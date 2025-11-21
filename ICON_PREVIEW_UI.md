@@ -58,9 +58,13 @@ The icon selection interface has been enhanced from a simple text dropdown to a 
 - Shows exactly what the default symbols look like
 
 #### Preset Icon Sets (1, 2, 3)
-- Shows 6 representative pieces:
-  - White King, Queen, Rook
-  - Black King, Queen, Rook
+- Shows 6 representative pieces in this order:
+  - White King
+  - Black Queen
+  - White Rook
+  - Black Bishop
+  - White Knight
+  - Black Pawn
 - Images are scaled to 48x48 pixels with smooth transformation
 - Actual PNG icons are loaded from resources
 - Maintains aspect ratio for proper display
