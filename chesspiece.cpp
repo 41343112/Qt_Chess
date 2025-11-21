@@ -1,36 +1,90 @@
 #include "chesspiece.h"
 #include <cmath>
 
+// Initialize static member
+PieceAppearanceStyle ChessPiece::s_appearanceStyle = PieceAppearanceStyle::UnicodeSymbols;
+
 ChessPiece::ChessPiece(PieceType type, PieceColor color)
     : m_type(type), m_color(color), m_hasMoved(false)
 {
 }
 
 QString ChessPiece::getSymbol() const {
-    if (m_type == PieceType::None) return " ";
+    return getSymbolForStyle(m_type, m_color, s_appearanceStyle);
+}
+
+void ChessPiece::setAppearanceStyle(PieceAppearanceStyle style) {
+    s_appearanceStyle = style;
+}
+
+PieceAppearanceStyle ChessPiece::getAppearanceStyle() {
+    return s_appearanceStyle;
+}
+
+QString ChessPiece::getSymbolForStyle(PieceType type, PieceColor color, PieceAppearanceStyle style) {
+    if (type == PieceType::None) return " ";
     
-    QString symbols;
-    if (m_color == PieceColor::White) {
-        switch (m_type) {
-            case PieceType::King:   return "♔";
-            case PieceType::Queen:  return "♕";
-            case PieceType::Rook:   return "♖";
-            case PieceType::Bishop: return "♗";
-            case PieceType::Knight: return "♘";
-            case PieceType::Pawn:   return "♙";
-            default: return " ";
-        }
-    } else {
-        switch (m_type) {
-            case PieceType::King:   return "♚";
-            case PieceType::Queen:  return "♛";
-            case PieceType::Rook:   return "♜";
-            case PieceType::Bishop: return "♝";
-            case PieceType::Knight: return "♞";
-            case PieceType::Pawn:   return "♟";
-            default: return " ";
-        }
+    switch (style) {
+        case PieceAppearanceStyle::UnicodeSymbols:
+            if (color == PieceColor::White) {
+                switch (type) {
+                    case PieceType::King:   return "♔";
+                    case PieceType::Queen:  return "♕";
+                    case PieceType::Rook:   return "♖";
+                    case PieceType::Bishop: return "♗";
+                    case PieceType::Knight: return "♘";
+                    case PieceType::Pawn:   return "♙";
+                    default: return " ";
+                }
+            } else {
+                switch (type) {
+                    case PieceType::King:   return "♚";
+                    case PieceType::Queen:  return "♛";
+                    case PieceType::Rook:   return "♜";
+                    case PieceType::Bishop: return "♝";
+                    case PieceType::Knight: return "♞";
+                    case PieceType::Pawn:   return "♟";
+                    default: return " ";
+                }
+            }
+            
+        case PieceAppearanceStyle::UnicodeAlternate:
+            // Use filled symbols for white, outlined for black (reversed)
+            if (color == PieceColor::White) {
+                switch (type) {
+                    case PieceType::King:   return "♚";
+                    case PieceType::Queen:  return "♛";
+                    case PieceType::Rook:   return "♜";
+                    case PieceType::Bishop: return "♝";
+                    case PieceType::Knight: return "♞";
+                    case PieceType::Pawn:   return "♟";
+                    default: return " ";
+                }
+            } else {
+                switch (type) {
+                    case PieceType::King:   return "♔";
+                    case PieceType::Queen:  return "♕";
+                    case PieceType::Rook:   return "♖";
+                    case PieceType::Bishop: return "♗";
+                    case PieceType::Knight: return "♘";
+                    case PieceType::Pawn:   return "♙";
+                    default: return " ";
+                }
+            }
+            
+        case PieceAppearanceStyle::TextBased:
+            switch (type) {
+                case PieceType::King:   return "K";
+                case PieceType::Queen:  return "Q";
+                case PieceType::Rook:   return "R";
+                case PieceType::Bishop: return "B";
+                case PieceType::Knight: return "N";
+                case PieceType::Pawn:   return "P";
+                default: return " ";
+            }
     }
+    
+    return " ";
 }
 
 bool ChessPiece::isValidMove(const QPoint& from, const QPoint& to, 

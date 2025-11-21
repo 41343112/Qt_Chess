@@ -15,6 +15,7 @@
 #include <vector>
 #include "chessboard.h"
 #include "soundsettingsdialog.h"
+#include "pieceappearancesettingsdialog.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -41,6 +42,7 @@ private slots:
     void onSquareClicked(int row, int col);
     void onNewGameClicked();
     void onSoundSettingsClicked();
+    void onAppearanceSettingsClicked();
 
 private:
     Ui::Qt_Chess *ui;
@@ -66,6 +68,7 @@ private:
     QSoundEffect m_checkSound;
     QSoundEffect m_checkmateSound;
     SoundSettingsDialog::SoundSettings m_soundSettings;
+    PieceAppearanceSettingsDialog::AppearanceSettings m_appearanceSettings;
     
     void setupUI();
     void setupMenuBar();
@@ -82,6 +85,8 @@ private:
     void initializeSounds();
     void loadSoundSettings();
     void applySoundSettings();
+    void loadAppearanceSettings();
+    void applyAppearanceSettings();
     void setSoundSource(QSoundEffect& sound, const QString& path);
     bool isCaptureMove(const QPoint& from, const QPoint& to) const;
     bool isCastlingMove(const QPoint& from, const QPoint& to) const;

@@ -37,6 +37,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     setMouseTracking(true);
     
     loadSoundSettings();
+    loadAppearanceSettings();
     initializeSounds();
     setupMenuBar();
     setupUI();
@@ -115,6 +116,11 @@ void Qt_Chess::setupMenuBar() {
     QAction* soundSettingsAction = new QAction("音效設定", this);
     connect(soundSettingsAction, &QAction::triggered, this, &Qt_Chess::onSoundSettingsClicked);
     settingsMenu->addAction(soundSettingsAction);
+    
+    // Appearance settings action
+    QAction* appearanceSettingsAction = new QAction("棋子外觀設定", this);
+    connect(appearanceSettingsAction, &QAction::triggered, this, &Qt_Chess::onAppearanceSettingsClicked);
+    settingsMenu->addAction(appearanceSettingsAction);
 }
 
 void Qt_Chess::updateSquareColor(int row, int col) {
@@ -660,6 +666,57 @@ void Qt_Chess::applySoundSettings() {
     
     setSoundSource(m_checkmateSound, m_soundSettings.checkmateSound);
     m_checkmateSound.setVolume(m_soundSettings.checkmateVolume);
+}
+
+void Qt_Chess::onAppearanceSettingsClicked() {
+    PieceAppearanceSettingsDialog dialog(this);
+    dialog.setSettings(m_appearanceSettings);
+    
+    if (dialog.exec() == QDialog::Accepted) {
+        m_appearanceSettings = dialog.getSettings();
+        applyAppearanceSettings();
+        updateBoard();  // Refresh the board to show new appearance
+    }
+}
+
+void Qt_Chess::loadAppearanceSettings() {
+    PieceAppearanceSettingsDialog::AppearanceSettings defaults = 
+        PieceAppearanceSettingsDialog::getDefaultSettings();
+    QSettings settings("QtChess", "AppearanceSettings");
+    
+    int styleInt = settings.value("style", static_cast<int>(defaults.style)).toInt();
+    m_appearanceSettings.style = static_cast<PieceAppearanceSettingsDialog::AppearanceStyle>(styleInt);
+    m_appearanceSettings.fontSize = settings.value("fontSize", defaults.fontSize).toInt();
+    
+    applyAppearanceSettings();
+}
+
+void Qt_Chess::applyAppearanceSettings() {
+    // Convert dialog appearance style to ChessPiece appearance style
+    PieceAppearanceStyle pieceStyle = PieceAppearanceStyle::UnicodeSymbols; // Default value
+    switch (m_appearanceSettings.style) {
+        case PieceAppearanceSettingsDialog::AppearanceStyle::UnicodeSymbols:
+            pieceStyle = PieceAppearanceStyle::UnicodeSymbols;
+            break;
+        case PieceAppearanceSettingsDialog::AppearanceStyle::UnicodeAlternate:
+            pieceStyle = PieceAppearanceStyle::UnicodeAlternate;
+            break;
+        case PieceAppearanceSettingsDialog::AppearanceStyle::TextBased:
+            pieceStyle = PieceAppearanceStyle::TextBased;
+            break;
+    }
+    
+    // Set the appearance style for all pieces
+    ChessPiece::setAppearanceStyle(pieceStyle);
+    
+    // Update font size for all squares
+    QFont font;
+    font.setPointSize(m_appearanceSettings.fontSize);
+    for (int row = 0; row < 8; ++row) {
+        for (int col = 0; col < 8; ++col) {
+            m_squares[row][col]->setFont(font);
+        }
+    }
 }
 
 bool Qt_Chess::isCaptureMove(const QPoint& from, const QPoint& to) const {

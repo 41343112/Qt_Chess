@@ -21,6 +21,12 @@ enum class PieceColor {
     Black
 };
 
+enum class PieceAppearanceStyle {
+    UnicodeSymbols,
+    UnicodeAlternate,
+    TextBased
+};
+
 class ChessPiece {
 public:
     ChessPiece(PieceType type = PieceType::None, PieceColor color = PieceColor::None);
@@ -32,6 +38,11 @@ public:
     
     QString getSymbol() const;
     
+    // Static methods for appearance settings
+    static void setAppearanceStyle(PieceAppearanceStyle style);
+    static PieceAppearanceStyle getAppearanceStyle();
+    static QString getSymbolForStyle(PieceType type, PieceColor color, PieceAppearanceStyle style);
+    
     // Check if a move to target position is valid (basic piece movement rules)
     bool isValidMove(const QPoint& from, const QPoint& to, 
                      const std::vector<std::vector<ChessPiece>>& board,
@@ -41,6 +52,8 @@ private:
     PieceType m_type;
     PieceColor m_color;
     bool m_hasMoved;
+    
+    static PieceAppearanceStyle s_appearanceStyle;
     
     bool isValidPawnMove(const QPoint& from, const QPoint& to, 
                          const std::vector<std::vector<ChessPiece>>& board,
