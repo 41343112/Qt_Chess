@@ -58,6 +58,7 @@ private:
     void updateColorButtons();
     void applyPresetColorScheme(ColorScheme scheme);
     QWidget* createPresetPreview(ColorScheme scheme, const QString& label);
+    void setComboBoxScheme(ColorScheme scheme);
 };
 
 #endif // BOARDCOLORSETTINGSDIALOG_H

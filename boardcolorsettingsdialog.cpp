@@ -205,19 +205,22 @@ void BoardColorSettingsDialog::applyPresetColorScheme(ColorScheme scheme) {
     updatePreview();
 }
 
+void BoardColorSettingsDialog::setComboBoxScheme(ColorScheme scheme) {
+    for (int i = 0; i < m_colorSchemeComboBox->count(); ++i) {
+        if (static_cast<ColorScheme>(m_colorSchemeComboBox->itemData(i).toInt()) == scheme) {
+            m_colorSchemeComboBox->setCurrentIndex(i);
+            break;
+        }
+    }
+}
+
 void BoardColorSettingsDialog::onLightColorClicked() {
     QColor color = QColorDialog::getColor(m_settings.lightSquareColor, this, "選擇淺色方格顏色");
     if (color.isValid()) {
         m_settings.lightSquareColor = color;
         m_settings.scheme = ColorScheme::Custom;
         
-        // Update combo box to show Custom
-        for (int i = 0; i < m_colorSchemeComboBox->count(); ++i) {
-            if (static_cast<ColorScheme>(m_colorSchemeComboBox->itemData(i).toInt()) == ColorScheme::Custom) {
-                m_colorSchemeComboBox->setCurrentIndex(i);
-                break;
-            }
-        }
+        setComboBoxScheme(ColorScheme::Custom);
         
         updateColorButtons();
         updatePreview();
@@ -230,13 +233,7 @@ void BoardColorSettingsDialog::onDarkColorClicked() {
         m_settings.darkSquareColor = color;
         m_settings.scheme = ColorScheme::Custom;
         
-        // Update combo box to show Custom
-        for (int i = 0; i < m_colorSchemeComboBox->count(); ++i) {
-            if (static_cast<ColorScheme>(m_colorSchemeComboBox->itemData(i).toInt()) == ColorScheme::Custom) {
-                m_colorSchemeComboBox->setCurrentIndex(i);
-                break;
-            }
-        }
+        setComboBoxScheme(ColorScheme::Custom);
         
         updateColorButtons();
         updatePreview();
@@ -246,13 +243,7 @@ void BoardColorSettingsDialog::onDarkColorClicked() {
 void BoardColorSettingsDialog::onResetToDefaults() {
     m_settings = getDefaultSettings();
     
-    // Update combo box
-    for (int i = 0; i < m_colorSchemeComboBox->count(); ++i) {
-        if (static_cast<ColorScheme>(m_colorSchemeComboBox->itemData(i).toInt()) == m_settings.scheme) {
-            m_colorSchemeComboBox->setCurrentIndex(i);
-            break;
-        }
-    }
+    setComboBoxScheme(m_settings.scheme);
     
     updateColorButtons();
     updatePreview();
@@ -269,13 +260,7 @@ BoardColorSettingsDialog::BoardColorSettings BoardColorSettingsDialog::getSettin
 void BoardColorSettingsDialog::setSettings(const BoardColorSettings& settings) {
     m_settings = settings;
     
-    // Update combo box
-    for (int i = 0; i < m_colorSchemeComboBox->count(); ++i) {
-        if (static_cast<ColorScheme>(m_colorSchemeComboBox->itemData(i).toInt()) == settings.scheme) {
-            m_colorSchemeComboBox->setCurrentIndex(i);
-            break;
-        }
-    }
+    setComboBoxScheme(settings.scheme);
     
     updateColorButtons();
     updatePreview();
