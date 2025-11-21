@@ -512,7 +512,9 @@ void Qt_Chess::resizeEvent(QResizeEvent *event) {
 }
 
 void Qt_Chess::updateSquareSizes() {
-    if (!m_boardWidget || m_squares.empty() || m_squares[0].empty()) return;
+    // Validate board structure before accessing
+    if (!m_boardWidget || m_squares.empty()) return;
+    if (m_squares[0].empty()) return;
     
     // Get available size for the board
     // We need to account for labels and button heights
