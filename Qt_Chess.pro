@@ -13,13 +13,15 @@ SOURCES += \
     qt_chess.cpp \
     chesspiece.cpp \
     chessboard.cpp \
-    soundsettingsdialog.cpp
+    soundsettingsdialog.cpp \
+    pieceiconsettingsdialog.cpp
 
 HEADERS += \
     qt_chess.h \
     chesspiece.h \
     chessboard.h \
-    soundsettingsdialog.h
+    soundsettingsdialog.h \
+    pieceiconsettingsdialog.h
 
 FORMS += \
     qt_chess.ui

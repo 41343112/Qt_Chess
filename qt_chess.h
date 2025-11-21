@@ -15,6 +15,7 @@
 #include <vector>
 #include "chessboard.h"
 #include "soundsettingsdialog.h"
+#include "pieceiconsettingsdialog.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -41,6 +42,7 @@ private slots:
     void onSquareClicked(int row, int col);
     void onNewGameClicked();
     void onSoundSettingsClicked();
+    void onPieceIconSettingsClicked();
 
 private:
     Ui::Qt_Chess *ui;
@@ -68,6 +70,10 @@ private:
     QSoundEffect m_checkmateSound;
     SoundSettingsDialog::SoundSettings m_soundSettings;
     
+    // Piece icon settings
+    PieceIconSettingsDialog::PieceIconSettings m_pieceIconSettings;
+    QMap<QString, QPixmap> m_pieceIconCache; // Cache for loaded piece icons
+    
     void setupUI();
     void setupMenuBar();
     void updateBoard();
@@ -88,5 +94,13 @@ private:
     bool isCaptureMove(const QPoint& from, const QPoint& to) const;
     bool isCastlingMove(const QPoint& from, const QPoint& to) const;
     void playSoundForMove(bool isCapture, bool isCastling);
+    void loadPieceIconSettings();
+    void applyPieceIconSettings();
+    QString getPieceIconPath(PieceType type, PieceColor color) const;
+    void displayPieceOnSquare(QPushButton* square, const ChessPiece& piece);
+    void loadPieceIconsToCache();
+    void clearPieceIconCache();
+    QPixmap getCachedPieceIcon(PieceType type, PieceColor color) const;
+    int calculateIconSize(QPushButton* square) const;
 };
 #endif // QT_CHESS_H

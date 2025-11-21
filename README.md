@@ -13,7 +13,7 @@ A fully functional player-vs-player chess game built with Qt5.
 - **Move Validation**: Only legal moves are allowed
 - **Check Detection**: The game detects when a king is in check
 - **Checkmate & Stalemate Detection**: Game automatically detects end conditions
-- **Visual Highlights**: Selected pieces and valid moves are highlighted
+- **Visual Highlights**: Selected pieces and valid moves are highlighted (orange for normal moves, red for capture moves)
 - **Clean UI**: Classic chessboard with Unicode chess piece symbols
 - **New Game**: Reset the board to start a new game at any time
 - **Sound Effects**: Different sounds for moves, captures, castling, check, and checkmate
@@ -24,6 +24,19 @@ A fully functional player-vs-player chess game built with Qt5.
   - Reset individual sound effects to default values independently
   - Preview sounds before applying settings
   - Settings are saved persistently between sessions
+- **Customizable Piece Icons**:
+  - Choose from multiple icon set options:
+    - Default Unicode chess symbols
+    - Three preset icon sets (when images are provided)
+    - Fully custom user-selected icons
+  - **Adjustable Piece Size**: Scale piece icons from 60% to 100% of square size using a convenient slider
+  - Configure custom icons for each of the 12 piece types (6 white + 6 black)
+  - Support for common image formats (PNG, JPG, SVG, BMP)
+  - Preview icons before applying
+  - Easy switching between different icon sets
+  - Reset to default Unicode symbols at any time
+  - Settings are saved persistently between sessions
+  - See [ADDING_ICON_SETS.md](ADDING_ICON_SETS.md) for instructions on adding preset icon images
 
 ## Building
 
@@ -48,7 +61,7 @@ make
 1. **Select a Piece**: Click on one of your pieces (White starts first)
 2. **Drag and Drop**: Click and drag a piece to move it to a valid square
 3. **Cancel Move**: Right-click at any time during dragging to cancel and return the piece to its original position
-4. **Valid Moves**: Valid destination squares will be highlighted in orange
+4. **Valid Moves**: Valid destination squares will be highlighted (orange for normal moves, red for capture moves)
 5. **Move**: Click on a highlighted square to move the piece, or drag and drop
 6. **Deselect**: Click the selected piece again or right-click to deselect it
 7. **Turn Indicator**: The current player's turn is displayed at the top
@@ -63,6 +76,18 @@ make
     - Preview sounds before applying settings
     - **Supported audio formats**: WAV (recommended), MP3, OGG
       - WAV format is recommended for best compatibility across all platforms
+11. **Piece Icon Settings**: Click "設定" (Settings) menu > "棋子圖標設定" (Piece Icon Settings) to:
+    - Choose from multiple icon set options:
+      - Default Unicode chess symbols (♔, ♕, ♖, etc.)
+      - Three preset icon sets (when available)
+      - Custom user-selected icons
+    - **Adjust piece size**: Use the slider to scale pieces from 60% to 100% of square size (default 80%)
+    - Upload custom image files for each piece type (white and black)
+    - Preview icons before applying
+    - Reset individual piece icons to default Unicode symbols using the "重設" (Reset) button
+    - Reset all piece icons at once using the "重設為預設值" (Reset to Defaults) button
+    - **Supported image formats**: PNG, JPG, SVG, BMP
+      - PNG format with transparent background is recommended for best appearance
 
 ## Game Rules
 
@@ -89,6 +114,7 @@ make
 - `chessboard.h/cpp` - Game board logic and rules
 - `chesspiece.h/cpp` - Chess piece definitions and movement validation
 - `soundsettingsdialog.h/cpp` - Sound settings dialog for customizing audio
+- `pieceiconsettingsdialog.h/cpp` - Piece icon settings dialog for customizing piece graphics
 - `qt_chess.ui` - Qt UI designer file
 - `resources.qrc` - Qt resource file for embedded sound files
 
