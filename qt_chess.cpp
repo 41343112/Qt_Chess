@@ -85,10 +85,10 @@ void Qt_Chess::setupUI() {
     // New game button
     m_newGameButton = new QPushButton("新遊戲", this);
     m_newGameButton->setMinimumHeight(40);
-    QFont font;
-    font.setPointSize(14);
-    font.setBold(true);
-    m_newGameButton->setFont(font);
+    QFont buttonFont;
+    buttonFont.setPointSize(14);
+    buttonFont.setBold(true);
+    m_newGameButton->setFont(buttonFont);
     connect(m_newGameButton, &QPushButton::clicked, this, &Qt_Chess::onNewGameClicked);
     mainLayout->addWidget(m_newGameButton);
     
@@ -128,7 +128,7 @@ void Qt_Chess::updateStatus() {
     } else if (m_chessBoard.isStalemate(currentPlayer)) {
         QMessageBox::information(this, "遊戲結束", "逼和！對局和棋。");
     } else if (m_chessBoard.isInsufficientMaterial()) {
-        QMessageBox::information(this, "遊戲結束", "子力不足以將殺！對局和棋。");
+        QMessageBox::information(this, "遊戲結束", "子力不足以將死！對局和棋。");
     }
 }
 
