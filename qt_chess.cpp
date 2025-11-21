@@ -298,7 +298,7 @@ QPoint Qt_Chess::getSquareAtPosition(const QPoint& pos) const {
 }
 
 void Qt_Chess::restorePieceToSquare(const QPoint& square) {
-    if (square.x() >= 0 && square.y() >= 0) {
+    if (square.x() >= 0 && square.y() >= 0 && square.x() < 8 && square.y() < 8) {
         const ChessPiece& piece = m_chessBoard.getPiece(square.y(), square.x());
         m_squares[square.y()][square.x()]->setText(piece.getSymbol());
     }
@@ -381,7 +381,8 @@ void Qt_Chess::mousePressEvent(QMouseEvent *event) {
     }
     
     // Left click - start drag
-    if (event->button() == Qt::LeftButton && square.x() >= 0 && square.y() >= 0) {
+    if (event->button() == Qt::LeftButton && square.x() >= 0 && square.y() >= 0 && 
+        square.x() < 8 && square.y() < 8) {
         const ChessPiece& piece = m_chessBoard.getPiece(square.y(), square.x());
         if (piece.getType() != PieceType::None && 
             piece.getColor() == m_chessBoard.getCurrentPlayer()) {
