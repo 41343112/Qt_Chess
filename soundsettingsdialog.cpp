@@ -88,9 +88,8 @@ void SoundSettingsDialog::createSoundRow(QGridLayout* gridLayout, int& row, cons
     gridLayout->addWidget(volumeLabel, row, 6);
     
     // Connect slider to update label
-    QLabel* volumeLabelPtr = volumeLabel;
-    connect(volumeSlider, &QSlider::valueChanged, [volumeLabelPtr](int value) {
-        volumeLabelPtr->setText(QString("%1%").arg(value));
+    connect(volumeSlider, &QSlider::valueChanged, [volumeLabel](int value) {
+        volumeLabel->setText(QString("%1%").arg(value));
     });
     
     // Preview button
