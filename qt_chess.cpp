@@ -998,8 +998,15 @@ int Qt_Chess::calculateIconSize(QPushButton* square) const {
 void Qt_Chess::loadBoardColorSettings() {
     QSettings settings("Qt_Chess", "BoardColorSettings");
     
-    // Load color scheme type
+    // Load color scheme type with validation
     int schemeInt = settings.value("colorScheme", static_cast<int>(BoardColorSettingsDialog::ColorScheme::Classic)).toInt();
+    
+    // Validate scheme is within valid range
+    if (schemeInt < static_cast<int>(BoardColorSettingsDialog::ColorScheme::Classic) ||
+        schemeInt > static_cast<int>(BoardColorSettingsDialog::ColorScheme::Custom)) {
+        schemeInt = static_cast<int>(BoardColorSettingsDialog::ColorScheme::Classic);
+    }
+    
     BoardColorSettingsDialog::ColorScheme scheme = static_cast<BoardColorSettingsDialog::ColorScheme>(schemeInt);
     
     // Load colors

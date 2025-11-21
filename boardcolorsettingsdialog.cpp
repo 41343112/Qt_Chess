@@ -206,11 +206,9 @@ void BoardColorSettingsDialog::applyPresetColorScheme(ColorScheme scheme) {
 }
 
 void BoardColorSettingsDialog::setComboBoxScheme(ColorScheme scheme) {
-    for (int i = 0; i < m_colorSchemeComboBox->count(); ++i) {
-        if (static_cast<ColorScheme>(m_colorSchemeComboBox->itemData(i).toInt()) == scheme) {
-            m_colorSchemeComboBox->setCurrentIndex(i);
-            break;
-        }
+    int index = m_colorSchemeComboBox->findData(static_cast<int>(scheme));
+    if (index != -1) {
+        m_colorSchemeComboBox->setCurrentIndex(index);
     }
 }
 
@@ -294,7 +292,8 @@ BoardColorSettingsDialog::BoardColorSettings BoardColorSettingsDialog::getPreset
             break;
             
         case ColorScheme::Custom:
-            // Return current custom colors or default
+            // For Custom scheme, return default colors as placeholder
+            // Actual custom colors are managed by the dialog state
             settings.lightSquareColor = QColor("#F0D9B5");
             settings.darkSquareColor = QColor("#B58863");
             break;
