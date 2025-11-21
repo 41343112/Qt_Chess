@@ -19,14 +19,8 @@ public:
     explicit PieceAppearanceSettingsDialog(QWidget *parent = nullptr);
     ~PieceAppearanceSettingsDialog();
 
-    enum class AppearanceStyle {
-        UnicodeSymbols,
-        UnicodeAlternate,
-        TextBased
-    };
-
     struct AppearanceSettings {
-        AppearanceStyle style;
+        PieceAppearanceStyle style;
         int fontSize;
     };
 
@@ -34,7 +28,6 @@ public:
     void setSettings(const AppearanceSettings& settings);
     
     static AppearanceSettings getDefaultSettings();
-    static QString getPieceSymbol(PieceType type, PieceColor color, AppearanceStyle style);
 
 private slots:
     void onStyleChanged();

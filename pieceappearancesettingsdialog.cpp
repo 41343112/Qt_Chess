@@ -20,7 +20,7 @@ PieceAppearanceSettingsDialog::PieceAppearanceSettingsDialog(QWidget *parent)
     QSettings settings("QtChess", "AppearanceSettings");
     
     int styleInt = settings.value("style", static_cast<int>(defaults.style)).toInt();
-    m_settings.style = static_cast<AppearanceStyle>(styleInt);
+    m_settings.style = static_cast<PieceAppearanceStyle>(styleInt);
     m_settings.fontSize = settings.value("fontSize", defaults.fontSize).toInt();
     
     setSettings(m_settings);
@@ -44,9 +44,9 @@ void PieceAppearanceSettingsDialog::setupUI()
     m_unicodeAltRadio = new QRadioButton("替代 Unicode 符號 (♚♛♜♝♞♟)", this);
     m_textBasedRadio = new QRadioButton("文字符號 (K Q R B N P)", this);
     
-    m_styleButtonGroup->addButton(m_unicodeRadio, static_cast<int>(AppearanceStyle::UnicodeSymbols));
-    m_styleButtonGroup->addButton(m_unicodeAltRadio, static_cast<int>(AppearanceStyle::UnicodeAlternate));
-    m_styleButtonGroup->addButton(m_textBasedRadio, static_cast<int>(AppearanceStyle::TextBased));
+    m_styleButtonGroup->addButton(m_unicodeRadio, static_cast<int>(PieceAppearanceStyle::UnicodeSymbols));
+    m_styleButtonGroup->addButton(m_unicodeAltRadio, static_cast<int>(PieceAppearanceStyle::UnicodeAlternate));
+    m_styleButtonGroup->addButton(m_textBasedRadio, static_cast<int>(PieceAppearanceStyle::TextBased));
     
     styleLayout->addWidget(m_unicodeRadio);
     styleLayout->addWidget(m_unicodeAltRadio);
@@ -166,7 +166,7 @@ void PieceAppearanceSettingsDialog::updatePreview()
 
 void PieceAppearanceSettingsDialog::updatePreviewLabel(QLabel* label, PieceType type, PieceColor color)
 {
-    QString symbol = getPieceSymbol(type, color, m_settings.style);
+    QString symbol = ChessPiece::getSymbolForStyle(type, color, m_settings.style);
     label->setText(symbol);
     
     QFont font;
@@ -174,7 +174,7 @@ void PieceAppearanceSettingsDialog::updatePreviewLabel(QLabel* label, PieceType 
     label->setFont(font);
     
     // Set colors for text-based style
-    if (m_settings.style == AppearanceStyle::TextBased) {
+    if (m_settings.style == PieceAppearanceStyle::TextBased) {
         if (color == PieceColor::White) {
             label->setStyleSheet("QLabel { color: #FFFFFF; background-color: #000000; padding: 5px; }");
         } else {
@@ -210,83 +210,16 @@ void PieceAppearanceSettingsDialog::setSettings(const AppearanceSettings& settin
 PieceAppearanceSettingsDialog::AppearanceSettings PieceAppearanceSettingsDialog::getDefaultSettings()
 {
     AppearanceSettings defaults;
-    defaults.style = AppearanceStyle::UnicodeSymbols;
+    defaults.style = PieceAppearanceStyle::UnicodeSymbols;
     defaults.fontSize = 36;
     return defaults;
-}
-
-QString PieceAppearanceSettingsDialog::getPieceSymbol(PieceType type, PieceColor color, AppearanceStyle style)
-{
-    if (type == PieceType::None) return " ";
-    
-    switch (style) {
-        case AppearanceStyle::UnicodeSymbols:
-            if (color == PieceColor::White) {
-                switch (type) {
-                    case PieceType::King:   return "♔";
-                    case PieceType::Queen:  return "♕";
-                    case PieceType::Rook:   return "♖";
-                    case PieceType::Bishop: return "♗";
-                    case PieceType::Knight: return "♘";
-                    case PieceType::Pawn:   return "♙";
-                    default: return " ";
-                }
-            } else {
-                switch (type) {
-                    case PieceType::King:   return "♚";
-                    case PieceType::Queen:  return "♛";
-                    case PieceType::Rook:   return "♜";
-                    case PieceType::Bishop: return "♝";
-                    case PieceType::Knight: return "♞";
-                    case PieceType::Pawn:   return "♟";
-                    default: return " ";
-                }
-            }
-            
-        case AppearanceStyle::UnicodeAlternate:
-            // Use filled symbols for white, outlined for black (reversed)
-            if (color == PieceColor::White) {
-                switch (type) {
-                    case PieceType::King:   return "♚";
-                    case PieceType::Queen:  return "♛";
-                    case PieceType::Rook:   return "♜";
-                    case PieceType::Bishop: return "♝";
-                    case PieceType::Knight: return "♞";
-                    case PieceType::Pawn:   return "♟";
-                    default: return " ";
-                }
-            } else {
-                switch (type) {
-                    case PieceType::King:   return "♔";
-                    case PieceType::Queen:  return "♕";
-                    case PieceType::Rook:   return "♖";
-                    case PieceType::Bishop: return "♗";
-                    case PieceType::Knight: return "♘";
-                    case PieceType::Pawn:   return "♙";
-                    default: return " ";
-                }
-            }
-            
-        case AppearanceStyle::TextBased:
-            switch (type) {
-                case PieceType::King:   return "K";
-                case PieceType::Queen:  return "Q";
-                case PieceType::Rook:   return "R";
-                case PieceType::Bishop: return "B";
-                case PieceType::Knight: return "N";
-                case PieceType::Pawn:   return "P";
-                default: return " ";
-            }
-    }
-    
-    return " ";
 }
 
 void PieceAppearanceSettingsDialog::onStyleChanged()
 {
     int checkedId = m_styleButtonGroup->checkedId();
     if (checkedId >= 0) {
-        m_settings.style = static_cast<AppearanceStyle>(checkedId);
+        m_settings.style = static_cast<PieceAppearanceStyle>(checkedId);
         updatePreview();
     }
 }

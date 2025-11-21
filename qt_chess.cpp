@@ -685,29 +685,15 @@ void Qt_Chess::loadAppearanceSettings() {
     QSettings settings("QtChess", "AppearanceSettings");
     
     int styleInt = settings.value("style", static_cast<int>(defaults.style)).toInt();
-    m_appearanceSettings.style = static_cast<PieceAppearanceSettingsDialog::AppearanceStyle>(styleInt);
+    m_appearanceSettings.style = static_cast<PieceAppearanceStyle>(styleInt);
     m_appearanceSettings.fontSize = settings.value("fontSize", defaults.fontSize).toInt();
     
     applyAppearanceSettings();
 }
 
 void Qt_Chess::applyAppearanceSettings() {
-    // Convert dialog appearance style to ChessPiece appearance style
-    PieceAppearanceStyle pieceStyle = PieceAppearanceStyle::UnicodeSymbols; // Default value
-    switch (m_appearanceSettings.style) {
-        case PieceAppearanceSettingsDialog::AppearanceStyle::UnicodeSymbols:
-            pieceStyle = PieceAppearanceStyle::UnicodeSymbols;
-            break;
-        case PieceAppearanceSettingsDialog::AppearanceStyle::UnicodeAlternate:
-            pieceStyle = PieceAppearanceStyle::UnicodeAlternate;
-            break;
-        case PieceAppearanceSettingsDialog::AppearanceStyle::TextBased:
-            pieceStyle = PieceAppearanceStyle::TextBased;
-            break;
-    }
-    
     // Set the appearance style for all pieces
-    ChessPiece::setAppearanceStyle(pieceStyle);
+    ChessPiece::setAppearanceStyle(m_appearanceSettings.style);
     
     // Update font size for all squares
     QFont font;
