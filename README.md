@@ -29,6 +29,7 @@ A fully functional player-vs-player chess game built with Qt5.
     - Default Unicode chess symbols
     - Three preset icon sets (when images are provided)
     - Fully custom user-selected icons
+  - **Adjustable Piece Size**: Scale piece icons from 60% to 100% of square size using a convenient slider
   - Configure custom icons for each of the 12 piece types (6 white + 6 black)
   - Support for common image formats (PNG, JPG, SVG, BMP)
   - Preview icons before applying
@@ -80,6 +81,7 @@ make
       - Default Unicode chess symbols (♔, ♕, ♖, etc.)
       - Three preset icon sets (when available)
       - Custom user-selected icons
+    - **Adjust piece size**: Use the slider to scale pieces from 60% to 100% of square size (default 80%)
     - Upload custom image files for each piece type (white and black)
     - Preview icons before applying
     - Reset individual piece icons to default Unicode symbols using the "重設" (Reset) button

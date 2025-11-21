@@ -12,6 +12,7 @@
 #include <QButtonGroup>
 #include <QRadioButton>
 #include <QScrollArea>
+#include <QSlider>
 #include "chesspiece.h"
 
 class PieceIconSettingsDialog : public QDialog
@@ -45,6 +46,7 @@ public:
         QString blackPawnIcon;
         bool useCustomIcons;
         IconSetType iconSetType;
+        int pieceScale;  // Scale factor in percentage (60-100), default 80
     };
 
     PieceIconSettings getSettings() const;
@@ -103,6 +105,8 @@ private:
     QCheckBox* m_useCustomIconsCheckBox;
     QButtonGroup* m_iconSetButtonGroup;
     QScrollArea* m_customIconsScrollArea;
+    QSlider* m_pieceScaleSlider;
+    QLabel* m_pieceScaleLabel;
     
     // White pieces
     QLineEdit* m_whiteKingEdit;
