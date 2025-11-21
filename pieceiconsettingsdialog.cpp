@@ -302,8 +302,8 @@ void PieceIconSettingsDialog::previewIcon(const QString& iconFile)
     
     layout->addLayout(zoomLayout);
     
-    // Update image function
-    auto updateImage = [&pixmap, imageLabel, zoomValueLabel](int zoomPercent) {
+    // Update image function - capture pixmap by value to avoid dangling reference
+    auto updateImage = [pixmap, imageLabel, zoomValueLabel](int zoomPercent) {
         int newWidth = pixmap.width() * zoomPercent / 100;
         int newHeight = pixmap.height() * zoomPercent / 100;
         imageLabel->setPixmap(pixmap.scaled(newWidth, newHeight, Qt::KeepAspectRatio, Qt::SmoothTransformation));
@@ -311,9 +311,7 @@ void PieceIconSettingsDialog::previewIcon(const QString& iconFile)
     };
     
     // Connect zoom controls
-    connect(zoomSlider, &QSlider::valueChanged, [updateImage](int value) {
-        updateImage(value);
-    });
+    connect(zoomSlider, &QSlider::valueChanged, updateImage);
     
     connect(zoomInButton, &QPushButton::clicked, [zoomSlider]() {
         zoomSlider->setValue(qMin(zoomSlider->value() + 25, zoomSlider->maximum()));
