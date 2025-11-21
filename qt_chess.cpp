@@ -8,6 +8,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QEvent>
+#include <QResizeEvent>
 
 Qt_Chess::Qt_Chess(QWidget *parent)
     : QMainWindow(parent)
@@ -63,8 +64,7 @@ void Qt_Chess::setupUI() {
     for (int row = 0; row < 8; ++row) {
         for (int col = 0; col < 8; ++col) {
             QPushButton* square = new QPushButton(m_boardWidget);
-            square->setMinimumSize(80, 80);
-            square->setMaximumSize(80, 80);
+            square->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
             square->setMouseTracking(true);
             
             QFont buttonFont;
@@ -494,4 +494,49 @@ void Qt_Chess::mouseReleaseEvent(QMouseEvent *event) {
     }
     
     QMainWindow::mouseReleaseEvent(event);
+}
+
+void Qt_Chess::resizeEvent(QResizeEvent *event) {
+    QMainWindow::resizeEvent(event);
+    updateSquareSizes();
+}
+
+void Qt_Chess::updateSquareSizes() {
+    if (!m_boardWidget || m_squares.empty()) return;
+    
+    // Get available size for the board
+    // We need to account for labels and button heights
+    int extraHeight = 100; // Base margin
+    if (m_turnLabel) extraHeight += m_turnLabel->height();
+    if (m_statusLabel) extraHeight += m_statusLabel->height();
+    if (m_newGameButton) extraHeight += m_newGameButton->height();
+    
+    int availableHeight = height() - extraHeight;
+    int availableWidth = width() - 40; // 40 for margins
+    
+    // Calculate square size - use the smaller dimension to keep squares square
+    int boardSize = qMin(availableWidth, availableHeight);
+    int squareSize = boardSize / 8;
+    
+    // Ensure a minimum size for usability
+    squareSize = qMax(squareSize, 40);
+    
+    // Update each square's size
+    for (int row = 0; row < 8; ++row) {
+        for (int col = 0; col < 8; ++col) {
+            m_squares[row][col]->setMinimumSize(squareSize, squareSize);
+            m_squares[row][col]->setMaximumSize(squareSize, squareSize);
+            
+            // Scale font size proportionally to square size
+            QFont font = m_squares[row][col]->font();
+            int fontSize = squareSize * 36 / 80; // Scale from original 36pt at 80px
+            fontSize = qMax(fontSize, 12); // Minimum readable size
+            font.setPointSize(fontSize);
+            m_squares[row][col]->setFont(font);
+        }
+    }
+    
+    // Update the board widget's size
+    m_boardWidget->setMinimumSize(squareSize * 8, squareSize * 8);
+    m_boardWidget->setMaximumSize(squareSize * 8, squareSize * 8);
 }
