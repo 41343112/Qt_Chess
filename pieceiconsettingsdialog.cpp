@@ -6,6 +6,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QCheckBox>
+#include <QComboBox>
 #include <QPixmap>
 
 PieceIconSettingsDialog::PieceIconSettingsDialog(QWidget *parent)
