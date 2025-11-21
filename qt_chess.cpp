@@ -344,24 +344,77 @@ bool Qt_Chess::eventFilter(QObject *obj, QEvent *event) {
     // Forward mouse events to enable drag-and-drop
     if (event->type() == QEvent::MouseButtonPress) {
         QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
-        // Map the button's position to the main window's coordinate system
-        QPoint globalPos = button->mapToGlobal(mouseEvent->pos());
-        QPoint windowPos = mapFromGlobal(globalPos);
-        QMouseEvent mappedEvent(mouseEvent->type(), windowPos, mouseEvent->button(), 
-                               mouseEvent->buttons(), mouseEvent->modifiers());
-        mousePressEvent(&mappedEvent);
-        // Don't accept the event completely - let the button still handle clicks if no drag started
-        if (m_isDragging) {
-            return true; // Event handled, start dragging
+        
+        // Left click on a valid piece - handle selection and drag
+        if (mouseEvent->button() == Qt::LeftButton) {
+            QPoint square = m_buttonCoordinates[button];
+            const ChessPiece& piece = m_chessBoard.getPiece(square.y(), square.x());
+            
+            // If it's a valid piece of the current player, start drag and show highlights immediately
+            if (piece.getType() != PieceType::None && 
+                piece.getColor() == m_chessBoard.getCurrentPlayer()) {
+                
+                m_isDragging = true;
+                m_dragStartSquare = square;
+                m_selectedSquare = square;
+                m_pieceSelected = true;
+                
+                // Show highlights immediately
+                highlightValidMoves();
+                
+                // Create drag label
+                m_dragLabel = new QLabel(this);
+                m_dragLabel->setText(piece.getSymbol());
+                QFont font;
+                font.setPointSize(36);
+                m_dragLabel->setFont(font);
+                m_dragLabel->setStyleSheet("QLabel { background-color: transparent; border: none; }");
+                m_dragLabel->adjustSize();
+                
+                // Map the button's position to the main window's coordinate system for drag label
+                QPoint globalPos = button->mapToGlobal(mouseEvent->pos());
+                QPoint windowPos = mapFromGlobal(globalPos);
+                m_dragLabel->move(windowPos - QPoint(m_dragLabel->width() / 2, m_dragLabel->height() / 2));
+                m_dragLabel->show();
+                m_dragLabel->raise();
+                
+                // Hide the piece from the original square during drag
+                m_squares[square.y()][square.x()]->setText("");
+                
+                return true; // Event handled, start dragging
+            }
+        }
+        // Right click - cancel any current action
+        else if (mouseEvent->button() == Qt::RightButton) {
+            if (m_isDragging) {
+                // Cancel drag and return piece to original position
+                m_isDragging = false;
+                if (m_dragLabel) {
+                    m_dragLabel->hide();
+                    m_dragLabel->deleteLater();
+                    m_dragLabel = nullptr;
+                }
+                // Restore the piece to the original square
+                restorePieceToSquare(m_dragStartSquare);
+                m_dragStartSquare = QPoint(-1, -1);
+                clearHighlights();
+                return true;
+            } else if (m_pieceSelected) {
+                // Deselect piece if one is selected
+                m_pieceSelected = false;
+                clearHighlights();
+                return true;
+            }
         }
     } else if (event->type() == QEvent::MouseMove) {
         if (m_isDragging) {
             QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
             QPoint globalPos = button->mapToGlobal(mouseEvent->pos());
             QPoint windowPos = mapFromGlobal(globalPos);
-            QMouseEvent mappedEvent(mouseEvent->type(), windowPos, mouseEvent->button(), 
-                                   mouseEvent->buttons(), mouseEvent->modifiers());
-            mouseMoveEvent(&mappedEvent);
+            
+            if (m_dragLabel) {
+                m_dragLabel->move(windowPos - QPoint(m_dragLabel->width() / 2, m_dragLabel->height() / 2));
+            }
             return true; // Event handled
         }
     } else if (event->type() == QEvent::MouseButtonRelease) {
@@ -381,69 +434,13 @@ bool Qt_Chess::eventFilter(QObject *obj, QEvent *event) {
 }
 
 void Qt_Chess::mousePressEvent(QMouseEvent *event) {
-    QPoint square = getSquareAtPosition(event->pos());
-    
-    // Right click - cancel any current action
-    if (event->button() == Qt::RightButton) {
-        if (m_isDragging) {
-            // Cancel drag and return piece to original position
-            m_isDragging = false;
-            if (m_dragLabel) {
-                m_dragLabel->hide();
-                m_dragLabel->deleteLater();
-                m_dragLabel = nullptr;
-            }
-            // Restore the piece to the original square
-            restorePieceToSquare(m_dragStartSquare);
-            m_dragStartSquare = QPoint(-1, -1);
-            clearHighlights();
-        } else if (m_pieceSelected) {
-            // Deselect piece if one is selected
-            m_pieceSelected = false;
-            clearHighlights();
-        }
-        return;
-    }
-    
-    // Left click - start drag
-    if (event->button() == Qt::LeftButton && square.x() >= 0 && square.y() >= 0 && 
-        square.x() < 8 && square.y() < 8) {
-        const ChessPiece& piece = m_chessBoard.getPiece(square.y(), square.x());
-        if (piece.getType() != PieceType::None && 
-            piece.getColor() == m_chessBoard.getCurrentPlayer()) {
-            
-            m_isDragging = true;
-            m_dragStartSquare = square;
-            m_selectedSquare = square;
-            m_pieceSelected = true;
-            
-            // Create drag label
-            m_dragLabel = new QLabel(this);
-            m_dragLabel->setText(piece.getSymbol());
-            QFont font;
-            font.setPointSize(36);
-            m_dragLabel->setFont(font);
-            m_dragLabel->setStyleSheet("QLabel { background-color: transparent; border: none; }");
-            m_dragLabel->adjustSize();
-            m_dragLabel->move(event->pos() - QPoint(m_dragLabel->width() / 2, m_dragLabel->height() / 2));
-            m_dragLabel->show();
-            m_dragLabel->raise();
-            
-            // Hide the piece from the original square during drag
-            m_squares[square.y()][square.x()]->setText("");
-            
-            highlightValidMoves();
-        }
-    }
-    
+    // Mouse press events on chess squares are now handled in eventFilter()
+    // This method only handles clicks outside the chess board
     QMainWindow::mousePressEvent(event);
 }
 
 void Qt_Chess::mouseMoveEvent(QMouseEvent *event) {
-    if (m_isDragging && m_dragLabel) {
-        m_dragLabel->move(event->pos() - QPoint(m_dragLabel->width() / 2, m_dragLabel->height() / 2));
-    }
-    
+    // Mouse move events during drag are now handled in eventFilter()
     QMainWindow::mouseMoveEvent(event);
 }
 
