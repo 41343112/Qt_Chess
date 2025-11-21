@@ -344,7 +344,6 @@ bool Qt_Chess::eventFilter(QObject *obj, QEvent *event) {
     // Forward mouse events to enable drag-and-drop
     if (event->type() == QEvent::MouseButtonPress) {
         QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
-        
         // Left click on a valid piece - handle selection and drag
         if (mouseEvent->button() == Qt::LeftButton) {
             QPoint square = m_buttonCoordinates[button];
@@ -435,12 +434,11 @@ bool Qt_Chess::eventFilter(QObject *obj, QEvent *event) {
 
 void Qt_Chess::mousePressEvent(QMouseEvent *event) {
     // Mouse press events on chess squares are now handled in eventFilter()
-    // This method only handles clicks outside the chess board
     QMainWindow::mousePressEvent(event);
 }
 
 void Qt_Chess::mouseMoveEvent(QMouseEvent *event) {
-    // Mouse move events during drag are now handled in eventFilter()
+    // Drag move events are handled in eventFilter()
     QMainWindow::mouseMoveEvent(event);
 }
 
