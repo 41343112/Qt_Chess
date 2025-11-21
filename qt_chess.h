@@ -44,6 +44,7 @@ private:
     void updateStatus();
     void highlightValidMoves();
     void clearHighlights();
+    void applyCheckHighlight(const QPoint& excludeSquare = QPoint(-1, -1));
     PieceType showPromotionDialog(PieceColor color);
 };
 #endif // QT_CHESS_H
