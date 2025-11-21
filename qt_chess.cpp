@@ -943,6 +943,9 @@ int Qt_Chess::calculateIconSize(QPushButton* square) const {
     int squareWidth = square->width();
     if (squareWidth <= 0) {
         squareWidth = square->minimumWidth();
+        if (squareWidth <= 0) {
+            return DEFAULT_ICON_SIZE;
+        }
     }
     return static_cast<int>(squareWidth * 0.8);
 }
