@@ -17,6 +17,7 @@ class Qt_Chess;
 }
 QT_END_NAMESPACE
 
+// 主視窗類別 - 處理使用者界面和互動
 class Qt_Chess : public QMainWindow
 {
     Q_OBJECT
@@ -40,11 +41,11 @@ private:
     Ui::Qt_Chess *ui;
     ChessBoard m_chessBoard;
     std::vector<std::vector<QPushButton*>> m_squares;
-    QMap<QPushButton*, QPoint> m_buttonCoordinates; // For efficient button-to-coordinate lookup
+    QMap<QPushButton*, QPoint> m_buttonCoordinates; // 用於高效的按鈕到座標的查找
     QPoint m_selectedSquare;
     bool m_pieceSelected;
     
-    // Drag-and-drop state
+    // 拖放狀態
     bool m_isDragging;
     QPoint m_dragStartSquare;
     QLabel* m_dragLabel;
