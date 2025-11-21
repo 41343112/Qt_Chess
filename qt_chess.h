@@ -101,5 +101,6 @@ private:
     void loadPieceIconsToCache();
     void clearPieceIconCache();
     QPixmap getCachedPieceIcon(PieceType type, PieceColor color) const;
+    int calculateIconSize(QPushButton* square) const;
 };
 #endif // QT_CHESS_H

@@ -469,9 +469,8 @@ void Qt_Chess::mousePressEvent(QMouseEvent *event) {
             if (m_pieceIconSettings.useCustomIcons) {
                 QPixmap pixmap = getCachedPieceIcon(piece.getType(), piece.getColor());
                 if (!pixmap.isNull()) {
-                    int squareWidth = m_squares[square.y()][square.x()]->width();
-                    int iconSize = squareWidth > 0 ? squareWidth : m_squares[square.y()][square.x()]->minimumWidth();
-                    iconSize = static_cast<int>(iconSize * 0.8);
+                    QPushButton* squareButton = m_squares[square.y()][square.x()];
+                    int iconSize = calculateIconSize(squareButton);
                     m_dragLabel->setPixmap(pixmap.scaled(iconSize, iconSize, Qt::KeepAspectRatio, Qt::SmoothTransformation));
                 } else {
                     m_dragLabel->setText(piece.getSymbol());
@@ -880,8 +879,8 @@ void Qt_Chess::displayPieceOnSquare(QPushButton* square, const ChessPiece& piece
             QIcon icon(pixmap);
             square->setIcon(icon);
             // Set icon size based on square size
-            int iconSize = square->width() > 0 ? square->width() : square->minimumWidth();
-            square->setIconSize(QSize(iconSize * 0.8, iconSize * 0.8));
+            int iconSize = calculateIconSize(square);
+            square->setIconSize(QSize(iconSize, iconSize));
         } else {
             // Fallback to symbol if icon can't be loaded or not in cache
             square->setText(piece.getSymbol());
@@ -901,9 +900,10 @@ void Qt_Chess::loadPieceIconsToCache() {
     
     // Load all piece icons into cache
     auto loadIconToCache = [this](const QString& iconPath) {
-        if (!iconPath.isEmpty() && QFile::exists(iconPath) && !m_pieceIconCache.contains(iconPath)) {
+        if (!iconPath.isEmpty() && QFile::exists(iconPath)) {
             QPixmap pixmap(iconPath);
             if (!pixmap.isNull()) {
+                // insert() will replace if already exists, so no need to check contains()
                 m_pieceIconCache.insert(iconPath, pixmap);
             }
         }
@@ -936,4 +936,13 @@ QPixmap Qt_Chess::getCachedPieceIcon(PieceType type, PieceColor color) const {
         return m_pieceIconCache.value(iconPath);
     }
     return QPixmap();
+}
+
+int Qt_Chess::calculateIconSize(QPushButton* square) const {
+    if (!square) return 40; // Default fallback size
+    int squareWidth = square->width();
+    if (squareWidth <= 0) {
+        squareWidth = square->minimumWidth();
+    }
+    return static_cast<int>(squareWidth * 0.8);
 }
