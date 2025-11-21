@@ -810,6 +810,9 @@ void Qt_Chess::loadPieceIconSettings() {
     QSettings settings("Qt_Chess", "ChessGame");
     
     m_pieceIconSettings.useCustomIcons = settings.value("PieceIcons/useCustomIcons", false).toBool();
+    m_pieceIconSettings.iconSetType = static_cast<PieceIconSettingsDialog::IconSetType>(
+        settings.value("PieceIcons/iconSetType", static_cast<int>(PieceIconSettingsDialog::IconSetType::Unicode)).toInt()
+    );
     m_pieceIconSettings.whiteKingIcon = settings.value("PieceIcons/whiteKingIcon", "").toString();
     m_pieceIconSettings.whiteQueenIcon = settings.value("PieceIcons/whiteQueenIcon", "").toString();
     m_pieceIconSettings.whiteRookIcon = settings.value("PieceIcons/whiteRookIcon", "").toString();
@@ -828,6 +831,7 @@ void Qt_Chess::applyPieceIconSettings() {
     QSettings settings("Qt_Chess", "ChessGame");
     
     settings.setValue("PieceIcons/useCustomIcons", m_pieceIconSettings.useCustomIcons);
+    settings.setValue("PieceIcons/iconSetType", static_cast<int>(m_pieceIconSettings.iconSetType));
     settings.setValue("PieceIcons/whiteKingIcon", m_pieceIconSettings.whiteKingIcon);
     settings.setValue("PieceIcons/whiteQueenIcon", m_pieceIconSettings.whiteQueenIcon);
     settings.setValue("PieceIcons/whiteRookIcon", m_pieceIconSettings.whiteRookIcon);

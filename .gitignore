@@ -74,6 +74,9 @@ CMakeLists.txt.user*
 *.exe
 Qt_Chess
 
+# Placeholder files for icon sets (actual icons to be provided by user)
+resources/icons/*/*.placeholder
+
 # Directories with generated files
 .moc/
 .obj/

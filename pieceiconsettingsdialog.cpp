@@ -24,9 +24,32 @@ void PieceIconSettingsDialog::setupUI()
 {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     
-    // Use custom icons checkbox
-    m_useCustomIconsCheckBox = new QCheckBox("使用自訂圖標", this);
+    // Icon Set Selection Group
+    QGroupBox* iconSetGroup = new QGroupBox("圖標集選擇", this);
+    QVBoxLayout* iconSetLayout = new QVBoxLayout(iconSetGroup);
+    
+    QHBoxLayout* comboLayout = new QHBoxLayout();
+    QLabel* iconSetLabel = new QLabel("選擇圖標集：", this);
+    comboLayout->addWidget(iconSetLabel);
+    
+    m_iconSetComboBox = new QComboBox(this);
+    m_iconSetComboBox->addItem("Unicode 符號 (預設)", static_cast<int>(IconSetType::Unicode));
+    m_iconSetComboBox->addItem("預設圖標集 1", static_cast<int>(IconSetType::Preset1));
+    m_iconSetComboBox->addItem("預設圖標集 2", static_cast<int>(IconSetType::Preset2));
+    m_iconSetComboBox->addItem("預設圖標集 3", static_cast<int>(IconSetType::Preset3));
+    m_iconSetComboBox->addItem("自訂圖標", static_cast<int>(IconSetType::Custom));
+    connect(m_iconSetComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), 
+            this, &PieceIconSettingsDialog::onIconSetTypeChanged);
+    comboLayout->addWidget(m_iconSetComboBox);
+    comboLayout->addStretch();
+    
+    iconSetLayout->addLayout(comboLayout);
+    mainLayout->addWidget(iconSetGroup);
+    
+    // Use custom icons checkbox (legacy, for backward compatibility)
+    m_useCustomIconsCheckBox = new QCheckBox("使用自訂圖標 (舊版相容)", this);
     m_useCustomIconsCheckBox->setChecked(m_settings.useCustomIcons);
+    m_useCustomIconsCheckBox->setVisible(false); // Hidden by default, icon set combo handles this now
     connect(m_useCustomIconsCheckBox, &QCheckBox::toggled, this, &PieceIconSettingsDialog::onUseCustomIconsToggled);
     mainLayout->addWidget(m_useCustomIconsCheckBox);
     
@@ -366,6 +389,12 @@ void PieceIconSettingsDialog::setSettings(const PieceIconSettings& settings)
 {
     m_settings = settings;
     
+    // Set icon set type in combo box
+    int index = m_iconSetComboBox->findData(static_cast<int>(settings.iconSetType));
+    if (index >= 0) {
+        m_iconSetComboBox->setCurrentIndex(index);
+    }
+    
     m_useCustomIconsCheckBox->setChecked(settings.useCustomIcons);
     
     m_whiteKingEdit->setText(settings.whiteKingIcon);
@@ -381,6 +410,8 @@ void PieceIconSettingsDialog::setSettings(const PieceIconSettings& settings)
     m_blackBishopEdit->setText(settings.blackBishopIcon);
     m_blackKnightEdit->setText(settings.blackKnightIcon);
     m_blackPawnEdit->setText(settings.blackPawnIcon);
+    
+    updateCustomIconsControls();
 }
 
 PieceIconSettingsDialog::PieceIconSettings PieceIconSettingsDialog::getDefaultSettings()
@@ -399,5 +430,140 @@ PieceIconSettingsDialog::PieceIconSettings PieceIconSettingsDialog::getDefaultSe
     defaults.blackKnightIcon = "";
     defaults.blackPawnIcon = "";
     defaults.useCustomIcons = false;
+    defaults.iconSetType = IconSetType::Unicode;
     return defaults;
+}
+
+PieceIconSettingsDialog::PieceIconSettings PieceIconSettingsDialog::getPresetSettings(IconSetType setType)
+{
+    PieceIconSettings settings;
+    settings.iconSetType = setType;
+    settings.useCustomIcons = (setType != IconSetType::Unicode);
+    
+    if (setType == IconSetType::Unicode) {
+        // Use default Unicode symbols
+        settings = getDefaultSettings();
+    } else if (setType == IconSetType::Preset1 || setType == IconSetType::Preset2 || setType == IconSetType::Preset3) {
+        QString setDir;
+        if (setType == IconSetType::Preset1) setDir = "set1";
+        else if (setType == IconSetType::Preset2) setDir = "set2";
+        else if (setType == IconSetType::Preset3) setDir = "set3";
+        
+        QString basePath = ":/resources/icons/" + setDir + "/";
+        settings.whiteKingIcon = basePath + "white_king.png";
+        settings.whiteQueenIcon = basePath + "white_queen.png";
+        settings.whiteRookIcon = basePath + "white_rook.png";
+        settings.whiteBishopIcon = basePath + "white_bishop.png";
+        settings.whiteKnightIcon = basePath + "white_knight.png";
+        settings.whitePawnIcon = basePath + "white_pawn.png";
+        settings.blackKingIcon = basePath + "black_king.png";
+        settings.blackQueenIcon = basePath + "black_queen.png";
+        settings.blackRookIcon = basePath + "black_rook.png";
+        settings.blackBishopIcon = basePath + "black_bishop.png";
+        settings.blackKnightIcon = basePath + "black_knight.png";
+        settings.blackPawnIcon = basePath + "black_pawn.png";
+    } else {
+        // Custom - keep existing paths
+        settings.useCustomIcons = true;
+    }
+    
+    return settings;
+}
+
+void PieceIconSettingsDialog::onIconSetTypeChanged(int index)
+{
+    IconSetType selectedType = static_cast<IconSetType>(m_iconSetComboBox->itemData(index).toInt());
+    m_settings.iconSetType = selectedType;
+    
+    if (selectedType == IconSetType::Custom) {
+        // Enable custom icon editing
+        m_settings.useCustomIcons = true;
+    } else {
+        // Apply preset or Unicode
+        applyPresetIconSet(selectedType);
+    }
+    
+    updateCustomIconsControls();
+}
+
+void PieceIconSettingsDialog::updateCustomIconsControls()
+{
+    bool enableCustomEditing = (m_settings.iconSetType == IconSetType::Custom);
+    
+    // Enable/disable all browse, preview, and reset buttons
+    m_whiteKingBrowseButton->setEnabled(enableCustomEditing);
+    m_whiteQueenBrowseButton->setEnabled(enableCustomEditing);
+    m_whiteRookBrowseButton->setEnabled(enableCustomEditing);
+    m_whiteBishopBrowseButton->setEnabled(enableCustomEditing);
+    m_whiteKnightBrowseButton->setEnabled(enableCustomEditing);
+    m_whitePawnBrowseButton->setEnabled(enableCustomEditing);
+    
+    m_blackKingBrowseButton->setEnabled(enableCustomEditing);
+    m_blackQueenBrowseButton->setEnabled(enableCustomEditing);
+    m_blackRookBrowseButton->setEnabled(enableCustomEditing);
+    m_blackBishopBrowseButton->setEnabled(enableCustomEditing);
+    m_blackKnightBrowseButton->setEnabled(enableCustomEditing);
+    m_blackPawnBrowseButton->setEnabled(enableCustomEditing);
+    
+    m_whiteKingResetButton->setEnabled(enableCustomEditing);
+    m_whiteQueenResetButton->setEnabled(enableCustomEditing);
+    m_whiteRookResetButton->setEnabled(enableCustomEditing);
+    m_whiteBishopResetButton->setEnabled(enableCustomEditing);
+    m_whiteKnightResetButton->setEnabled(enableCustomEditing);
+    m_whitePawnResetButton->setEnabled(enableCustomEditing);
+    
+    m_blackKingResetButton->setEnabled(enableCustomEditing);
+    m_blackQueenResetButton->setEnabled(enableCustomEditing);
+    m_blackRookResetButton->setEnabled(enableCustomEditing);
+    m_blackBishopResetButton->setEnabled(enableCustomEditing);
+    m_blackKnightResetButton->setEnabled(enableCustomEditing);
+    m_blackPawnResetButton->setEnabled(enableCustomEditing);
+}
+
+void PieceIconSettingsDialog::applyPresetIconSet(IconSetType setType)
+{
+    PieceIconSettings presetSettings = getPresetSettings(setType);
+    
+    m_settings.whiteKingIcon = presetSettings.whiteKingIcon;
+    m_settings.whiteQueenIcon = presetSettings.whiteQueenIcon;
+    m_settings.whiteRookIcon = presetSettings.whiteRookIcon;
+    m_settings.whiteBishopIcon = presetSettings.whiteBishopIcon;
+    m_settings.whiteKnightIcon = presetSettings.whiteKnightIcon;
+    m_settings.whitePawnIcon = presetSettings.whitePawnIcon;
+    m_settings.blackKingIcon = presetSettings.blackKingIcon;
+    m_settings.blackQueenIcon = presetSettings.blackQueenIcon;
+    m_settings.blackRookIcon = presetSettings.blackRookIcon;
+    m_settings.blackBishopIcon = presetSettings.blackBishopIcon;
+    m_settings.blackKnightIcon = presetSettings.blackKnightIcon;
+    m_settings.blackPawnIcon = presetSettings.blackPawnIcon;
+    m_settings.useCustomIcons = presetSettings.useCustomIcons;
+    
+    // Update UI to show the new paths
+    m_whiteKingEdit->setText(m_settings.whiteKingIcon);
+    m_whiteQueenEdit->setText(m_settings.whiteQueenIcon);
+    m_whiteRookEdit->setText(m_settings.whiteRookIcon);
+    m_whiteBishopEdit->setText(m_settings.whiteBishopIcon);
+    m_whiteKnightEdit->setText(m_settings.whiteKnightIcon);
+    m_whitePawnEdit->setText(m_settings.whitePawnIcon);
+    m_blackKingEdit->setText(m_settings.blackKingIcon);
+    m_blackQueenEdit->setText(m_settings.blackQueenIcon);
+    m_blackRookEdit->setText(m_settings.blackRookIcon);
+    m_blackBishopEdit->setText(m_settings.blackBishopIcon);
+    m_blackKnightEdit->setText(m_settings.blackKnightIcon);
+    m_blackPawnEdit->setText(m_settings.blackPawnIcon);
+}
+
+QString PieceIconSettingsDialog::getPresetIconPath(IconSetType setType, const QString& pieceName)
+{
+    if (setType == IconSetType::Unicode) {
+        return "";
+    }
+    
+    QString setDir;
+    if (setType == IconSetType::Preset1) setDir = "set1";
+    else if (setType == IconSetType::Preset2) setDir = "set2";
+    else if (setType == IconSetType::Preset3) setDir = "set3";
+    else return "";
+    
+    return ":/resources/icons/" + setDir + "/" + pieceName + ".png";
 }
