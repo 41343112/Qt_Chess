@@ -10,6 +10,10 @@
 #include <QEvent>
 #include <QResizeEvent>
 
+namespace {
+    const QString CHECK_HIGHLIGHT_STYLE = "QPushButton { background-color: #FF6B6B; border: 2px solid #FF0000; }";
+}
+
 Qt_Chess::Qt_Chess(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::Qt_Chess)
@@ -123,6 +127,8 @@ void Qt_Chess::updateBoard() {
         }
     }
     
+    // Highlight king in red if in check
+    applyCheckHighlight();
     // Reapply highlights if a piece is selected
     if (m_pieceSelected) {
         highlightValidMoves();
@@ -157,12 +163,27 @@ void Qt_Chess::updateStatus() {
     }
 }
 
+void Qt_Chess::applyCheckHighlight(const QPoint& excludeSquare) {
+    PieceColor currentPlayer = m_chessBoard.getCurrentPlayer();
+    if (m_chessBoard.isInCheck(currentPlayer)) {
+        QPoint kingPos = m_chessBoard.findKing(currentPlayer);
+        if (kingPos.x() >= 0 && kingPos.y() >= 0 && kingPos != excludeSquare) {
+            int row = kingPos.y();
+            int col = kingPos.x();
+            m_squares[row][col]->setStyleSheet(CHECK_HIGHLIGHT_STYLE);
+        }
+    }
+}
+
 void Qt_Chess::clearHighlights() {
     for (int row = 0; row < 8; ++row) {
         for (int col = 0; col < 8; ++col) {
             updateSquareColor(row, col);
         }
     }
+    
+    // Re-apply red background to king if in check
+    applyCheckHighlight();
 }
 
 void Qt_Chess::highlightValidMoves() {
@@ -187,6 +208,9 @@ void Qt_Chess::highlightValidMoves() {
             }
         }
     }
+    
+    // Re-apply red background to king if in check and king is not the selected piece
+    applyCheckHighlight(m_selectedSquare);
 }
 
 void Qt_Chess::onSquareClicked(int row, int col) {
