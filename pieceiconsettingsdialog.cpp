@@ -302,6 +302,9 @@ void PieceIconSettingsDialog::previewIcon(const QString& iconFile)
     
     layout->addLayout(zoomLayout);
     
+    // Zoom step for +/- buttons
+    const int zoomStep = 25;
+    
     // Update image function - capture pixmap by value to avoid dangling reference
     auto updateImage = [pixmap, imageLabel, zoomValueLabel](int zoomPercent) {
         int newWidth = pixmap.width() * zoomPercent / 100;
@@ -313,12 +316,12 @@ void PieceIconSettingsDialog::previewIcon(const QString& iconFile)
     // Connect zoom controls
     connect(zoomSlider, &QSlider::valueChanged, updateImage);
     
-    connect(zoomInButton, &QPushButton::clicked, [zoomSlider]() {
-        zoomSlider->setValue(qMin(zoomSlider->value() + 25, zoomSlider->maximum()));
+    connect(zoomInButton, &QPushButton::clicked, [zoomSlider, zoomStep]() {
+        zoomSlider->setValue(qMin(zoomSlider->value() + zoomStep, zoomSlider->maximum()));
     });
     
-    connect(zoomOutButton, &QPushButton::clicked, [zoomSlider]() {
-        zoomSlider->setValue(qMax(zoomSlider->value() - 25, zoomSlider->minimum()));
+    connect(zoomOutButton, &QPushButton::clicked, [zoomSlider, zoomStep]() {
+        zoomSlider->setValue(qMax(zoomSlider->value() - zoomStep, zoomSlider->minimum()));
     });
     
     // Set initial display
