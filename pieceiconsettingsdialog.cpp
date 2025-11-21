@@ -647,13 +647,14 @@ QWidget* PieceIconSettingsDialog::createIconSetPreviewWidget(IconSetType setType
         PieceIconSettings presetSettings = getPresetSettings(setType);
         
         // Display a few key pieces as preview
+        // Order: White King, Black Queen, White Rook, Black Bishop, White Knight, Black Pawn
         QStringList previewPieces;
         previewPieces << presetSettings.whiteKingIcon 
-                      << presetSettings.whiteQueenIcon 
-                      << presetSettings.whiteRookIcon
-                      << presetSettings.blackKingIcon 
                       << presetSettings.blackQueenIcon 
-                      << presetSettings.blackRookIcon;
+                      << presetSettings.whiteRookIcon
+                      << presetSettings.blackBishopIcon 
+                      << presetSettings.whiteKnightIcon 
+                      << presetSettings.blackPawnIcon;
         
         for (const QString& iconPath : previewPieces) {
             QLabel* iconLabel = new QLabel(frame);
