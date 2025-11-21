@@ -7,6 +7,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
+#include <QEvent>
 
 Qt_Chess::Qt_Chess(QWidget *parent)
     : QMainWindow(parent)
@@ -64,6 +65,7 @@ void Qt_Chess::setupUI() {
             QPushButton* square = new QPushButton(m_boardWidget);
             square->setMinimumSize(80, 80);
             square->setMaximumSize(80, 80);
+            square->setMouseTracking(true);
             
             QFont buttonFont;
             buttonFont.setPointSize(36);
@@ -71,6 +73,9 @@ void Qt_Chess::setupUI() {
             
             m_squares[row][col] = square;
             gridLayout->addWidget(square, row, col);
+            
+            // Install event filter to capture mouse events for drag-and-drop
+            square->installEventFilter(this);
             
             connect(square, &QPushButton::clicked, this, [this, row, col]() {
                 onSquareClicked(row, col);
@@ -287,6 +292,63 @@ QPoint Qt_Chess::getSquareAtPosition(const QPoint& pos) const {
     }
     
     return QPoint(-1, -1);
+}
+
+bool Qt_Chess::eventFilter(QObject *obj, QEvent *event) {
+    // Check if the event is from one of our chess square buttons
+    QPushButton* button = qobject_cast<QPushButton*>(obj);
+    if (button) {
+        // Check if this button is one of our chess squares
+        bool isChessSquare = false;
+        for (int row = 0; row < 8 && !isChessSquare; ++row) {
+            for (int col = 0; col < 8; ++col) {
+                if (m_squares[row][col] == button) {
+                    isChessSquare = true;
+                    break;
+                }
+            }
+        }
+        
+        if (isChessSquare) {
+            // Forward mouse events to enable drag-and-drop
+            if (event->type() == QEvent::MouseButtonPress) {
+                QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+                // Map the button's position to the main window's coordinate system
+                QPoint globalPos = button->mapToGlobal(mouseEvent->pos());
+                QPoint windowPos = mapFromGlobal(globalPos);
+                QMouseEvent mappedEvent(mouseEvent->type(), windowPos, mouseEvent->button(), 
+                                       mouseEvent->buttons(), mouseEvent->modifiers());
+                mousePressEvent(&mappedEvent);
+                // Don't accept the event completely - let the button still handle clicks if no drag started
+                if (m_isDragging) {
+                    return true; // Event handled, start dragging
+                }
+            } else if (event->type() == QEvent::MouseMove) {
+                QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+                if (m_isDragging) {
+                    QPoint globalPos = button->mapToGlobal(mouseEvent->pos());
+                    QPoint windowPos = mapFromGlobal(globalPos);
+                    QMouseEvent mappedEvent(mouseEvent->type(), windowPos, mouseEvent->button(), 
+                                           mouseEvent->buttons(), mouseEvent->modifiers());
+                    mouseMoveEvent(&mappedEvent);
+                    return true; // Event handled
+                }
+            } else if (event->type() == QEvent::MouseButtonRelease) {
+                QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+                if (m_isDragging) {
+                    QPoint globalPos = button->mapToGlobal(mouseEvent->pos());
+                    QPoint windowPos = mapFromGlobal(globalPos);
+                    QMouseEvent mappedEvent(mouseEvent->type(), windowPos, mouseEvent->button(), 
+                                           mouseEvent->buttons(), mouseEvent->modifiers());
+                    mouseReleaseEvent(&mappedEvent);
+                    return true; // Event handled
+                }
+            }
+        }
+    }
+    
+    // Pass the event to the parent class for standard processing
+    return QMainWindow::eventFilter(obj, event);
 }
 
 void Qt_Chess::mousePressEvent(QMouseEvent *event) {
