@@ -74,6 +74,9 @@ void Qt_Chess::setupUI() {
             m_squares[row][col] = square;
             gridLayout->addWidget(square, row, col);
             
+            // Store button coordinates for efficient lookup in eventFilter
+            m_buttonCoordinates[square] = QPoint(col, row);
+            
             // Install event filter to capture mouse events for drag-and-drop
             square->installEventFilter(this);
             
@@ -297,53 +300,47 @@ QPoint Qt_Chess::getSquareAtPosition(const QPoint& pos) const {
 bool Qt_Chess::eventFilter(QObject *obj, QEvent *event) {
     // Check if the event is from one of our chess square buttons
     QPushButton* button = qobject_cast<QPushButton*>(obj);
-    if (button) {
-        // Check if this button is one of our chess squares
-        bool isChessSquare = false;
-        for (int row = 0; row < 8 && !isChessSquare; ++row) {
-            for (int col = 0; col < 8; ++col) {
-                if (m_squares[row][col] == button) {
-                    isChessSquare = true;
-                    break;
-                }
-            }
+    if (!button) {
+        return QMainWindow::eventFilter(obj, event);
+    }
+    
+    // Check if this button is one of our chess squares using efficient map lookup
+    if (!m_buttonCoordinates.contains(button)) {
+        return QMainWindow::eventFilter(obj, event);
+    }
+    
+    // Forward mouse events to enable drag-and-drop
+    if (event->type() == QEvent::MouseButtonPress) {
+        QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+        // Map the button's position to the main window's coordinate system
+        QPoint globalPos = button->mapToGlobal(mouseEvent->pos());
+        QPoint windowPos = mapFromGlobal(globalPos);
+        QMouseEvent mappedEvent(mouseEvent->type(), windowPos, mouseEvent->button(), 
+                               mouseEvent->buttons(), mouseEvent->modifiers());
+        mousePressEvent(&mappedEvent);
+        // Don't accept the event completely - let the button still handle clicks if no drag started
+        if (m_isDragging) {
+            return true; // Event handled, start dragging
         }
-        
-        if (isChessSquare) {
-            // Forward mouse events to enable drag-and-drop
-            if (event->type() == QEvent::MouseButtonPress) {
-                QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
-                // Map the button's position to the main window's coordinate system
-                QPoint globalPos = button->mapToGlobal(mouseEvent->pos());
-                QPoint windowPos = mapFromGlobal(globalPos);
-                QMouseEvent mappedEvent(mouseEvent->type(), windowPos, mouseEvent->button(), 
-                                       mouseEvent->buttons(), mouseEvent->modifiers());
-                mousePressEvent(&mappedEvent);
-                // Don't accept the event completely - let the button still handle clicks if no drag started
-                if (m_isDragging) {
-                    return true; // Event handled, start dragging
-                }
-            } else if (event->type() == QEvent::MouseMove) {
-                QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
-                if (m_isDragging) {
-                    QPoint globalPos = button->mapToGlobal(mouseEvent->pos());
-                    QPoint windowPos = mapFromGlobal(globalPos);
-                    QMouseEvent mappedEvent(mouseEvent->type(), windowPos, mouseEvent->button(), 
-                                           mouseEvent->buttons(), mouseEvent->modifiers());
-                    mouseMoveEvent(&mappedEvent);
-                    return true; // Event handled
-                }
-            } else if (event->type() == QEvent::MouseButtonRelease) {
-                QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
-                if (m_isDragging) {
-                    QPoint globalPos = button->mapToGlobal(mouseEvent->pos());
-                    QPoint windowPos = mapFromGlobal(globalPos);
-                    QMouseEvent mappedEvent(mouseEvent->type(), windowPos, mouseEvent->button(), 
-                                           mouseEvent->buttons(), mouseEvent->modifiers());
-                    mouseReleaseEvent(&mappedEvent);
-                    return true; // Event handled
-                }
-            }
+    } else if (event->type() == QEvent::MouseMove) {
+        if (m_isDragging) {
+            QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+            QPoint globalPos = button->mapToGlobal(mouseEvent->pos());
+            QPoint windowPos = mapFromGlobal(globalPos);
+            QMouseEvent mappedEvent(mouseEvent->type(), windowPos, mouseEvent->button(), 
+                                   mouseEvent->buttons(), mouseEvent->modifiers());
+            mouseMoveEvent(&mappedEvent);
+            return true; // Event handled
+        }
+    } else if (event->type() == QEvent::MouseButtonRelease) {
+        if (m_isDragging) {
+            QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+            QPoint globalPos = button->mapToGlobal(mouseEvent->pos());
+            QPoint windowPos = mapFromGlobal(globalPos);
+            QMouseEvent mappedEvent(mouseEvent->type(), windowPos, mouseEvent->button(), 
+                                   mouseEvent->buttons(), mouseEvent->modifiers());
+            mouseReleaseEvent(&mappedEvent);
+            return true; // Event handled
         }
     }
     

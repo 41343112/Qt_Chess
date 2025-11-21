@@ -7,6 +7,7 @@
 #include <QGridLayout>
 #include <QVBoxLayout>
 #include <QMouseEvent>
+#include <QMap>
 #include <vector>
 #include "chessboard.h"
 
@@ -38,6 +39,7 @@ private:
     Ui::Qt_Chess *ui;
     ChessBoard m_chessBoard;
     std::vector<std::vector<QPushButton*>> m_squares;
+    QMap<QPushButton*, QPoint> m_buttonCoordinates; // For efficient button-to-coordinate lookup
     QPoint m_selectedSquare;
     bool m_pieceSelected;
     
