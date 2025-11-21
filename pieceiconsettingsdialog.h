@@ -7,6 +7,7 @@
 #include <QLabel>
 #include <QGridLayout>
 #include <QCheckBox>
+#include <QComboBox>
 #include <QMap>
 #include "chesspiece.h"
 
@@ -17,6 +18,14 @@ class PieceIconSettingsDialog : public QDialog
 public:
     explicit PieceIconSettingsDialog(QWidget *parent = nullptr);
     ~PieceIconSettingsDialog();
+
+    enum class IconSetType {
+        Unicode,      // Default Unicode symbols
+        Preset1,      // Preset icon set 1
+        Preset2,      // Preset icon set 2
+        Preset3,      // Preset icon set 3
+        Custom        // Custom user-selected icons
+    };
 
     struct PieceIconSettings {
         QString whiteKingIcon;
@@ -32,14 +41,17 @@ public:
         QString blackKnightIcon;
         QString blackPawnIcon;
         bool useCustomIcons;
+        IconSetType iconSetType;
     };
 
     PieceIconSettings getSettings() const;
     void setSettings(const PieceIconSettings& settings);
     
     static PieceIconSettings getDefaultSettings();
+    static PieceIconSettings getPresetSettings(IconSetType setType);
 
 private slots:
+    void onIconSetTypeChanged(int index);
     void onBrowseWhiteKing();
     void onBrowseWhiteQueen();
     void onBrowseWhiteRook();
@@ -83,6 +95,7 @@ private slots:
 private:
     PieceIconSettings m_settings;
     
+    QComboBox* m_iconSetComboBox;
     QCheckBox* m_useCustomIconsCheckBox;
     
     // White pieces
@@ -157,6 +170,9 @@ private:
                        void (PieceIconSettingsDialog::*resetSlot)());
     QString browseForIconFile();
     void previewIcon(const QString& iconFile);
+    void updateCustomIconsControls();
+    void applyPresetIconSet(IconSetType setType);
+    static QString getSetDirectoryName(IconSetType setType);
 };
 
 #endif // PIECEICONSETTINGSDIALOG_H
