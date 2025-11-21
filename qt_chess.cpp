@@ -44,6 +44,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     loadSoundSettings();
     initializeSounds();
     loadPieceIconSettings();
+    loadPieceIconsToCache(); // Load icons to cache after loading settings
     setupMenuBar();
     setupUI();
     updateBoard();
@@ -466,18 +467,12 @@ void Qt_Chess::mousePressEvent(QMouseEvent *event) {
             
             // Use custom icon or Unicode symbol
             if (m_pieceIconSettings.useCustomIcons) {
-                QString iconPath = getPieceIconPath(piece.getType(), piece.getColor());
-                if (!iconPath.isEmpty() && QFile::exists(iconPath)) {
-                    QPixmap pixmap(iconPath);
-                    if (!pixmap.isNull()) {
-                        int iconSize = m_squares[square.y()][square.x()]->size().width() * 0.8;
-                        m_dragLabel->setPixmap(pixmap.scaled(iconSize, iconSize, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-                    } else {
-                        m_dragLabel->setText(piece.getSymbol());
-                        QFont font;
-                        font.setPointSize(36);
-                        m_dragLabel->setFont(font);
-                    }
+                QPixmap pixmap = getCachedPieceIcon(piece.getType(), piece.getColor());
+                if (!pixmap.isNull()) {
+                    int squareWidth = m_squares[square.y()][square.x()]->width();
+                    int iconSize = squareWidth > 0 ? squareWidth : m_squares[square.y()][square.x()]->minimumWidth();
+                    iconSize = static_cast<int>(iconSize * 0.8);
+                    m_dragLabel->setPixmap(pixmap.scaled(iconSize, iconSize, Qt::KeepAspectRatio, Qt::SmoothTransformation));
                 } else {
                     m_dragLabel->setText(piece.getSymbol());
                     QFont font;
@@ -836,6 +831,9 @@ void Qt_Chess::applyPieceIconSettings() {
     
     settings.sync();
     
+    // Load icons to cache for improved performance
+    loadPieceIconsToCache();
+    
     // Update the board to reflect the new settings
     updateBoard();
 }
@@ -877,23 +875,65 @@ void Qt_Chess::displayPieceOnSquare(QPushButton* square, const ChessPiece& piece
     
     // Display piece with icon or symbol
     if (m_pieceIconSettings.useCustomIcons) {
-        QString iconPath = getPieceIconPath(piece.getType(), piece.getColor());
-        if (!iconPath.isEmpty() && QFile::exists(iconPath)) {
-            QPixmap pixmap(iconPath);
-            if (!pixmap.isNull()) {
-                QIcon icon(pixmap);
-                square->setIcon(icon);
-                square->setIconSize(square->size() * 0.8);
-            } else {
-                // Fallback to symbol if icon can't be loaded
-                square->setText(piece.getSymbol());
-            }
+        QPixmap pixmap = getCachedPieceIcon(piece.getType(), piece.getColor());
+        if (!pixmap.isNull()) {
+            QIcon icon(pixmap);
+            square->setIcon(icon);
+            // Set icon size based on square size
+            int iconSize = square->width() > 0 ? square->width() : square->minimumWidth();
+            square->setIconSize(QSize(iconSize * 0.8, iconSize * 0.8));
         } else {
-            // Fallback to symbol if no custom icon is set
+            // Fallback to symbol if icon can't be loaded or not in cache
             square->setText(piece.getSymbol());
         }
     } else {
         // Use Unicode symbols
         square->setText(piece.getSymbol());
     }
+}
+
+void Qt_Chess::loadPieceIconsToCache() {
+    clearPieceIconCache();
+    
+    if (!m_pieceIconSettings.useCustomIcons) {
+        return;
+    }
+    
+    // Load all piece icons into cache
+    auto loadIconToCache = [this](const QString& iconPath) {
+        if (!iconPath.isEmpty() && QFile::exists(iconPath) && !m_pieceIconCache.contains(iconPath)) {
+            QPixmap pixmap(iconPath);
+            if (!pixmap.isNull()) {
+                m_pieceIconCache.insert(iconPath, pixmap);
+            }
+        }
+    };
+    
+    // Load white pieces
+    loadIconToCache(m_pieceIconSettings.whiteKingIcon);
+    loadIconToCache(m_pieceIconSettings.whiteQueenIcon);
+    loadIconToCache(m_pieceIconSettings.whiteRookIcon);
+    loadIconToCache(m_pieceIconSettings.whiteBishopIcon);
+    loadIconToCache(m_pieceIconSettings.whiteKnightIcon);
+    loadIconToCache(m_pieceIconSettings.whitePawnIcon);
+    
+    // Load black pieces
+    loadIconToCache(m_pieceIconSettings.blackKingIcon);
+    loadIconToCache(m_pieceIconSettings.blackQueenIcon);
+    loadIconToCache(m_pieceIconSettings.blackRookIcon);
+    loadIconToCache(m_pieceIconSettings.blackBishopIcon);
+    loadIconToCache(m_pieceIconSettings.blackKnightIcon);
+    loadIconToCache(m_pieceIconSettings.blackPawnIcon);
+}
+
+void Qt_Chess::clearPieceIconCache() {
+    m_pieceIconCache.clear();
+}
+
+QPixmap Qt_Chess::getCachedPieceIcon(PieceType type, PieceColor color) const {
+    QString iconPath = getPieceIconPath(type, color);
+    if (!iconPath.isEmpty() && m_pieceIconCache.contains(iconPath)) {
+        return m_pieceIconCache.value(iconPath);
+    }
+    return QPixmap();
 }
