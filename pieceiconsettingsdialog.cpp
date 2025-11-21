@@ -264,7 +264,9 @@ void PieceIconSettingsDialog::previewIcon(const QString& iconFile)
     
     QDialog previewDialog(this);
     previewDialog.setWindowTitle("圖標預覽");
-    previewDialog.resize(400, 500);
+    previewDialog.resize(500, 600);  // Larger default size for better viewing
+    previewDialog.setMinimumSize(350, 400);  // Set minimum size
+    previewDialog.setSizeGripEnabled(true);  // Enable resize grip
     QVBoxLayout* layout = new QVBoxLayout(&previewDialog);
     
     // Image label with scroll area for zoom
@@ -303,6 +305,12 @@ void PieceIconSettingsDialog::previewIcon(const QString& iconFile)
     zoomValueLabel->setAlignment(Qt::AlignCenter);
     zoomLayout->addWidget(zoomValueLabel);
     
+    // Add reset zoom button
+    QPushButton* resetZoomButton = new QPushButton("重置", &previewDialog);
+    resetZoomButton->setFixedWidth(50);
+    resetZoomButton->setToolTip("重置縮放至 100%");
+    zoomLayout->addWidget(resetZoomButton);
+    
     layout->addLayout(zoomLayout);
     
     // Zoom step for +/- buttons
@@ -325,6 +333,10 @@ void PieceIconSettingsDialog::previewIcon(const QString& iconFile)
     
     connect(zoomOutButton, &QPushButton::clicked, [zoomSlider, zoomStep]() {
         zoomSlider->setValue(qMax(zoomSlider->value() - zoomStep, zoomSlider->minimum()));
+    });
+    
+    connect(resetZoomButton, &QPushButton::clicked, [zoomSlider]() {
+        zoomSlider->setValue(100);  // Reset to 100%
     });
     
     // Set initial display
