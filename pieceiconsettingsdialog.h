@@ -12,6 +12,7 @@
 #include <QButtonGroup>
 #include <QRadioButton>
 #include <QScrollArea>
+#include <QSlider>
 #include "chesspiece.h"
 
 class PieceIconSettingsDialog : public QDialog

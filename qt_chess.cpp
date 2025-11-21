@@ -665,7 +665,9 @@ void Qt_Chess::updateSquareSizes() {
             
             // Update icon size if using custom icons
             if (m_pieceIconSettings.useCustomIcons && !square->icon().isNull()) {
-                int iconSize = static_cast<int>(squareSize * m_pieceIconSettings.pieceScale / 100.0);
+                // Ensure scale is within valid range (60-100)
+                int scale = qBound(60, m_pieceIconSettings.pieceScale, 100);
+                int iconSize = static_cast<int>(squareSize * scale / 100.0);
                 square->setIconSize(QSize(iconSize, iconSize));
             }
         }
@@ -814,7 +816,9 @@ void Qt_Chess::loadPieceIconSettings() {
     m_pieceIconSettings.iconSetType = static_cast<PieceIconSettingsDialog::IconSetType>(
         settings.value("PieceIcons/iconSetType", static_cast<int>(PieceIconSettingsDialog::IconSetType::Unicode)).toInt()
     );
-    m_pieceIconSettings.pieceScale = settings.value("PieceIcons/pieceScale", 80).toInt();
+    // Load and validate piece scale (ensure it's within valid range 60-100)
+    int loadedScale = settings.value("PieceIcons/pieceScale", 80).toInt();
+    m_pieceIconSettings.pieceScale = qBound(60, loadedScale, 100);
     m_pieceIconSettings.whiteKingIcon = settings.value("PieceIcons/whiteKingIcon", "").toString();
     m_pieceIconSettings.whiteQueenIcon = settings.value("PieceIcons/whiteQueenIcon", "").toString();
     m_pieceIconSettings.whiteRookIcon = settings.value("PieceIcons/whiteRookIcon", "").toString();
@@ -834,7 +838,9 @@ void Qt_Chess::applyPieceIconSettings() {
     
     settings.setValue("PieceIcons/useCustomIcons", m_pieceIconSettings.useCustomIcons);
     settings.setValue("PieceIcons/iconSetType", static_cast<int>(m_pieceIconSettings.iconSetType));
-    settings.setValue("PieceIcons/pieceScale", m_pieceIconSettings.pieceScale);
+    // Validate and save piece scale (ensure it's within valid range 60-100)
+    int validatedScale = qBound(60, m_pieceIconSettings.pieceScale, 100);
+    settings.setValue("PieceIcons/pieceScale", validatedScale);
     settings.setValue("PieceIcons/whiteKingIcon", m_pieceIconSettings.whiteKingIcon);
     settings.setValue("PieceIcons/whiteQueenIcon", m_pieceIconSettings.whiteQueenIcon);
     settings.setValue("PieceIcons/whiteRookIcon", m_pieceIconSettings.whiteRookIcon);
@@ -967,5 +973,7 @@ int Qt_Chess::calculateIconSize(QPushButton* square) const {
         }
     }
     // Apply the user-configured scale factor (default 80%)
-    return static_cast<int>(squareWidth * m_pieceIconSettings.pieceScale / 100.0);
+    // Ensure scale is within valid range (60-100)
+    int scale = qBound(60, m_pieceIconSettings.pieceScale, 100);
+    return static_cast<int>(squareWidth * scale / 100.0);
 }

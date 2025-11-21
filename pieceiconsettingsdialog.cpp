@@ -86,6 +86,8 @@ void PieceIconSettingsDialog::setupUI()
     scaleLayout->addWidget(m_pieceScaleLabel);
     
     connect(m_pieceScaleSlider, &QSlider::valueChanged, [this](int value) {
+        // Ensure value is within valid range (60-100)
+        value = qBound(60, value, 100);
         m_pieceScaleLabel->setText(QString("%1%").arg(value));
         m_settings.pieceScale = value;
     });
