@@ -17,10 +17,9 @@ PieceIconSettingsDialog::PieceIconSettingsDialog(QWidget *parent)
     : QDialog(parent)
 {
     setWindowTitle("棋子圖標設定");
-    resize(800, 700);  // Slightly larger default size
+    resize(800, 700);  // Slightly larger default size for better visibility
     setMinimumSize(600, 500);  // Set minimum size to prevent too small window
-    // Make dialog resizable by not setting Qt::MSWindowsFixedSizeDialogHint
-    setSizeGripEnabled(true);  // Enable resize grip in corner
+    setSizeGripEnabled(true);  // Enable resize grip in corner for user resizing
     setupUI();
 }
 
@@ -748,7 +747,7 @@ QWidget* PieceIconSettingsDialog::createIconSetPreviewWidget(IconSetType setType
                 iconLabel->setStyleSheet("QLabel { font-size: 28pt; }");  // Increased from 24pt to 28pt
             }
             iconLabel->setAlignment(Qt::AlignCenter);
-            iconLabel->setMinimumSize(64, 64);  // Changed from setFixedSize to setMinimumSize to allow growth
+            iconLabel->setMinimumSize(60, 60);  // Match pixmap size, allowing growth when dialog is resized
             previewLayout->addWidget(iconLabel);
         }
     }
