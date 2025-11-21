@@ -793,11 +793,9 @@ bool PieceIconSettingsDialog::eventFilter(QObject *obj, QEvent *event)
             QVariant radioButtonVariant = obj->property("radioButton");
             if (radioButtonVariant.isValid()) {
                 QRadioButton* radioButton = qvariant_cast<QRadioButton*>(radioButtonVariant);
-                if (radioButton) {
-                    // Trigger the radio button
-                    radioButton->setChecked(true);
-                    // Emit the signal manually to ensure the button group slot is called
-                    m_iconSetButtonGroup->button(m_iconSetButtonGroup->id(radioButton))->click();
+                if (radioButton && !radioButton->isChecked()) {
+                    // Trigger the radio button (handles both state and signals)
+                    radioButton->click();
                     return true;  // Event handled
                 }
             }
