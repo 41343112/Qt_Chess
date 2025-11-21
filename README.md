@@ -24,6 +24,14 @@ A fully functional player-vs-player chess game built with Qt5.
   - Reset individual sound effects to default values independently
   - Preview sounds before applying settings
   - Settings are saved persistently between sessions
+- **Customizable Piece Icons**:
+  - Use custom images for chess pieces instead of Unicode symbols
+  - Configure custom icons for each of the 12 piece types (6 white + 6 black)
+  - Support for common image formats (PNG, JPG, SVG, BMP)
+  - Preview icons before applying
+  - Enable/disable custom icons with a single toggle
+  - Reset to default Unicode symbols at any time
+  - Settings are saved persistently between sessions
 
 ## Building
 
@@ -63,6 +71,14 @@ make
     - Preview sounds before applying settings
     - **Supported audio formats**: WAV (recommended), MP3, OGG
       - WAV format is recommended for best compatibility across all platforms
+11. **Piece Icon Settings**: Click "設定" (Settings) menu > "棋子圖標設定" (Piece Icon Settings) to:
+    - Upload custom image files for each piece type (white and black)
+    - Preview icons before applying
+    - Enable/disable custom icons using the "使用自訂圖標" (Use Custom Icons) checkbox
+    - Reset individual piece icons to default Unicode symbols using the "重設" (Reset) button
+    - Reset all piece icons at once using the "重設為預設值" (Reset to Defaults) button
+    - **Supported image formats**: PNG, JPG, SVG, BMP
+      - PNG format with transparent background is recommended for best appearance
 
 ## Game Rules
 
@@ -89,6 +105,7 @@ make
 - `chessboard.h/cpp` - Game board logic and rules
 - `chesspiece.h/cpp` - Chess piece definitions and movement validation
 - `soundsettingsdialog.h/cpp` - Sound settings dialog for customizing audio
+- `pieceiconsettingsdialog.h/cpp` - Piece icon settings dialog for customizing piece graphics
 - `qt_chess.ui` - Qt UI designer file
 - `resources.qrc` - Qt resource file for embedded sound files
 
