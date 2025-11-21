@@ -1,5 +1,6 @@
 #include "qt_chess.h"
 #include "ui_qt_chess.h"
+#include "soundsettingsdialog.h"
 #include <QMessageBox>
 #include <QFont>
 #include <QDialog>
@@ -9,6 +10,7 @@
 #include <QPushButton>
 #include <QEvent>
 #include <QResizeEvent>
+#include <QSettings>
 
 namespace {
     const QString CHECK_HIGHLIGHT_STYLE = "QPushButton { background-color: #FF6B6B; border: 2px solid #FF0000; }";
@@ -23,6 +25,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_dragStartSquare(-1, -1)
     , m_dragLabel(nullptr)
     , m_boardWidget(nullptr)
+    , m_menuBar(nullptr)
 {
     ui->setupUi(this);
     setWindowTitle("國際象棋 - 雙人對弈");
@@ -33,7 +36,9 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     
     setMouseTracking(true);
     
+    loadSoundSettings();
     initializeSounds();
+    setupMenuBar();
     setupUI();
     updateBoard();
     updateStatus();
@@ -98,6 +103,18 @@ void Qt_Chess::setupUI() {
     mainLayout->addWidget(m_newGameButton);
     
     setCentralWidget(centralWidget);
+}
+
+void Qt_Chess::setupMenuBar() {
+    m_menuBar = menuBar();
+    
+    // Settings menu
+    QMenu* settingsMenu = m_menuBar->addMenu("設定");
+    
+    // Sound settings action
+    QAction* soundSettingsAction = new QAction("音效設定", this);
+    connect(soundSettingsAction, &QAction::triggered, this, &Qt_Chess::onSoundSettingsClicked);
+    settingsMenu->addAction(soundSettingsAction);
 }
 
 void Qt_Chess::updateSquareColor(int row, int col) {
@@ -244,6 +261,16 @@ void Qt_Chess::onNewGameClicked() {
     m_pieceSelected = false;
     updateBoard();
     updateStatus();
+}
+
+void Qt_Chess::onSoundSettingsClicked() {
+    SoundSettingsDialog dialog(this);
+    dialog.setSettings(m_soundSettings);
+    
+    if (dialog.exec() == QDialog::Accepted) {
+        m_soundSettings = dialog.getSettings();
+        applySoundSettings();
+    }
 }
 
 PieceType Qt_Chess::showPromotionDialog(PieceColor color) {
@@ -579,22 +606,48 @@ void Qt_Chess::updateSquareSizes() {
 }
 
 void Qt_Chess::initializeSounds() {
-    // Initialize sound effects
-    m_moveSound.setSource(QUrl("qrc:/resources/sounds/move.wav"));
-    m_moveSound.setVolume(0.5);
+    applySoundSettings();
+}
+
+void Qt_Chess::loadSoundSettings() {
+    QSettings settings("QtChess", "SoundSettings");
     
-    m_captureSound.setSource(QUrl("qrc:/resources/sounds/capture.wav"));
-    m_captureSound.setVolume(0.5);
+    m_soundSettings.moveSound = settings.value("moveSound", "qrc:/resources/sounds/move.wav").toString();
+    m_soundSettings.captureSound = settings.value("captureSound", "qrc:/resources/sounds/capture.wav").toString();
+    m_soundSettings.castlingSound = settings.value("castlingSound", "qrc:/resources/sounds/castling.wav").toString();
+    m_soundSettings.checkSound = settings.value("checkSound", "qrc:/resources/sounds/check.wav").toString();
+    m_soundSettings.checkmateSound = settings.value("checkmateSound", "qrc:/resources/sounds/checkmate.wav").toString();
     
-    m_castlingSound.setSource(QUrl("qrc:/resources/sounds/castling.wav"));
-    m_castlingSound.setVolume(0.5);
+    m_soundSettings.moveVolume = settings.value("moveVolume", 0.5).toDouble();
+    m_soundSettings.captureVolume = settings.value("captureVolume", 0.5).toDouble();
+    m_soundSettings.castlingVolume = settings.value("castlingVolume", 0.5).toDouble();
+    m_soundSettings.checkVolume = settings.value("checkVolume", 0.5).toDouble();
+    m_soundSettings.checkmateVolume = settings.value("checkmateVolume", 0.6).toDouble();
     
-    m_checkSound.setSource(QUrl("qrc:/resources/sounds/check.wav"));
-    m_checkSound.setVolume(0.5);
+    m_soundSettings.moveSoundEnabled = settings.value("moveSoundEnabled", true).toBool();
+    m_soundSettings.captureSoundEnabled = settings.value("captureSoundEnabled", true).toBool();
+    m_soundSettings.castlingSoundEnabled = settings.value("castlingSoundEnabled", true).toBool();
+    m_soundSettings.checkSoundEnabled = settings.value("checkSoundEnabled", true).toBool();
+    m_soundSettings.checkmateSoundEnabled = settings.value("checkmateSoundEnabled", true).toBool();
+    m_soundSettings.allSoundsEnabled = settings.value("allSoundsEnabled", true).toBool();
+}
+
+void Qt_Chess::applySoundSettings() {
+    // Initialize sound effects with settings
+    m_moveSound.setSource(QUrl(m_soundSettings.moveSound));
+    m_moveSound.setVolume(m_soundSettings.moveVolume);
     
-    // Checkmate sound is slightly louder to emphasize the game-ending event
-    m_checkmateSound.setSource(QUrl("qrc:/resources/sounds/checkmate.wav"));
-    m_checkmateSound.setVolume(0.6);
+    m_captureSound.setSource(QUrl(m_soundSettings.captureSound));
+    m_captureSound.setVolume(m_soundSettings.captureVolume);
+    
+    m_castlingSound.setSource(QUrl(m_soundSettings.castlingSound));
+    m_castlingSound.setVolume(m_soundSettings.castlingVolume);
+    
+    m_checkSound.setSource(QUrl(m_soundSettings.checkSound));
+    m_checkSound.setVolume(m_soundSettings.checkVolume);
+    
+    m_checkmateSound.setSource(QUrl(m_soundSettings.checkmateSound));
+    m_checkmateSound.setVolume(m_soundSettings.checkmateVolume);
 }
 
 bool Qt_Chess::isCaptureMove(const QPoint& from, const QPoint& to) const {
@@ -637,20 +690,25 @@ bool Qt_Chess::isCastlingMove(const QPoint& from, const QPoint& to) const {
 }
 
 void Qt_Chess::playSoundForMove(bool isCapture, bool isCastling) {
+    // Check if all sounds are disabled
+    if (!m_soundSettings.allSoundsEnabled) {
+        return;
+    }
+    
     // Note: After movePiece(), the turn has switched, so currentPlayer is now the opponent
     PieceColor opponentColor = m_chessBoard.getCurrentPlayer();
     bool opponentInCheck = m_chessBoard.isInCheck(opponentColor);
     bool opponentCheckmate = m_chessBoard.isCheckmate(opponentColor);
     
-    if (opponentCheckmate) {
+    if (opponentCheckmate && m_soundSettings.checkmateSoundEnabled) {
         m_checkmateSound.play();
-    } else if (opponentInCheck) {
+    } else if (opponentInCheck && m_soundSettings.checkSoundEnabled) {
         m_checkSound.play();
-    } else if (isCastling) {
+    } else if (isCastling && m_soundSettings.castlingSoundEnabled) {
         m_castlingSound.play();
-    } else if (isCapture) {
+    } else if (isCapture && m_soundSettings.captureSoundEnabled) {
         m_captureSound.play();
-    } else {
+    } else if (m_soundSettings.moveSoundEnabled) {
         m_moveSound.play();
     }
 }

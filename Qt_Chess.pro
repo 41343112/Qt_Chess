@@ -12,12 +12,14 @@ SOURCES += \
     main.cpp \
     qt_chess.cpp \
     chesspiece.cpp \
-    chessboard.cpp
+    chessboard.cpp \
+    soundsettingsdialog.cpp
 
 HEADERS += \
     qt_chess.h \
     chesspiece.h \
-    chessboard.h
+    chessboard.h \
+    soundsettingsdialog.h
 
 FORMS += \
     qt_chess.ui
