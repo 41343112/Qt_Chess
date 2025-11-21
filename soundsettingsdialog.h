@@ -98,18 +98,11 @@ private:
     
     QSoundEffect m_previewSound;
     
-    struct SoundControlWidgets {
-        QLineEdit* soundEdit;
-        QCheckBox* soundCheckBox;
-        QSlider* volumeSlider;
-        QLabel* volumeLabel;
-        QPushButton* browseButton;
-        QPushButton* previewButton;
-    };
-    
     void setupUI();
     void createSoundRow(QGridLayout* gridLayout, int& row, const QString& label,
-                       SoundControlWidgets& widgets,
+                       QLineEdit*& soundEdit, QCheckBox*& soundCheckBox,
+                       QSlider*& volumeSlider, QLabel*& volumeLabel,
+                       QPushButton*& browseButton, QPushButton*& previewButton,
                        void (SoundSettingsDialog::*browseSlot)(),
                        void (SoundSettingsDialog::*previewSlot)());
     void updateAllSoundsCheckBox();

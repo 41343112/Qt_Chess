@@ -46,7 +46,9 @@ SoundSettingsDialog::~SoundSettingsDialog()
 }
 
 void SoundSettingsDialog::createSoundRow(QGridLayout* gridLayout, int& row, const QString& label,
-                                         SoundControlWidgets& widgets,
+                                         QLineEdit*& soundEdit, QCheckBox*& soundCheckBox,
+                                         QSlider*& volumeSlider, QLabel*& volumeLabel,
+                                         QPushButton*& browseButton, QPushButton*& previewButton,
                                          void (SoundSettingsDialog::*browseSlot)(),
                                          void (SoundSettingsDialog::*previewSlot)())
 {
@@ -55,46 +57,46 @@ void SoundSettingsDialog::createSoundRow(QGridLayout* gridLayout, int& row, cons
     gridLayout->addWidget(nameLabel, row, 0);
     
     // Enable checkbox
-    *widgets.soundCheckBox = new QCheckBox("啟用", this);
-    (*widgets.soundCheckBox)->setChecked(true);
-    gridLayout->addWidget(*widgets.soundCheckBox, row, 1);
+    soundCheckBox = new QCheckBox("啟用", this);
+    soundCheckBox->setChecked(true);
+    gridLayout->addWidget(soundCheckBox, row, 1);
     
     // File path edit
-    *widgets.soundEdit = new QLineEdit(this);
-    (*widgets.soundEdit)->setReadOnly(true);
-    gridLayout->addWidget(*widgets.soundEdit, row, 2);
+    soundEdit = new QLineEdit(this);
+    soundEdit->setReadOnly(true);
+    gridLayout->addWidget(soundEdit, row, 2);
     
     // Browse button
-    *widgets.browseButton = new QPushButton("瀏覽...", this);
-    connect(*widgets.browseButton, &QPushButton::clicked, this, browseSlot);
-    gridLayout->addWidget(*widgets.browseButton, row, 3);
+    browseButton = new QPushButton("瀏覽...", this);
+    connect(browseButton, &QPushButton::clicked, this, browseSlot);
+    gridLayout->addWidget(browseButton, row, 3);
     
     // Volume label
     QLabel* volLabel = new QLabel("音量:", this);
     gridLayout->addWidget(volLabel, row, 4);
     
     // Volume slider
-    *widgets.volumeSlider = new QSlider(Qt::Horizontal, this);
-    (*widgets.volumeSlider)->setRange(0, 100);
-    (*widgets.volumeSlider)->setValue(50);
-    (*widgets.volumeSlider)->setFixedWidth(100);
-    gridLayout->addWidget(*widgets.volumeSlider, row, 5);
+    volumeSlider = new QSlider(Qt::Horizontal, this);
+    volumeSlider->setRange(0, 100);
+    volumeSlider->setValue(50);
+    volumeSlider->setFixedWidth(100);
+    gridLayout->addWidget(volumeSlider, row, 5);
     
     // Volume percentage label
-    *widgets.volumeLabel = new QLabel("50%", this);
-    (*widgets.volumeLabel)->setFixedWidth(40);
-    gridLayout->addWidget(*widgets.volumeLabel, row, 6);
+    volumeLabel = new QLabel("50%", this);
+    volumeLabel->setFixedWidth(40);
+    gridLayout->addWidget(volumeLabel, row, 6);
     
     // Connect slider to update label
-    QLabel* volumeLabelPtr = *widgets.volumeLabel;
-    connect(*widgets.volumeSlider, &QSlider::valueChanged, [volumeLabelPtr](int value) {
+    QLabel* volumeLabelPtr = volumeLabel;
+    connect(volumeSlider, &QSlider::valueChanged, [volumeLabelPtr](int value) {
         volumeLabelPtr->setText(QString("%1%").arg(value));
     });
     
     // Preview button
-    *widgets.previewButton = new QPushButton("預覽", this);
-    connect(*widgets.previewButton, &QPushButton::clicked, this, previewSlot);
-    gridLayout->addWidget(*widgets.previewButton, row, 7);
+    previewButton = new QPushButton("預覽", this);
+    connect(previewButton, &QPushButton::clicked, this, previewSlot);
+    gridLayout->addWidget(previewButton, row, 7);
     
     row++;
 }
@@ -116,29 +118,24 @@ void SoundSettingsDialog::setupUI()
     int row = 0;
     
     // Create rows for each sound type
-    SoundControlWidgets moveWidgets = {&m_moveSoundEdit, &m_moveSoundCheckBox, &m_moveVolumeSlider, 
-                                       &m_moveVolumeLabel, &m_moveBrowseButton, &m_movePreviewButton};
-    createSoundRow(gridLayout, row, "移動音效:", moveWidgets,
+    createSoundRow(gridLayout, row, "移動音效:", m_moveSoundEdit, m_moveSoundCheckBox, 
+                   m_moveVolumeSlider, m_moveVolumeLabel, m_moveBrowseButton, m_movePreviewButton,
                    &SoundSettingsDialog::onBrowseMove, &SoundSettingsDialog::onPreviewMove);
     
-    SoundControlWidgets captureWidgets = {&m_captureSoundEdit, &m_captureSoundCheckBox, &m_captureVolumeSlider,
-                                          &m_captureVolumeLabel, &m_captureBrowseButton, &m_capturePreviewButton};
-    createSoundRow(gridLayout, row, "吃子音效:", captureWidgets,
+    createSoundRow(gridLayout, row, "吃子音效:", m_captureSoundEdit, m_captureSoundCheckBox,
+                   m_captureVolumeSlider, m_captureVolumeLabel, m_captureBrowseButton, m_capturePreviewButton,
                    &SoundSettingsDialog::onBrowseCapture, &SoundSettingsDialog::onPreviewCapture);
     
-    SoundControlWidgets castlingWidgets = {&m_castlingSoundEdit, &m_castlingSoundCheckBox, &m_castlingVolumeSlider,
-                                           &m_castlingVolumeLabel, &m_castlingBrowseButton, &m_castlingPreviewButton};
-    createSoundRow(gridLayout, row, "王車易位:", castlingWidgets,
+    createSoundRow(gridLayout, row, "王車易位:", m_castlingSoundEdit, m_castlingSoundCheckBox,
+                   m_castlingVolumeSlider, m_castlingVolumeLabel, m_castlingBrowseButton, m_castlingPreviewButton,
                    &SoundSettingsDialog::onBrowseCastling, &SoundSettingsDialog::onPreviewCastling);
     
-    SoundControlWidgets checkWidgets = {&m_checkSoundEdit, &m_checkSoundCheckBox, &m_checkVolumeSlider,
-                                        &m_checkVolumeLabel, &m_checkBrowseButton, &m_checkPreviewButton};
-    createSoundRow(gridLayout, row, "將軍音效:", checkWidgets,
+    createSoundRow(gridLayout, row, "將軍音效:", m_checkSoundEdit, m_checkSoundCheckBox,
+                   m_checkVolumeSlider, m_checkVolumeLabel, m_checkBrowseButton, m_checkPreviewButton,
                    &SoundSettingsDialog::onBrowseCheck, &SoundSettingsDialog::onPreviewCheck);
     
-    SoundControlWidgets checkmateWidgets = {&m_checkmateSoundEdit, &m_checkmateSoundCheckBox, &m_checkmateVolumeSlider,
-                                            &m_checkmateVolumeLabel, &m_checkmateBrowseButton, &m_checkmatePreviewButton};
-    createSoundRow(gridLayout, row, "將死音效:", checkmateWidgets,
+    createSoundRow(gridLayout, row, "將死音效:", m_checkmateSoundEdit, m_checkmateSoundCheckBox,
+                   m_checkmateVolumeSlider, m_checkmateVolumeLabel, m_checkmateBrowseButton, m_checkmatePreviewButton,
                    &SoundSettingsDialog::onBrowseCheckmate, &SoundSettingsDialog::onPreviewCheckmate);
     
     mainLayout->addWidget(soundsGroupBox);
