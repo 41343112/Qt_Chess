@@ -82,6 +82,7 @@ private:
     void initializeSounds();
     void loadSoundSettings();
     void applySoundSettings();
+    void setSoundSource(QSoundEffect& sound, const QString& path);
     bool isCaptureMove(const QPoint& from, const QPoint& to) const;
     bool isCastlingMove(const QPoint& from, const QPoint& to) const;
     void playSoundForMove(bool isCapture, bool isCastling);
