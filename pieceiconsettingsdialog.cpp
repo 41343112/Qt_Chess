@@ -445,11 +445,7 @@ PieceIconSettingsDialog::PieceIconSettings PieceIconSettingsDialog::getPresetSet
         // Use default Unicode symbols
         settings = getDefaultSettings();
     } else if (setType == IconSetType::Preset1 || setType == IconSetType::Preset2 || setType == IconSetType::Preset3) {
-        QString setDir;
-        if (setType == IconSetType::Preset1) setDir = "set1";
-        else if (setType == IconSetType::Preset2) setDir = "set2";
-        else if (setType == IconSetType::Preset3) setDir = "set3";
-        
+        QString setDir = getSetDirectoryName(setType);
         QString basePath = ":/resources/icons/" + setDir + "/";
         settings.whiteKingIcon = basePath + "white_king.png";
         settings.whiteQueenIcon = basePath + "white_queen.png";
@@ -556,15 +552,19 @@ void PieceIconSettingsDialog::applyPresetIconSet(IconSetType setType)
 
 QString PieceIconSettingsDialog::getPresetIconPath(IconSetType setType, const QString& pieceName)
 {
-    if (setType == IconSetType::Unicode) {
+    QString setDir = getSetDirectoryName(setType);
+    if (setDir.isEmpty()) {
         return "";
     }
-    
-    QString setDir;
-    if (setType == IconSetType::Preset1) setDir = "set1";
-    else if (setType == IconSetType::Preset2) setDir = "set2";
-    else if (setType == IconSetType::Preset3) setDir = "set3";
-    else return "";
-    
     return ":/resources/icons/" + setDir + "/" + pieceName + ".png";
+}
+
+QString PieceIconSettingsDialog::getSetDirectoryName(IconSetType setType) const
+{
+    switch (setType) {
+        case IconSetType::Preset1: return "set1";
+        case IconSetType::Preset2: return "set2";
+        case IconSetType::Preset3: return "set3";
+        default: return "";
+    }
 }
