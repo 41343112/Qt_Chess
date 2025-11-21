@@ -23,6 +23,11 @@ A fully functional player-vs-player chess game built with Qt5.
   - Enable/disable individual sounds or all sounds
   - Preview sounds before applying settings
   - Settings are saved persistently between sessions
+- **Customizable Piece Appearance**:
+  - Choose from multiple chess piece styles (Standard Unicode, Alternate Unicode, Text-based)
+  - Adjust font size of pieces (20-72pt)
+  - Real-time preview of all pieces before applying
+  - Settings are saved persistently between sessions
 
 ## Building
 
@@ -60,6 +65,13 @@ make
     - Preview sounds before applying settings
     - **Supported audio formats**: WAV (recommended), MP3, OGG
       - WAV format is recommended for best compatibility across all platforms
+11. **Piece Appearance Settings**: Click "設定" (Settings) menu > "棋子外觀設定" (Piece Appearance Settings) to:
+    - Choose from three piece styles:
+      - **Standard Unicode Symbols**: Classic chess piece symbols (♔♕♖♗♘♙ for white, ♚♛♜♝♞♟ for black)
+      - **Alternate Unicode Symbols**: Reversed style (filled symbols for white, outlined for black)
+      - **Text-Based**: Simple letter notation (K, Q, R, B, N, P)
+    - Adjust font size from 20pt to 72pt
+    - Preview all pieces in real-time before applying changes
 
 ## Game Rules
 
@@ -86,6 +98,7 @@ make
 - `chessboard.h/cpp` - Game board logic and rules
 - `chesspiece.h/cpp` - Chess piece definitions and movement validation
 - `soundsettingsdialog.h/cpp` - Sound settings dialog for customizing audio
+- `pieceappearancesettingsdialog.h/cpp` - Piece appearance settings dialog for customizing piece display
 - `qt_chess.ui` - Qt UI designer file
 - `resources.qrc` - Qt resource file for embedded sound files
 
