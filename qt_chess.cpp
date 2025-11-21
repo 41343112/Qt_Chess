@@ -634,7 +634,9 @@ void Qt_Chess::loadSoundSettings() {
 }
 
 void Qt_Chess::setSoundSource(QSoundEffect& sound, const QString& path) {
-    // Handle both qrc: URLs and file paths
+    // Helper function to set sound source with proper URL handling
+    // - For Qt resource paths (qrc:), use QUrl constructor directly
+    // - For local file paths, use QUrl::fromLocalFile for proper conversion
     if (path.startsWith("qrc:")) {
         sound.setSource(QUrl(path));
     } else {
