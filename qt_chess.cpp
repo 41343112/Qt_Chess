@@ -42,11 +42,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
 
 Qt_Chess::~Qt_Chess()
 {
-    delete m_moveSound;
-    delete m_captureSound;
-    delete m_checkSound;
-    delete m_castlingSound;
-    delete m_checkmateSound;
+    // QSoundEffect objects are parented to 'this', so Qt will automatically clean them up
     delete ui;
 }
 
@@ -118,25 +114,27 @@ void Qt_Chess::setupUI() {
 
 void Qt_Chess::setupSounds() {
     // 初始化音效物件
+    constexpr float DEFAULT_VOLUME = 0.5f;
+    
     m_moveSound = new QSoundEffect(this);
     m_moveSound->setSource(QUrl("qrc:/sounds/sounds/move.wav"));
-    m_moveSound->setVolume(0.5);
+    m_moveSound->setVolume(DEFAULT_VOLUME);
     
     m_captureSound = new QSoundEffect(this);
     m_captureSound->setSource(QUrl("qrc:/sounds/sounds/capture.wav"));
-    m_captureSound->setVolume(0.5);
+    m_captureSound->setVolume(DEFAULT_VOLUME);
     
     m_checkSound = new QSoundEffect(this);
     m_checkSound->setSource(QUrl("qrc:/sounds/sounds/check.wav"));
-    m_checkSound->setVolume(0.5);
+    m_checkSound->setVolume(DEFAULT_VOLUME);
     
     m_castlingSound = new QSoundEffect(this);
     m_castlingSound->setSource(QUrl("qrc:/sounds/sounds/castling.wav"));
-    m_castlingSound->setVolume(0.5);
+    m_castlingSound->setVolume(DEFAULT_VOLUME);
     
     m_checkmateSound = new QSoundEffect(this);
     m_checkmateSound->setSource(QUrl("qrc:/sounds/sounds/checkmate.wav"));
-    m_checkmateSound->setVolume(0.5);
+    m_checkmateSound->setVolume(DEFAULT_VOLUME);
 }
 
 void Qt_Chess::playMoveSound(const MoveInfo& moveInfo) {
