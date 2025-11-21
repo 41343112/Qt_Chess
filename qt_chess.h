@@ -96,5 +96,6 @@ private:
     void loadPieceIconSettings();
     void applyPieceIconSettings();
     QString getPieceIconPath(PieceType type, PieceColor color) const;
+    void displayPieceOnSquare(QPushButton* square, const ChessPiece& piece);
 };
 #endif // QT_CHESS_H

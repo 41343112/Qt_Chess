@@ -140,32 +140,7 @@ void Qt_Chess::updateBoard() {
     for (int row = 0; row < 8; ++row) {
         for (int col = 0; col < 8; ++col) {
             const ChessPiece& piece = m_chessBoard.getPiece(row, col);
-            
-            // Clear previous content
-            m_squares[row][col]->setText("");
-            m_squares[row][col]->setIcon(QIcon());
-            
-            if (m_pieceIconSettings.useCustomIcons) {
-                QString iconPath = getPieceIconPath(piece.getType(), piece.getColor());
-                if (!iconPath.isEmpty() && QFile::exists(iconPath)) {
-                    QPixmap pixmap(iconPath);
-                    if (!pixmap.isNull()) {
-                        QIcon icon(pixmap);
-                        m_squares[row][col]->setIcon(icon);
-                        m_squares[row][col]->setIconSize(m_squares[row][col]->size() * 0.8);
-                    } else {
-                        // Fallback to symbol if icon can't be loaded
-                        m_squares[row][col]->setText(piece.getSymbol());
-                    }
-                } else {
-                    // Fallback to symbol if no custom icon is set
-                    m_squares[row][col]->setText(piece.getSymbol());
-                }
-            } else {
-                // Use Unicode symbols
-                m_squares[row][col]->setText(piece.getSymbol());
-            }
-            
+            displayPieceOnSquare(m_squares[row][col], piece);
             updateSquareColor(row, col);
         }
     }
@@ -391,29 +366,7 @@ QPoint Qt_Chess::getSquareAtPosition(const QPoint& pos) const {
 void Qt_Chess::restorePieceToSquare(const QPoint& square) {
     if (square.x() >= 0 && square.y() >= 0 && square.x() < 8 && square.y() < 8) {
         const ChessPiece& piece = m_chessBoard.getPiece(square.y(), square.x());
-        
-        // Clear previous content
-        m_squares[square.y()][square.x()]->setText("");
-        m_squares[square.y()][square.x()]->setIcon(QIcon());
-        
-        // Restore piece with icon or symbol
-        if (m_pieceIconSettings.useCustomIcons) {
-            QString iconPath = getPieceIconPath(piece.getType(), piece.getColor());
-            if (!iconPath.isEmpty() && QFile::exists(iconPath)) {
-                QPixmap pixmap(iconPath);
-                if (!pixmap.isNull()) {
-                    QIcon icon(pixmap);
-                    m_squares[square.y()][square.x()]->setIcon(icon);
-                    m_squares[square.y()][square.x()]->setIconSize(m_squares[square.y()][square.x()]->size() * 0.8);
-                } else {
-                    m_squares[square.y()][square.x()]->setText(piece.getSymbol());
-                }
-            } else {
-                m_squares[square.y()][square.x()]->setText(piece.getSymbol());
-            }
-        } else {
-            m_squares[square.y()][square.x()]->setText(piece.getSymbol());
-        }
+        displayPieceOnSquare(m_squares[square.y()][square.x()], piece);
     }
 }
 
@@ -912,5 +865,35 @@ QString Qt_Chess::getPieceIconPath(PieceType type, PieceColor color) const {
             case PieceType::Pawn:   return m_pieceIconSettings.blackPawnIcon;
             default: return "";
         }
+    }
+}
+
+void Qt_Chess::displayPieceOnSquare(QPushButton* square, const ChessPiece& piece) {
+    if (!square) return;
+    
+    // Clear previous content
+    square->setText("");
+    square->setIcon(QIcon());
+    
+    // Display piece with icon or symbol
+    if (m_pieceIconSettings.useCustomIcons) {
+        QString iconPath = getPieceIconPath(piece.getType(), piece.getColor());
+        if (!iconPath.isEmpty() && QFile::exists(iconPath)) {
+            QPixmap pixmap(iconPath);
+            if (!pixmap.isNull()) {
+                QIcon icon(pixmap);
+                square->setIcon(icon);
+                square->setIconSize(square->size() * 0.8);
+            } else {
+                // Fallback to symbol if icon can't be loaded
+                square->setText(piece.getSymbol());
+            }
+        } else {
+            // Fallback to symbol if no custom icon is set
+            square->setText(piece.getSymbol());
+        }
+    } else {
+        // Use Unicode symbols
+        square->setText(piece.getSymbol());
     }
 }
