@@ -139,11 +139,11 @@ void Qt_Chess::updateStatus() {
     }
 }
 
-void Qt_Chess::applyCheckHighlight() {
+void Qt_Chess::applyCheckHighlight(const QPoint& excludeSquare) {
     PieceColor currentPlayer = m_chessBoard.getCurrentPlayer();
     if (m_chessBoard.isInCheck(currentPlayer)) {
         QPoint kingPos = m_chessBoard.findKing(currentPlayer);
-        if (kingPos.x() >= 0 && kingPos.y() >= 0) {
+        if (kingPos.x() >= 0 && kingPos.y() >= 0 && kingPos != excludeSquare) {
             int row = kingPos.y();
             int col = kingPos.x();
             m_squares[row][col]->setStyleSheet(CHECK_HIGHLIGHT_STYLE);
@@ -186,13 +186,7 @@ void Qt_Chess::highlightValidMoves() {
     }
     
     // Re-apply red background to king if in check and king is not the selected piece
-    PieceColor currentPlayer = m_chessBoard.getCurrentPlayer();
-    if (m_chessBoard.isInCheck(currentPlayer)) {
-        QPoint kingPos = m_chessBoard.findKing(currentPlayer);
-        if (kingPos.x() >= 0 && kingPos.y() >= 0 && kingPos != m_selectedSquare) {
-            m_squares[kingPos.y()][kingPos.x()]->setStyleSheet(CHECK_HIGHLIGHT_STYLE);
-        }
-    }
+    applyCheckHighlight(m_selectedSquare);
 }
 
 void Qt_Chess::onSquareClicked(int row, int col) {
