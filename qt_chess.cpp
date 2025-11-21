@@ -6,6 +6,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QPushButton>
 
 Qt_Chess::Qt_Chess(QWidget *parent)
     : QMainWindow(parent)

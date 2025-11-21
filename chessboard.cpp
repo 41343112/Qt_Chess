@@ -197,7 +197,8 @@ bool ChessBoard::movePiece(const QPoint& from, const QPoint& to) {
     
     // Track pawn double moves for en passant
     if (pieceType == PieceType::Pawn && abs(to.y() - from.y()) == 2) {
-        // Set en passant target to the square the pawn skipped over
+        // Set en passant target to the square the pawn skipped over (middle square)
+        // For example, if white pawn moves from row 6 to row 4, target is row 5
         int targetRow = (from.y() + to.y()) / 2;
         m_enPassantTarget = QPoint(from.x(), targetRow);
     }
@@ -274,13 +275,10 @@ bool ChessBoard::canCastle(const QPoint& from, const QPoint& to) const {
     if (rook.getType() != PieceType::Rook || rook.hasMoved()) return false;
     
     // Check if path is clear between king and rook
+    // Verify all squares between king's current position and rook are empty
     int direction = (to.x() > from.x()) ? 1 : -1;
-    int col = from.x() + direction;
-    int endCol = rookCol;
-    
-    while (col != endCol) {
+    for (int col = from.x() + direction; col != rookCol; col += direction) {
         if (m_board[from.y()][col].getType() != PieceType::None) return false;
-        col += direction;
     }
     
     // Check that king doesn't move through check
