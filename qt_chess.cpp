@@ -5,6 +5,7 @@
 #include <QDialog>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QLabel>
 
 Qt_Chess::Qt_Chess(QWidget *parent)
     : QMainWindow(parent)
