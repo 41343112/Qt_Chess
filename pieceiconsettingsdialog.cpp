@@ -17,7 +17,10 @@ PieceIconSettingsDialog::PieceIconSettingsDialog(QWidget *parent)
     : QDialog(parent)
 {
     setWindowTitle("棋子圖標設定");
-    resize(700, 600);
+    resize(800, 700);  // Slightly larger default size
+    setMinimumSize(600, 500);  // Set minimum size to prevent too small window
+    // Make dialog resizable by not setting Qt::MSWindowsFixedSizeDialogHint
+    setSizeGripEnabled(true);  // Enable resize grip in corner
     setupUI();
 }
 
@@ -696,20 +699,20 @@ QWidget* PieceIconSettingsDialog::createIconSetPreviewWidget(IconSetType setType
     previewLayout->setSpacing(5);
     
     if (setType == IconSetType::Unicode) {
-        // Show Unicode symbols
+        // Show Unicode symbols - larger for better visibility
         QLabel* unicodeLabel = new QLabel("♔ ♕ ♖ ♗ ♘ ♙", frame);
-        unicodeLabel->setStyleSheet("QLabel { font-size: 36pt; }");
+        unicodeLabel->setStyleSheet("QLabel { font-size: 42pt; }");  // Increased from 36pt to 42pt
         unicodeLabel->setAlignment(Qt::AlignCenter);
         previewLayout->addWidget(unicodeLabel);
     } else if (setType == IconSetType::Custom) {
         // Show text description for custom
         QLabel* customLabel = new QLabel("使用您自己的圖標檔案\n點擊下方「瀏覽」按鈕選擇", frame);
-        customLabel->setStyleSheet("QLabel { font-size: 10pt; color: #666; }");
+        customLabel->setStyleSheet("QLabel { font-size: 11pt; color: #666; }");  // Increased from 10pt to 11pt
         customLabel->setAlignment(Qt::AlignCenter);
         customLabel->setWordWrap(true);
         previewLayout->addWidget(customLabel);
     } else {
-        // Show preset icon previews
+        // Show preset icon previews - larger icons for better visibility
         PieceIconSettings presetSettings = getPresetSettings(setType);
         
         // Display a few key pieces as preview
@@ -726,13 +729,14 @@ QWidget* PieceIconSettingsDialog::createIconSetPreviewWidget(IconSetType setType
             QLabel* iconLabel = new QLabel(frame);
             QPixmap pixmap(iconPath);
             if (!pixmap.isNull()) {
-                iconLabel->setPixmap(pixmap.scaled(48, 48, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+                // Increased from 48x48 to 60x60 for better visibility
+                iconLabel->setPixmap(pixmap.scaled(60, 60, Qt::KeepAspectRatio, Qt::SmoothTransformation));
             } else {
                 iconLabel->setText("?");
-                iconLabel->setStyleSheet("QLabel { font-size: 24pt; }");
+                iconLabel->setStyleSheet("QLabel { font-size: 28pt; }");  // Increased from 24pt to 28pt
             }
             iconLabel->setAlignment(Qt::AlignCenter);
-            iconLabel->setFixedSize(50, 50);
+            iconLabel->setMinimumSize(64, 64);  // Changed from setFixedSize to setMinimumSize to allow growth
             previewLayout->addWidget(iconLabel);
         }
     }
