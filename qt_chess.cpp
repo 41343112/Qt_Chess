@@ -8,6 +8,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QEvent>
+#include <QResizeEvent>
 
 namespace {
     const QString CHECK_HIGHLIGHT_STYLE = "QPushButton { background-color: #FF6B6B; border: 2px solid #FF0000; }";
@@ -25,7 +26,11 @@ Qt_Chess::Qt_Chess(QWidget *parent)
 {
     ui->setupUi(this);
     setWindowTitle("國際象棋 - 雙人對弈");
-    resize(700, 750);
+    resize(700, 660);
+    
+    // Set minimum window size: width 320px (8 squares × 40px), height 380px (320px board + ~60px UI elements)
+    setMinimumSize(320, 380);
+    
     setMouseTracking(true);
     
     setupUI();
@@ -42,33 +47,20 @@ void Qt_Chess::setupUI() {
     QWidget* centralWidget = new QWidget(this);
     QVBoxLayout* mainLayout = new QVBoxLayout(centralWidget);
     
-    // Turn and status labels
-    m_turnLabel = new QLabel("當前回合：白方", this);
-    m_turnLabel->setAlignment(Qt::AlignCenter);
-    QFont font = m_turnLabel->font();
-    font.setPointSize(14);
-    font.setBold(true);
-    m_turnLabel->setFont(font);
-    mainLayout->addWidget(m_turnLabel);
-    
-    m_statusLabel = new QLabel("對局進行中", this);
-    m_statusLabel->setAlignment(Qt::AlignCenter);
-    m_statusLabel->setFont(font);
-    mainLayout->addWidget(m_statusLabel);
-    
     // Chess board
     m_boardWidget = new QWidget(this);
     m_boardWidget->setMouseTracking(true);
     QGridLayout* gridLayout = new QGridLayout(m_boardWidget);
     gridLayout->setSpacing(0);
+    gridLayout->setContentsMargins(2, 2, 2, 2);  // Add 2px margin on all sides to prevent border clipping
     
     m_squares.resize(8, std::vector<QPushButton*>(8));
     
     for (int row = 0; row < 8; ++row) {
         for (int col = 0; col < 8; ++col) {
             QPushButton* square = new QPushButton(m_boardWidget);
-            square->setMinimumSize(80, 80);
-            square->setMaximumSize(80, 80);
+            square->setMinimumSize(40, 40);  // Set a reasonable minimum size
+            square->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
             square->setMouseTracking(true);
             
             QFont buttonFont;
@@ -97,7 +89,10 @@ void Qt_Chess::setupUI() {
     // New game button
     m_newGameButton = new QPushButton("新遊戲", this);
     m_newGameButton->setMinimumHeight(40);
-    m_newGameButton->setFont(font);
+    QFont buttonFont;
+    buttonFont.setPointSize(14);
+    buttonFont.setBold(true);
+    m_newGameButton->setFont(buttonFont);
     connect(m_newGameButton, &QPushButton::clicked, this, &Qt_Chess::onNewGameClicked);
     mainLayout->addWidget(m_newGameButton);
     
@@ -123,33 +118,23 @@ void Qt_Chess::updateBoard() {
     
     // Highlight king in red if in check
     applyCheckHighlight();
+    // Reapply highlights if a piece is selected
+    if (m_pieceSelected) {
+        highlightValidMoves();
+    }
 }
 
 void Qt_Chess::updateStatus() {
     PieceColor currentPlayer = m_chessBoard.getCurrentPlayer();
     QString playerName = (currentPlayer == PieceColor::White) ? "白方" : "黑方";
     
-    m_turnLabel->setText(QString("當前回合：%1").arg(playerName));
-    
     if (m_chessBoard.isCheckmate(currentPlayer)) {
         QString winner = (currentPlayer == PieceColor::White) ? "黑方" : "白方";
-        m_statusLabel->setText(QString("將死！%1獲勝！").arg(winner));
-        m_statusLabel->setStyleSheet("QLabel { color: red; }");
         QMessageBox::information(this, "遊戲結束", QString("將死！%1獲勝！").arg(winner));
     } else if (m_chessBoard.isStalemate(currentPlayer)) {
-        m_statusLabel->setText("逼和！對局和棋。");
-        m_statusLabel->setStyleSheet("QLabel { color: orange; }");
         QMessageBox::information(this, "遊戲結束", "逼和！對局和棋。");
     } else if (m_chessBoard.isInsufficientMaterial()) {
-        m_statusLabel->setText("子力不足！對局和棋。");
-        m_statusLabel->setStyleSheet("QLabel { color: orange; }");
-        QMessageBox::information(this, "遊戲結束", "子力不足以將殺！對局和棋。");
-    } else if (m_chessBoard.isInCheck(currentPlayer)) {
-        m_statusLabel->setText(QString("%1被將軍！").arg(playerName));
-        m_statusLabel->setStyleSheet("QLabel { color: red; }");
-    } else {
-        m_statusLabel->setText("對局進行中");
-        m_statusLabel->setStyleSheet("QLabel { color: black; }");
+        QMessageBox::information(this, "遊戲結束", "子力不足以將死！對局和棋。");
     }
 }
 
@@ -519,4 +504,61 @@ void Qt_Chess::mouseReleaseEvent(QMouseEvent *event) {
     }
     
     QMainWindow::mouseReleaseEvent(event);
+}
+
+void Qt_Chess::resizeEvent(QResizeEvent *event) {
+    QMainWindow::resizeEvent(event);
+    updateSquareSizes();
+    
+    // Reapply highlights after resize
+    if (m_pieceSelected) {
+        highlightValidMoves();
+    }
+}
+
+void Qt_Chess::updateSquareSizes() {
+    if (!m_boardWidget || m_squares.empty()) return;
+    
+    // Get the central widget
+    QWidget* central = centralWidget();
+    if (!central) return;
+    
+    // Calculate available space for the board
+    // Account for the new game button
+    int reservedHeight = 0;
+    if (m_newGameButton) reservedHeight += m_newGameButton->minimumHeight();
+    
+    // Add some padding for layout margins and spacing (estimate ~50px)
+    reservedHeight += 50;
+    
+    int availableWidth = central->width();
+    int availableHeight = central->height() - reservedHeight;
+    
+    // Calculate the size for each square (use the smaller dimension to keep squares square)
+    int squareSize = qMin(availableWidth, availableHeight) / 8;
+    
+    // Ensure minimum and reasonable maximum size
+    squareSize = qMax(squareSize, 35);
+    squareSize = qMin(squareSize, 180);  // Cap at a reasonable maximum
+    
+    // Calculate font size based on square size (approximately 45% of square size)
+    int fontSize = squareSize * 9 / 20;  // This gives roughly 36pt for 80px squares
+    fontSize = qMax(fontSize, 12);  // Ensure minimum readable font size
+    fontSize = qMin(fontSize, 54);  // Cap font size for very large boards
+    
+    // Update all squares
+    for (int row = 0; row < 8; ++row) {
+        for (int col = 0; col < 8; ++col) {
+            QPushButton* square = m_squares[row][col];
+            square->setFixedSize(squareSize, squareSize);
+            
+            QFont font = square->font();
+            font.setPointSize(fontSize);
+            square->setFont(font);
+        }
+    }
+    
+    // Update the board widget size to fit the squares exactly
+    // Add 4 extra pixels (2px on each side) to prevent border clipping when squares are highlighted
+    m_boardWidget->setFixedSize(squareSize * 8 + 4, squareSize * 8 + 4);
 }

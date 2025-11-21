@@ -30,6 +30,7 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
     bool eventFilter(QObject *obj, QEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
 
 private slots:
     void onSquareClicked(int row, int col);
@@ -48,8 +49,6 @@ private:
     QPoint m_dragStartSquare;
     QLabel* m_dragLabel;
     
-    QLabel* m_statusLabel;
-    QLabel* m_turnLabel;
     QPushButton* m_newGameButton;
     QWidget* m_boardWidget;
     
@@ -63,5 +62,6 @@ private:
     void restorePieceToSquare(const QPoint& square);
     PieceType showPromotionDialog(PieceColor color);
     QPoint getSquareAtPosition(const QPoint& pos) const;
+    void updateSquareSizes();
 };
 #endif // QT_CHESS_H
