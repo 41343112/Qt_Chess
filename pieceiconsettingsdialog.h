@@ -180,6 +180,9 @@ private:
     void updateCustomIconsControls();
     void applyPresetIconSet(IconSetType setType);
     static QString getSetDirectoryName(IconSetType setType);
+    
+protected:
+    bool eventFilter(QObject *obj, QEvent *event) override;
 };
 
 #endif // PIECEICONSETTINGSDIALOG_H
