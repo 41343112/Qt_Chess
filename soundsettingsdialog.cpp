@@ -104,6 +104,15 @@ void SoundSettingsDialog::setupUI()
 {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     
+    // Add informational label about supported formats
+    QLabel* infoLabel = new QLabel(
+        "支援的音檔格式：WAV (推薦)、MP3、OGG\n"
+        "注意：WAV 格式具有最佳的相容性，建議使用 WAV 格式的音效檔案。", 
+        this);
+    infoLabel->setWordWrap(true);
+    infoLabel->setStyleSheet("QLabel { color: #555; font-size: 10pt; padding: 5px; background-color: #f0f0f0; border-radius: 3px; }");
+    mainLayout->addWidget(infoLabel);
+    
     // Master enable/disable checkbox
     m_allSoundsCheckBox = new QCheckBox("啟用所有音效", this);
     m_allSoundsCheckBox->setChecked(true);
@@ -325,7 +334,7 @@ QString SoundSettingsDialog::browseForSoundFile()
         this,
         "選擇音效檔案",
         QString(),
-        "音效檔案 (*.wav *.mp3 *.ogg);;所有檔案 (*.*)"
+        "WAV 音效檔案 (*.wav);;所有音效檔案 (*.wav *.mp3 *.ogg);;所有檔案 (*.*)"
     );
     return file;
 }

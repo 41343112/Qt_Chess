@@ -58,6 +58,8 @@ make
     - Adjust volume levels using sliders
     - Enable/disable individual sounds or all sounds
     - Preview sounds before applying settings
+    - **Supported audio formats**: WAV (recommended), MP3, OGG
+      - WAV format is recommended for best compatibility across all platforms
 
 ## Game Rules
 

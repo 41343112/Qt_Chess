@@ -635,19 +635,40 @@ void Qt_Chess::loadSoundSettings() {
 
 void Qt_Chess::applySoundSettings() {
     // Initialize sound effects with settings
-    m_moveSound.setSource(QUrl(m_soundSettings.moveSound));
+    // Handle both qrc: URLs and file paths
+    if (m_soundSettings.moveSound.startsWith("qrc:")) {
+        m_moveSound.setSource(QUrl(m_soundSettings.moveSound));
+    } else {
+        m_moveSound.setSource(QUrl::fromLocalFile(m_soundSettings.moveSound));
+    }
     m_moveSound.setVolume(m_soundSettings.moveVolume);
     
-    m_captureSound.setSource(QUrl(m_soundSettings.captureSound));
+    if (m_soundSettings.captureSound.startsWith("qrc:")) {
+        m_captureSound.setSource(QUrl(m_soundSettings.captureSound));
+    } else {
+        m_captureSound.setSource(QUrl::fromLocalFile(m_soundSettings.captureSound));
+    }
     m_captureSound.setVolume(m_soundSettings.captureVolume);
     
-    m_castlingSound.setSource(QUrl(m_soundSettings.castlingSound));
+    if (m_soundSettings.castlingSound.startsWith("qrc:")) {
+        m_castlingSound.setSource(QUrl(m_soundSettings.castlingSound));
+    } else {
+        m_castlingSound.setSource(QUrl::fromLocalFile(m_soundSettings.castlingSound));
+    }
     m_castlingSound.setVolume(m_soundSettings.castlingVolume);
     
-    m_checkSound.setSource(QUrl(m_soundSettings.checkSound));
+    if (m_soundSettings.checkSound.startsWith("qrc:")) {
+        m_checkSound.setSource(QUrl(m_soundSettings.checkSound));
+    } else {
+        m_checkSound.setSource(QUrl::fromLocalFile(m_soundSettings.checkSound));
+    }
     m_checkSound.setVolume(m_soundSettings.checkVolume);
     
-    m_checkmateSound.setSource(QUrl(m_soundSettings.checkmateSound));
+    if (m_soundSettings.checkmateSound.startsWith("qrc:")) {
+        m_checkmateSound.setSource(QUrl(m_soundSettings.checkmateSound));
+    } else {
+        m_checkmateSound.setSource(QUrl::fromLocalFile(m_soundSettings.checkmateSound));
+    }
     m_checkmateSound.setVolume(m_soundSettings.checkmateVolume);
 }
 
