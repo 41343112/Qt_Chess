@@ -1,6 +1,7 @@
 #include "qt_chess.h"
 #include "ui_qt_chess.h"
 #include "soundsettingsdialog.h"
+#include "pieceiconsettingsdialog.h"
 #include <QMessageBox>
 #include <QFont>
 #include <QDialog>
@@ -11,6 +12,9 @@
 #include <QEvent>
 #include <QResizeEvent>
 #include <QSettings>
+#include <QIcon>
+#include <QPixmap>
+#include <QFile>
 
 namespace {
     const QString CHECK_HIGHLIGHT_STYLE = "QPushButton { background-color: #FF6B6B; border: 2px solid #FF0000; }";
@@ -39,6 +43,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     
     loadSoundSettings();
     initializeSounds();
+    loadPieceIconSettings();
     setupMenuBar();
     setupUI();
     updateBoard();
@@ -116,6 +121,11 @@ void Qt_Chess::setupMenuBar() {
     QAction* soundSettingsAction = new QAction("音效設定", this);
     connect(soundSettingsAction, &QAction::triggered, this, &Qt_Chess::onSoundSettingsClicked);
     settingsMenu->addAction(soundSettingsAction);
+    
+    // Piece icon settings action
+    QAction* pieceIconSettingsAction = new QAction("棋子圖標設定", this);
+    connect(pieceIconSettingsAction, &QAction::triggered, this, &Qt_Chess::onPieceIconSettingsClicked);
+    settingsMenu->addAction(pieceIconSettingsAction);
 }
 
 void Qt_Chess::updateSquareColor(int row, int col) {
@@ -130,7 +140,7 @@ void Qt_Chess::updateBoard() {
     for (int row = 0; row < 8; ++row) {
         for (int col = 0; col < 8; ++col) {
             const ChessPiece& piece = m_chessBoard.getPiece(row, col);
-            m_squares[row][col]->setText(piece.getSymbol());
+            displayPieceOnSquare(m_squares[row][col], piece);
             updateSquareColor(row, col);
         }
     }
@@ -274,6 +284,16 @@ void Qt_Chess::onSoundSettingsClicked() {
     }
 }
 
+void Qt_Chess::onPieceIconSettingsClicked() {
+    PieceIconSettingsDialog dialog(this);
+    dialog.setSettings(m_pieceIconSettings);
+    
+    if (dialog.exec() == QDialog::Accepted) {
+        m_pieceIconSettings = dialog.getSettings();
+        applyPieceIconSettings();
+    }
+}
+
 PieceType Qt_Chess::showPromotionDialog(PieceColor color) {
     QDialog dialog(this);
     dialog.setWindowTitle("兵升變");
@@ -346,7 +366,7 @@ QPoint Qt_Chess::getSquareAtPosition(const QPoint& pos) const {
 void Qt_Chess::restorePieceToSquare(const QPoint& square) {
     if (square.x() >= 0 && square.y() >= 0 && square.x() < 8 && square.y() < 8) {
         const ChessPiece& piece = m_chessBoard.getPiece(square.y(), square.x());
-        m_squares[square.y()][square.x()]->setText(piece.getSymbol());
+        displayPieceOnSquare(m_squares[square.y()][square.x()], piece);
     }
 }
 
@@ -443,10 +463,34 @@ void Qt_Chess::mousePressEvent(QMouseEvent *event) {
             
             // Create drag label
             m_dragLabel = new QLabel(this);
-            m_dragLabel->setText(piece.getSymbol());
-            QFont font;
-            font.setPointSize(36);
-            m_dragLabel->setFont(font);
+            
+            // Use custom icon or Unicode symbol
+            if (m_pieceIconSettings.useCustomIcons) {
+                QString iconPath = getPieceIconPath(piece.getType(), piece.getColor());
+                if (!iconPath.isEmpty() && QFile::exists(iconPath)) {
+                    QPixmap pixmap(iconPath);
+                    if (!pixmap.isNull()) {
+                        int iconSize = m_squares[square.y()][square.x()]->size().width() * 0.8;
+                        m_dragLabel->setPixmap(pixmap.scaled(iconSize, iconSize, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+                    } else {
+                        m_dragLabel->setText(piece.getSymbol());
+                        QFont font;
+                        font.setPointSize(36);
+                        m_dragLabel->setFont(font);
+                    }
+                } else {
+                    m_dragLabel->setText(piece.getSymbol());
+                    QFont font;
+                    font.setPointSize(36);
+                    m_dragLabel->setFont(font);
+                }
+            } else {
+                m_dragLabel->setText(piece.getSymbol());
+                QFont font;
+                font.setPointSize(36);
+                m_dragLabel->setFont(font);
+            }
+            
             m_dragLabel->setStyleSheet("QLabel { background-color: transparent; border: none; }");
             m_dragLabel->adjustSize();
             m_dragLabel->move(event->pos() - QPoint(m_dragLabel->width() / 2, m_dragLabel->height() / 2));
@@ -455,6 +499,7 @@ void Qt_Chess::mousePressEvent(QMouseEvent *event) {
             
             // Hide the piece from the original square during drag
             m_squares[square.y()][square.x()]->setText("");
+            m_squares[square.y()][square.x()]->setIcon(QIcon());
             
             highlightValidMoves();
         }
@@ -610,6 +655,11 @@ void Qt_Chess::updateSquareSizes() {
             QFont font = square->font();
             font.setPointSize(fontSize);
             square->setFont(font);
+            
+            // Update icon size if using custom icons
+            if (m_pieceIconSettings.useCustomIcons && !square->icon().isNull()) {
+                square->setIconSize(QSize(squareSize * 0.8, squareSize * 0.8));
+            }
         }
     }
     
@@ -746,5 +796,104 @@ void Qt_Chess::playSoundForMove(bool isCapture, bool isCastling) {
         m_captureSound.play();
     } else if (m_soundSettings.moveSoundEnabled) {
         m_moveSound.play();
+    }
+}
+
+void Qt_Chess::loadPieceIconSettings() {
+    QSettings settings("Qt_Chess", "ChessGame");
+    
+    m_pieceIconSettings.useCustomIcons = settings.value("PieceIcons/useCustomIcons", false).toBool();
+    m_pieceIconSettings.whiteKingIcon = settings.value("PieceIcons/whiteKingIcon", "").toString();
+    m_pieceIconSettings.whiteQueenIcon = settings.value("PieceIcons/whiteQueenIcon", "").toString();
+    m_pieceIconSettings.whiteRookIcon = settings.value("PieceIcons/whiteRookIcon", "").toString();
+    m_pieceIconSettings.whiteBishopIcon = settings.value("PieceIcons/whiteBishopIcon", "").toString();
+    m_pieceIconSettings.whiteKnightIcon = settings.value("PieceIcons/whiteKnightIcon", "").toString();
+    m_pieceIconSettings.whitePawnIcon = settings.value("PieceIcons/whitePawnIcon", "").toString();
+    m_pieceIconSettings.blackKingIcon = settings.value("PieceIcons/blackKingIcon", "").toString();
+    m_pieceIconSettings.blackQueenIcon = settings.value("PieceIcons/blackQueenIcon", "").toString();
+    m_pieceIconSettings.blackRookIcon = settings.value("PieceIcons/blackRookIcon", "").toString();
+    m_pieceIconSettings.blackBishopIcon = settings.value("PieceIcons/blackBishopIcon", "").toString();
+    m_pieceIconSettings.blackKnightIcon = settings.value("PieceIcons/blackKnightIcon", "").toString();
+    m_pieceIconSettings.blackPawnIcon = settings.value("PieceIcons/blackPawnIcon", "").toString();
+}
+
+void Qt_Chess::applyPieceIconSettings() {
+    QSettings settings("Qt_Chess", "ChessGame");
+    
+    settings.setValue("PieceIcons/useCustomIcons", m_pieceIconSettings.useCustomIcons);
+    settings.setValue("PieceIcons/whiteKingIcon", m_pieceIconSettings.whiteKingIcon);
+    settings.setValue("PieceIcons/whiteQueenIcon", m_pieceIconSettings.whiteQueenIcon);
+    settings.setValue("PieceIcons/whiteRookIcon", m_pieceIconSettings.whiteRookIcon);
+    settings.setValue("PieceIcons/whiteBishopIcon", m_pieceIconSettings.whiteBishopIcon);
+    settings.setValue("PieceIcons/whiteKnightIcon", m_pieceIconSettings.whiteKnightIcon);
+    settings.setValue("PieceIcons/whitePawnIcon", m_pieceIconSettings.whitePawnIcon);
+    settings.setValue("PieceIcons/blackKingIcon", m_pieceIconSettings.blackKingIcon);
+    settings.setValue("PieceIcons/blackQueenIcon", m_pieceIconSettings.blackQueenIcon);
+    settings.setValue("PieceIcons/blackRookIcon", m_pieceIconSettings.blackRookIcon);
+    settings.setValue("PieceIcons/blackBishopIcon", m_pieceIconSettings.blackBishopIcon);
+    settings.setValue("PieceIcons/blackKnightIcon", m_pieceIconSettings.blackKnightIcon);
+    settings.setValue("PieceIcons/blackPawnIcon", m_pieceIconSettings.blackPawnIcon);
+    
+    settings.sync();
+    
+    // Update the board to reflect the new settings
+    updateBoard();
+}
+
+QString Qt_Chess::getPieceIconPath(PieceType type, PieceColor color) const {
+    if (type == PieceType::None || color == PieceColor::None) {
+        return "";
+    }
+    
+    if (color == PieceColor::White) {
+        switch (type) {
+            case PieceType::King:   return m_pieceIconSettings.whiteKingIcon;
+            case PieceType::Queen:  return m_pieceIconSettings.whiteQueenIcon;
+            case PieceType::Rook:   return m_pieceIconSettings.whiteRookIcon;
+            case PieceType::Bishop: return m_pieceIconSettings.whiteBishopIcon;
+            case PieceType::Knight: return m_pieceIconSettings.whiteKnightIcon;
+            case PieceType::Pawn:   return m_pieceIconSettings.whitePawnIcon;
+            default: return "";
+        }
+    } else {
+        switch (type) {
+            case PieceType::King:   return m_pieceIconSettings.blackKingIcon;
+            case PieceType::Queen:  return m_pieceIconSettings.blackQueenIcon;
+            case PieceType::Rook:   return m_pieceIconSettings.blackRookIcon;
+            case PieceType::Bishop: return m_pieceIconSettings.blackBishopIcon;
+            case PieceType::Knight: return m_pieceIconSettings.blackKnightIcon;
+            case PieceType::Pawn:   return m_pieceIconSettings.blackPawnIcon;
+            default: return "";
+        }
+    }
+}
+
+void Qt_Chess::displayPieceOnSquare(QPushButton* square, const ChessPiece& piece) {
+    if (!square) return;
+    
+    // Clear previous content
+    square->setText("");
+    square->setIcon(QIcon());
+    
+    // Display piece with icon or symbol
+    if (m_pieceIconSettings.useCustomIcons) {
+        QString iconPath = getPieceIconPath(piece.getType(), piece.getColor());
+        if (!iconPath.isEmpty() && QFile::exists(iconPath)) {
+            QPixmap pixmap(iconPath);
+            if (!pixmap.isNull()) {
+                QIcon icon(pixmap);
+                square->setIcon(icon);
+                square->setIconSize(square->size() * 0.8);
+            } else {
+                // Fallback to symbol if icon can't be loaded
+                square->setText(piece.getSymbol());
+            }
+        } else {
+            // Fallback to symbol if no custom icon is set
+            square->setText(piece.getSymbol());
+        }
+    } else {
+        // Use Unicode symbols
+        square->setText(piece.getSymbol());
     }
 }
