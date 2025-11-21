@@ -205,12 +205,24 @@ void Qt_Chess::highlightValidMoves() {
     // Highlight valid moves
     for (int row = 0; row < 8; ++row) {
         for (int col = 0; col < 8; ++col) {
-            if (m_chessBoard.isValidMove(m_selectedSquare, QPoint(col, row))) {
+            QPoint targetSquare(col, row);
+            if (m_chessBoard.isValidMove(m_selectedSquare, targetSquare)) {
+                bool isCapture = isCaptureMove(m_selectedSquare, targetSquare);
                 bool isLight = (row + col) % 2 == 0;
-                QString color = isLight ? "#FFE4B5" : "#DEB887";
-                m_squares[row][col]->setStyleSheet(
-                    QString("QPushButton { background-color: %1; border: 2px solid #FFA500; }").arg(color)
-                );
+                
+                if (isCapture) {
+                    // Highlight capture moves in red
+                    QString color = isLight ? "#FFB3B3" : "#FF8080";
+                    m_squares[row][col]->setStyleSheet(
+                        QString("QPushButton { background-color: %1; border: 2px solid #FF0000; }").arg(color)
+                    );
+                } else {
+                    // Highlight non-capture moves in orange
+                    QString color = isLight ? "#FFE4B5" : "#DEB887";
+                    m_squares[row][col]->setStyleSheet(
+                        QString("QPushButton { background-color: %1; border: 2px solid #FFA500; }").arg(color)
+                    );
+                }
             }
         }
     }
