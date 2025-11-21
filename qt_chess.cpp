@@ -37,6 +37,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     setMouseTracking(true);
     
     setupUI();
+    updateSquareSizes();
     updateBoard();
     updateStatus();
 }
