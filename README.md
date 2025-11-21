@@ -1,78 +1,78 @@
 # Qt_Chess
 
-A fully functional player-vs-player chess game built with Qt5.
+基於 Qt5 開發的功能完整的雙人對弈國際象棋遊戲。
 
-## Features
+## 功能特點
 
-- **Complete Chess Implementation**: All pieces (King, Queen, Rook, Bishop, Knight, Pawn) with proper movement rules
-- **Special Moves**: 
-  - **Castling** (王車易位): King can castle with rook (kingside or queenside) under appropriate conditions
-  - **Pawn Promotion** (兵升變): Pawns are promoted when reaching the opposite end of the board, with a dialog to choose the promotion piece (Queen, Rook, Bishop, or Knight)
-  - **En Passant** (吃過路兵): Special pawn capture when an opponent's pawn moves two squares forward
-- **Turn-based Gameplay**: Alternating turns between White and Black players
-- **Move Validation**: Only legal moves are allowed
-- **Check Detection**: The game detects when a king is in check
-- **Checkmate & Stalemate Detection**: Game automatically detects end conditions
-- **Visual Highlights**: Selected pieces and valid moves are highlighted
-- **Clean UI**: Classic chessboard with Unicode chess piece symbols
-- **New Game**: Reset the board to start a new game at any time
+- **完整的國際象棋實現**：包含所有棋子（王、后、車、象、馬、兵）及其正確的移動規則
+- **特殊走法**：
+  - **王車易位**：在適當條件下，王可以與車進行易位（王翼或后翼）
+  - **兵升變**：兵到達棋盤對面底線時必須升變，可通過對話框選擇升變為后、車、象或馬
+  - **吃過路兵**：當對手的兵從初始位置走兩格時，可在下一回合進行特殊的吃過路兵捕獲
+- **回合制遊戲**：白方和黑方交替行棋
+- **走法驗證**：只允許合法的走法
+- **將軍檢測**：遊戲會自動檢測王是否被將軍
+- **將死與逼和檢測**：遊戲自動檢測終局條件
+- **視覺高亮**：選中的棋子和有效走法會被高亮顯示
+- **簡潔界面**：經典棋盤配合 Unicode 象棋符號
+- **新遊戲**：隨時重置棋盤開始新對局
 
-## Building
+## 編譯
 
-### Requirements
-- Qt5 (qt5-qtbase-devel or qtbase5-dev)
-- C++17 compatible compiler
+### 需求
+- Qt5 (qt5-qtbase-devel 或 qtbase5-dev)
+- 支援 C++17 的編譯器
 - qmake
 
-### Build Instructions
+### 編譯指令
 ```bash
 qmake Qt_Chess.pro
 make
 ```
 
-### Run
+### 執行
 ```bash
 ./Qt_Chess
 ```
 
-## How to Play
+## 如何遊玩
 
-1. **Select a Piece**: Click on one of your pieces (White starts first)
-2. **Drag and Drop**: Click and drag a piece to move it to a valid square
-3. **Cancel Move**: Right-click at any time during dragging to cancel and return the piece to its original position
-4. **Valid Moves**: Valid destination squares will be highlighted in orange
-5. **Move**: Click on a highlighted square to move the piece, or drag and drop
-6. **Deselect**: Click the selected piece again or right-click to deselect it
-7. **Turn Indicator**: The current player's turn is displayed at the top
-8. **Game Status**: Check, checkmate, and stalemate are automatically detected and displayed
-9. **New Game**: Click "New Game" button to reset the board
+1. **選擇棋子**：點擊您的一個棋子（白方先行）
+2. **拖放操作**：點擊並拖動棋子將其移動到有效位置
+3. **取消移動**：拖動過程中隨時右鍵點擊可取消並將棋子歸位
+4. **有效走法**：有效的目標格會以橙色高亮顯示
+5. **移動棋子**：點擊高亮的格子移動棋子，或使用拖放
+6. **取消選擇**：再次點擊選中的棋子或右鍵點擊可取消選擇
+7. **回合指示**：當前玩家的回合顯示在頂部
+8. **對局狀態**：將軍、將死和逼和會被自動檢測並顯示
+9. **新遊戲**：點擊「新遊戲」按鈕重置棋盤
 
-## Game Rules
+## 遊戲規則
 
-- White always moves first
-- Players alternate turns
-- Each piece moves according to standard chess rules:
-  - **Pawn**: Moves forward one square (two squares on first move), captures diagonally
-  - **Rook**: Moves horizontally or vertically any number of squares
-  - **Knight**: Moves in an "L" shape (2 squares in one direction, 1 square perpendicular)
-  - **Bishop**: Moves diagonally any number of squares
-  - **Queen**: Moves horizontally, vertically, or diagonally any number of squares
-  - **King**: Moves one square in any direction
-- **Special Moves**:
-  - **Castling**: King and rook can castle if neither piece has moved, there are no pieces between them, the king is not in check, and the king doesn't move through or into check
-  - **Pawn Promotion**: When a pawn reaches the opposite end of the board (row 0 for White, row 7 for Black), it must be promoted to a Queen, Rook, Bishop, or Knight
-  - **En Passant**: If an opponent's pawn moves two squares forward from its starting position and lands beside your pawn, you can capture it "in passing" on your next move
-- You cannot move into check
-- The game ends when checkmate or stalemate is reached
+- 白方始終先行
+- 雙方輪流行棋
+- 每個棋子按照標準國際象棋規則移動：
+  - **兵**：向前走一格（首次移動可走兩格），斜向捕獲
+  - **車**：橫向或縱向移動任意格數
+  - **馬**：走 "L" 字形（一個方向走兩格，垂直方向走一格）
+  - **象**：斜向移動任意格數
+  - **后**：橫向、縱向或斜向移動任意格數
+  - **王**：任意方向移動一格
+- **特殊走法**：
+  - **王車易位**：如果王和車都未移動過，它們之間沒有棋子，王未被將軍，且王不會經過或移入被將軍的位置，則可以進行易位
+  - **兵升變**：當兵到達棋盤對面底線（白兵到達第 0 行，黑兵到達第 7 行）時，必須升變為后、車、象或馬
+  - **吃過路兵**：如果對手的兵從起始位置一次走兩格並停在您的兵旁邊，您可以在下一回合「吃過路」捕獲它
+- 不能將自己的王置於被將軍的狀態
+- 當出現將死或逼和時對局結束
 
-## Project Structure
+## 專案結構
 
-- `main.cpp` - Application entry point
-- `qt_chess.h/cpp` - Main window and UI logic
-- `chessboard.h/cpp` - Game board logic and rules
-- `chesspiece.h/cpp` - Chess piece definitions and movement validation
-- `qt_chess.ui` - Qt UI designer file
+- `main.cpp` - 應用程式入口點
+- `qt_chess.h/cpp` - 主視窗和 UI 邏輯
+- `chessboard.h/cpp` - 棋盤邏輯和規則
+- `chesspiece.h/cpp` - 棋子定義和走法驗證
+- `qt_chess.ui` - Qt UI 設計器文件
 
-## License
+## 授權
 
-This is an educational project for learning Qt and game development.
+這是一個用於學習 Qt 和遊戲開發的教育專案。

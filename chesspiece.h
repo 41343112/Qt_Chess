@@ -5,22 +5,25 @@
 #include <QPoint>
 #include <vector>
 
+// 棋子類型枚舉
 enum class PieceType {
-    None,
-    Pawn,
-    Rook,
-    Knight,
-    Bishop,
-    Queen,
-    King
+    None,    // 無
+    Pawn,    // 兵
+    Rook,    // 車
+    Knight,  // 馬
+    Bishop,  // 象
+    Queen,   // 后
+    King     // 王
 };
 
+// 棋子顏色枚舉
 enum class PieceColor {
-    None,
-    White,
-    Black
+    None,   // 無
+    White,  // 白方
+    Black   // 黑方
 };
 
+// 棋子類別 - 表示單個棋子及其移動規則
 class ChessPiece {
 public:
     ChessPiece(PieceType type = PieceType::None, PieceColor color = PieceColor::None);
@@ -32,7 +35,7 @@ public:
     
     QString getSymbol() const;
     
-    // Check if a move to target position is valid (basic piece movement rules)
+    // 檢查移動到目標位置是否有效（基本棋子移動規則）
     bool isValidMove(const QPoint& from, const QPoint& to, 
                      const std::vector<std::vector<ChessPiece>>& board,
                      const QPoint& enPassantTarget = QPoint(-1, -1)) const;

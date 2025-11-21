@@ -5,6 +5,7 @@
 #include <QPoint>
 #include <vector>
 
+// 棋盤類別 - 管理棋盤狀態和遊戲規則
 class ChessBoard {
 public:
     ChessBoard();
@@ -25,14 +26,14 @@ public:
     QPoint findKing(PieceColor color) const;
     QPoint getEnPassantTarget() const { return m_enPassantTarget; }
     
-    // Promotion - returns true if pawn promotion is needed
+    // 升變 - 當兵需要升變時回傳 true
     bool needsPromotion(const QPoint& to) const;
     void promotePawn(const QPoint& pos, PieceType newType);
     
 private:
     std::vector<std::vector<ChessPiece>> m_board;
     PieceColor m_currentPlayer;
-    QPoint m_enPassantTarget; // Position where en passant capture is possible (-1, -1 if none)
+    QPoint m_enPassantTarget; // 可進行吃過路兵捕獲的位置（若無則為 -1, -1）
     
     void switchPlayer();
     bool wouldBeInCheck(const QPoint& from, const QPoint& to, PieceColor color) const;

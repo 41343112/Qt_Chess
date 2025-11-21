@@ -47,7 +47,7 @@ void Qt_Chess::setupUI() {
     QWidget* centralWidget = new QWidget(this);
     QVBoxLayout* mainLayout = new QVBoxLayout(centralWidget);
     
-    // Turn and status labels
+    // 回合和狀態標籤
     m_turnLabel = new QLabel("當前回合：白方", this);
     m_turnLabel->setAlignment(Qt::AlignCenter);
     QFont font = m_turnLabel->font();
@@ -61,7 +61,7 @@ void Qt_Chess::setupUI() {
     m_statusLabel->setFont(font);
     mainLayout->addWidget(m_statusLabel);
     
-    // Chess board
+    // 棋盤
     m_boardWidget = new QWidget(this);
     m_boardWidget->setMouseTracking(true);
     QGridLayout* gridLayout = new QGridLayout(m_boardWidget);
@@ -72,7 +72,7 @@ void Qt_Chess::setupUI() {
     for (int row = 0; row < 8; ++row) {
         for (int col = 0; col < 8; ++col) {
             QPushButton* square = new QPushButton(m_boardWidget);
-            square->setMinimumSize(40, 40);  // Set a reasonable minimum size
+            square->setMinimumSize(40, 40);  // 設置合理的最小尺寸
             square->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
             square->setMouseTracking(true);
             
@@ -83,10 +83,10 @@ void Qt_Chess::setupUI() {
             m_squares[row][col] = square;
             gridLayout->addWidget(square, row, col);
             
-            // Store button coordinates for efficient lookup in eventFilter
+            // 儲存按鈕座標以便在 eventFilter 中高效查找
             m_buttonCoordinates[square] = QPoint(col, row);
             
-            // Install event filter to capture mouse events for drag-and-drop
+            // 安裝事件過濾器以捕獲拖放的滑鼠事件
             square->installEventFilter(this);
             
             connect(square, &QPushButton::clicked, this, [this, row, col]() {
@@ -99,7 +99,7 @@ void Qt_Chess::setupUI() {
     
     mainLayout->addWidget(m_boardWidget, 0, Qt::AlignCenter);
     
-    // New game button
+    // 新遊戲按鈕
     m_newGameButton = new QPushButton("新遊戲", this);
     m_newGameButton->setMinimumHeight(40);
     m_newGameButton->setFont(font);
@@ -126,7 +126,7 @@ void Qt_Chess::updateBoard() {
         }
     }
     
-    // Highlight king in red if in check
+    // 如果王被將軍則以紅色高亮顯示
     applyCheckHighlight();
 }
 
@@ -177,7 +177,7 @@ void Qt_Chess::clearHighlights() {
         }
     }
     
-    // Re-apply red background to king if in check
+    // 如果王在被將軍狀態，重新套用紅色背景
     applyCheckHighlight();
 }
 
@@ -186,12 +186,12 @@ void Qt_Chess::highlightValidMoves() {
     
     if (!m_pieceSelected) return;
     
-    // Highlight selected square
+    // 高亮選中的格子
     m_squares[m_selectedSquare.y()][m_selectedSquare.x()]->setStyleSheet(
         "QPushButton { background-color: #7FC97F; border: 2px solid #00FF00; }"
     );
     
-    // Highlight valid moves
+    // 高亮有效的移動
     for (int row = 0; row < 8; ++row) {
         for (int col = 0; col < 8; ++col) {
             if (m_chessBoard.isValidMove(m_selectedSquare, QPoint(col, row))) {
@@ -204,7 +204,7 @@ void Qt_Chess::highlightValidMoves() {
         }
     }
     
-    // Re-apply red background to king if in check and king is not the selected piece
+    // 如果王在被將軍狀態且王不是選中的棋子，重新套用紅色背景
     applyCheckHighlight(m_selectedSquare);
 }
 
@@ -212,7 +212,7 @@ void Qt_Chess::onSquareClicked(int row, int col) {
     QPoint clickedSquare(col, row);
     
     if (!m_pieceSelected) {
-        // Try to select a piece
+        // 嘗試選擇棋子
         const ChessPiece& piece = m_chessBoard.getPiece(row, col);
         if (piece.getType() != PieceType::None && 
             piece.getColor() == m_chessBoard.getCurrentPlayer()) {
@@ -221,12 +221,12 @@ void Qt_Chess::onSquareClicked(int row, int col) {
             highlightValidMoves();
         }
     } else {
-        // Try to move the selected piece
+        // 嘗試移動選中的棋子
         if (m_chessBoard.movePiece(m_selectedSquare, clickedSquare)) {
             m_pieceSelected = false;
             updateBoard();
             
-            // Check if pawn promotion is needed
+            // 檢查是否需要兵升變
             if (m_chessBoard.needsPromotion(clickedSquare)) {
                 const ChessPiece& piece = m_chessBoard.getPiece(clickedSquare.y(), clickedSquare.x());
                 PieceType promotionType = showPromotionDialog(piece.getColor());
@@ -236,11 +236,11 @@ void Qt_Chess::onSquareClicked(int row, int col) {
             
             updateStatus();
         } else if (clickedSquare == m_selectedSquare) {
-            // Deselect the piece
+            // 取消選擇棋子
             m_pieceSelected = false;
             clearHighlights();
         } else {
-            // Try to select a different piece of the same color
+            // 嘗試選擇相同顏色的另一個棋子
             const ChessPiece& piece = m_chessBoard.getPiece(row, col);
             if (piece.getType() != PieceType::None && 
                 piece.getColor() == m_chessBoard.getCurrentPlayer()) {
@@ -274,7 +274,7 @@ PieceType Qt_Chess::showPromotionDialog(PieceColor color) {
     
     QHBoxLayout* buttonLayout = new QHBoxLayout();
     
-    // Create buttons for each promotion option
+    // 為每個升變選項建立按鈕
     struct PromotionOption {
         PieceType type;
         QString symbol;
@@ -287,7 +287,7 @@ PieceType Qt_Chess::showPromotionDialog(PieceColor color) {
         {PieceType::Knight, color == PieceColor::White ? "♘" : "♞"}
     };
     
-    PieceType selectedType = PieceType::Queen; // Default to Queen
+    PieceType selectedType = PieceType::Queen; // 預設為后
     
     for (const auto& option : options) {
         QPushButton* button = new QPushButton(option.symbol, &dialog);
@@ -335,29 +335,29 @@ void Qt_Chess::restorePieceToSquare(const QPoint& square) {
 }
 
 bool Qt_Chess::eventFilter(QObject *obj, QEvent *event) {
-    // Check if the event is from one of our chess square buttons
+    // 檢查事件是否來自我們的棋盤格按鈕
     QPushButton* button = qobject_cast<QPushButton*>(obj);
     if (!button) {
         return QMainWindow::eventFilter(obj, event);
     }
     
-    // Check if this button is one of our chess squares using efficient map lookup
+    // 使用高效的映射查找檢查此按鈕是否為我們的棋盤格之一
     if (!m_buttonCoordinates.contains(button)) {
         return QMainWindow::eventFilter(obj, event);
     }
     
-    // Forward mouse events to enable drag-and-drop
+    // 轉發滑鼠事件以啟用拖放功能
     if (event->type() == QEvent::MouseButtonPress) {
         QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
-        // Map the button's position to the main window's coordinate system
+        // 將按鈕的位置映射到主視窗的座標系統
         QPoint globalPos = button->mapToGlobal(mouseEvent->pos());
         QPoint windowPos = mapFromGlobal(globalPos);
         QMouseEvent mappedEvent(mouseEvent->type(), windowPos, mouseEvent->button(), 
                                mouseEvent->buttons(), mouseEvent->modifiers());
         mousePressEvent(&mappedEvent);
-        // Don't accept the event completely - let the button still handle clicks if no drag started
+        // 不完全接受事件 - 如果沒有開始拖動，讓按鈕仍然處理點擊
         if (m_isDragging) {
-            return true; // Event handled, start dragging
+            return true; // 事件已處理，開始拖動
         }
     } else if (event->type() == QEvent::MouseMove) {
         if (m_isDragging) {
@@ -367,7 +367,7 @@ bool Qt_Chess::eventFilter(QObject *obj, QEvent *event) {
             QMouseEvent mappedEvent(mouseEvent->type(), windowPos, mouseEvent->button(), 
                                    mouseEvent->buttons(), mouseEvent->modifiers());
             mouseMoveEvent(&mappedEvent);
-            return true; // Event handled
+            return true; // 事件已處理
         }
     } else if (event->type() == QEvent::MouseButtonRelease) {
         if (m_isDragging) {
@@ -377,40 +377,40 @@ bool Qt_Chess::eventFilter(QObject *obj, QEvent *event) {
             QMouseEvent mappedEvent(mouseEvent->type(), windowPos, mouseEvent->button(), 
                                    mouseEvent->buttons(), mouseEvent->modifiers());
             mouseReleaseEvent(&mappedEvent);
-            return true; // Event handled
+            return true; // 事件已處理
         }
     }
     
-    // Pass the event to the parent class for standard processing
+    // 將事件傳遞給父類別進行標準處理
     return QMainWindow::eventFilter(obj, event);
 }
 
 void Qt_Chess::mousePressEvent(QMouseEvent *event) {
     QPoint square = getSquareAtPosition(event->pos());
     
-    // Right click - cancel any current action
+    // 右鍵點擊 - 取消當前動作
     if (event->button() == Qt::RightButton) {
         if (m_isDragging) {
-            // Cancel drag and return piece to original position
+            // 取消拖動並將棋子歸位
             m_isDragging = false;
             if (m_dragLabel) {
                 m_dragLabel->hide();
                 m_dragLabel->deleteLater();
                 m_dragLabel = nullptr;
             }
-            // Restore the piece to the original square
+            // 將棋子恢復到原始格子
             restorePieceToSquare(m_dragStartSquare);
             m_dragStartSquare = QPoint(-1, -1);
             clearHighlights();
         } else if (m_pieceSelected) {
-            // Deselect piece if one is selected
+            // 如果已選中棋子，取消選擇
             m_pieceSelected = false;
             clearHighlights();
         }
         return;
     }
     
-    // Left click - start drag
+    // 左鍵點擊 - 開始拖動
     if (event->button() == Qt::LeftButton && square.x() >= 0 && square.y() >= 0 && 
         square.x() < 8 && square.y() < 8) {
         const ChessPiece& piece = m_chessBoard.getPiece(square.y(), square.x());
@@ -422,7 +422,7 @@ void Qt_Chess::mousePressEvent(QMouseEvent *event) {
             m_selectedSquare = square;
             m_pieceSelected = true;
             
-            // Create drag label
+            // 建立拖動標籤
             m_dragLabel = new QLabel(this);
             m_dragLabel->setText(piece.getSymbol());
             QFont font;
@@ -434,7 +434,7 @@ void Qt_Chess::mousePressEvent(QMouseEvent *event) {
             m_dragLabel->show();
             m_dragLabel->raise();
             
-            // Hide the piece from the original square during drag
+            // 拖動期間從原始格子隱藏棋子
             m_squares[square.y()][square.x()]->setText("");
             
             highlightValidMoves();
@@ -453,17 +453,17 @@ void Qt_Chess::mouseMoveEvent(QMouseEvent *event) {
 }
 
 void Qt_Chess::mouseReleaseEvent(QMouseEvent *event) {
-    // Right click - already handled in mousePressEvent
+    // 右鍵點擊 - 已在 mousePressEvent 中處理
     if (event->button() == Qt::RightButton) {
         QMainWindow::mouseReleaseEvent(event);
         return;
     }
     
-    // Left click release - complete drag
+    // 左鍵釋放 - 完成拖動
     if (event->button() == Qt::LeftButton && m_isDragging) {
         QPoint dropSquare = getSquareAtPosition(event->pos());
         
-        // Clean up drag label
+        // 清理拖動標籤
         if (m_dragLabel) {
             m_dragLabel->hide();
             m_dragLabel->deleteLater();
@@ -473,12 +473,12 @@ void Qt_Chess::mouseReleaseEvent(QMouseEvent *event) {
         m_isDragging = false;
         
         if (dropSquare.x() >= 0 && dropSquare.y() >= 0) {
-            // Try to move the piece
+            // 嘗試移動棋子
             if (m_chessBoard.movePiece(m_dragStartSquare, dropSquare)) {
                 m_pieceSelected = false;
                 updateBoard();
                 
-                // Check if pawn promotion is needed
+                // 檢查是否需要兵升變
                 if (m_chessBoard.needsPromotion(dropSquare)) {
                     const ChessPiece& piece = m_chessBoard.getPiece(dropSquare.y(), dropSquare.x());
                     PieceType promotionType = showPromotionDialog(piece.getColor());
@@ -489,32 +489,32 @@ void Qt_Chess::mouseReleaseEvent(QMouseEvent *event) {
                 updateStatus();
                 clearHighlights();
             } else if (dropSquare == m_dragStartSquare) {
-                // Dropped on same square - deselect
-                // Restore the piece to the original square
+                // 放在同一格上 - 取消選擇
+                // 將棋子恢復到原始格子
                 restorePieceToSquare(m_dragStartSquare);
                 m_pieceSelected = false;
                 clearHighlights();
             } else {
-                // Invalid move - try to select a different piece
+                // 無效移動 - 嘗試選擇另一個棋子
                 const ChessPiece& piece = m_chessBoard.getPiece(dropSquare.y(), dropSquare.x());
                 if (piece.getType() != PieceType::None && 
                     piece.getColor() == m_chessBoard.getCurrentPlayer()) {
-                    // Restore the piece to the original square first
+                    // 先將棋子恢復到原始格子
                     restorePieceToSquare(m_dragStartSquare);
                     m_selectedSquare = dropSquare;
                     m_pieceSelected = true;
                     highlightValidMoves();
                 } else {
-                    // Invalid move and not selecting another piece
-                    // Restore the piece to the original square
+                    // 無效移動且沒有選擇另一個棋子
+                    // 將棋子恢復到原始格子
                     restorePieceToSquare(m_dragStartSquare);
                     m_pieceSelected = false;
                     clearHighlights();
                 }
             }
         } else {
-            // Dropped outside board - cancel
-            // Restore the piece to the original square
+            // 放在棋盤外 - 取消
+            // 將棋子恢復到原始格子
             restorePieceToSquare(m_dragStartSquare);
             m_pieceSelected = false;
             clearHighlights();
@@ -534,36 +534,36 @@ void Qt_Chess::resizeEvent(QResizeEvent *event) {
 void Qt_Chess::updateSquareSizes() {
     if (!m_boardWidget || m_squares.empty()) return;
     
-    // Get the central widget
+    // 取得中央小工具
     QWidget* central = centralWidget();
     if (!central) return;
     
-    // Calculate available space for the board
-    // Account for the turn label, status label, and new game button
+    // 計算棋盤的可用空間
+    // 考慮回合標籤、狀態標籤和新遊戲按鈕
     int reservedHeight = 0;
     if (m_turnLabel) reservedHeight += m_turnLabel->sizeHint().height();
     if (m_statusLabel) reservedHeight += m_statusLabel->sizeHint().height();
     if (m_newGameButton) reservedHeight += m_newGameButton->minimumHeight();
     
-    // Add some padding for layout margins and spacing (estimate ~50px)
+    // 為佈局邊距和間距添加一些填充（估計約 50px）
     reservedHeight += 50;
     
     int availableWidth = central->width();
     int availableHeight = central->height() - reservedHeight;
     
-    // Calculate the size for each square (use the smaller dimension to keep squares square)
+    // 計算每個格子的大小（使用較小的維度以保持格子為正方形）
     int squareSize = qMin(availableWidth, availableHeight) / 8;
     
-    // Ensure minimum and reasonable maximum size
+    // 確保最小和合理的最大尺寸
     squareSize = qMax(squareSize, 40);
-    squareSize = qMin(squareSize, 120);  // Cap at a reasonable maximum
+    squareSize = qMin(squareSize, 120);  // 限制在合理的最大值
     
-    // Calculate font size based on square size (approximately 45% of square size)
-    int fontSize = squareSize * 9 / 20;  // This gives roughly 36pt for 80px squares
-    fontSize = qMax(fontSize, 12);  // Ensure minimum readable font size
-    fontSize = qMin(fontSize, 54);  // Cap font size for very large boards
+    // 根據格子大小計算字體大小（約為格子大小的 45%）
+    int fontSize = squareSize * 9 / 20;  // 對於 80px 的格子約為 36pt
+    fontSize = qMax(fontSize, 12);  // 確保最小可讀字體大小
+    fontSize = qMin(fontSize, 54);  // 限制非常大棋盤的字體大小
     
-    // Update all squares
+    // 更新所有格子
     for (int row = 0; row < 8; ++row) {
         for (int col = 0; col < 8; ++col) {
             QPushButton* square = m_squares[row][col];
@@ -575,6 +575,6 @@ void Qt_Chess::updateSquareSizes() {
         }
     }
     
-    // Update the board widget size to fit the squares exactly
+    // 更新棋盤小工具的大小以精確適應格子
     m_boardWidget->setFixedSize(squareSize * 8, squareSize * 8);
 }
