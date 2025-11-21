@@ -633,21 +633,32 @@ void Qt_Chess::loadSoundSettings() {
     m_soundSettings.allSoundsEnabled = settings.value("allSoundsEnabled", defaults.allSoundsEnabled).toBool();
 }
 
+void Qt_Chess::setSoundSource(QSoundEffect& sound, const QString& path) {
+    // Helper function to set sound source with proper URL handling
+    // - For Qt resource paths (qrc:), use QUrl constructor directly
+    // - For local file paths, use QUrl::fromLocalFile for proper conversion
+    if (path.startsWith("qrc:")) {
+        sound.setSource(QUrl(path));
+    } else {
+        sound.setSource(QUrl::fromLocalFile(path));
+    }
+}
+
 void Qt_Chess::applySoundSettings() {
     // Initialize sound effects with settings
-    m_moveSound.setSource(QUrl(m_soundSettings.moveSound));
+    setSoundSource(m_moveSound, m_soundSettings.moveSound);
     m_moveSound.setVolume(m_soundSettings.moveVolume);
     
-    m_captureSound.setSource(QUrl(m_soundSettings.captureSound));
+    setSoundSource(m_captureSound, m_soundSettings.captureSound);
     m_captureSound.setVolume(m_soundSettings.captureVolume);
     
-    m_castlingSound.setSource(QUrl(m_soundSettings.castlingSound));
+    setSoundSource(m_castlingSound, m_soundSettings.castlingSound);
     m_castlingSound.setVolume(m_soundSettings.castlingVolume);
     
-    m_checkSound.setSource(QUrl(m_soundSettings.checkSound));
+    setSoundSource(m_checkSound, m_soundSettings.checkSound);
     m_checkSound.setVolume(m_soundSettings.checkVolume);
     
-    m_checkmateSound.setSource(QUrl(m_soundSettings.checkmateSound));
+    setSoundSource(m_checkmateSound, m_soundSettings.checkmateSound);
     m_checkmateSound.setVolume(m_soundSettings.checkmateVolume);
 }
 
