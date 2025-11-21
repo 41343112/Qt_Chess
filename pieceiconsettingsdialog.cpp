@@ -12,6 +12,8 @@
 #include <QButtonGroup>
 #include <QFrame>
 #include <QSlider>
+#include <QEvent>
+#include <QMouseEvent>
 
 PieceIconSettingsDialog::PieceIconSettingsDialog(QWidget *parent)
     : QDialog(parent)
@@ -691,6 +693,14 @@ QWidget* PieceIconSettingsDialog::createIconSetPreviewWidget(IconSetType setType
     m_iconSetButtonGroup->addButton(radioButton, static_cast<int>(setType));
     frameLayout->addWidget(radioButton);
     
+    // Store the radio button pointer in the frame and widget for the event filter
+    frame->setProperty("radioButton", QVariant::fromValue(radioButton));
+    widget->setProperty("radioButton", QVariant::fromValue(radioButton));
+    
+    // Install event filter to make the entire frame clickable
+    frame->installEventFilter(this);
+    widget->installEventFilter(this);
+    
     // Preview images layout
     QHBoxLayout* previewLayout = new QHBoxLayout();
     previewLayout->setSpacing(5);
@@ -700,6 +710,8 @@ QWidget* PieceIconSettingsDialog::createIconSetPreviewWidget(IconSetType setType
         QLabel* unicodeLabel = new QLabel("♔ ♕ ♖ ♗ ♘ ♙", frame);
         unicodeLabel->setStyleSheet("QLabel { font-size: 36pt; }");
         unicodeLabel->setAlignment(Qt::AlignCenter);
+        unicodeLabel->setProperty("radioButton", QVariant::fromValue(radioButton));
+        unicodeLabel->installEventFilter(this);
         previewLayout->addWidget(unicodeLabel);
     } else if (setType == IconSetType::Custom) {
         // Show text description for custom
@@ -707,6 +719,8 @@ QWidget* PieceIconSettingsDialog::createIconSetPreviewWidget(IconSetType setType
         customLabel->setStyleSheet("QLabel { font-size: 10pt; color: #666; }");
         customLabel->setAlignment(Qt::AlignCenter);
         customLabel->setWordWrap(true);
+        customLabel->setProperty("radioButton", QVariant::fromValue(radioButton));
+        customLabel->installEventFilter(this);
         previewLayout->addWidget(customLabel);
     } else {
         // Show preset icon previews
@@ -733,6 +747,8 @@ QWidget* PieceIconSettingsDialog::createIconSetPreviewWidget(IconSetType setType
             }
             iconLabel->setAlignment(Qt::AlignCenter);
             iconLabel->setFixedSize(50, 50);
+            iconLabel->setProperty("radioButton", QVariant::fromValue(radioButton));
+            iconLabel->installEventFilter(this);
             previewLayout->addWidget(iconLabel);
         }
     }
@@ -763,4 +779,31 @@ void PieceIconSettingsDialog::onIconSetButtonClicked(int id)
     }
     
     updateCustomIconsControls();
+}
+
+bool PieceIconSettingsDialog::eventFilter(QObject *obj, QEvent *event)
+{
+    // Check if this is a mouse button press event
+    if (event->type() == QEvent::MouseButtonPress) {
+        QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+        
+        // Only handle left button clicks
+        if (mouseEvent->button() == Qt::LeftButton) {
+            // Check if the object has a "radioButton" property that we set
+            QVariant radioButtonVariant = obj->property("radioButton");
+            if (radioButtonVariant.isValid()) {
+                QRadioButton* radioButton = qvariant_cast<QRadioButton*>(radioButtonVariant);
+                if (radioButton) {
+                    // Trigger the radio button
+                    radioButton->setChecked(true);
+                    // Emit the signal manually to ensure the button group slot is called
+                    m_iconSetButtonGroup->button(m_iconSetButtonGroup->id(radioButton))->click();
+                    return true;  // Event handled
+                }
+            }
+        }
+    }
+    
+    // Call base class implementation for other events
+    return QDialog::eventFilter(obj, event);
 }
