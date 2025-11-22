@@ -1301,7 +1301,7 @@ void Qt_Chess::setupTimeControlUI(QVBoxLayout* rightPanelLayout) {
 }
 
 void Qt_Chess::onTimeLimitChanged(int value) {
-    if (!m_timeLimitSlider) return;
+    if (!m_timeLimitSlider || !m_timeLimitLabel) return;
     
     if (value == 0) {
         // Unlimited time
@@ -1343,6 +1343,8 @@ void Qt_Chess::onTimeLimitChanged(int value) {
 }
 
 void Qt_Chess::updateTimeDisplays() {
+    if (!m_whiteTimeLabel || !m_blackTimeLabel) return;
+    
     if (!m_timeControlEnabled) {
         m_whiteTimeLabel->setText("--:--");
         m_blackTimeLabel->setText("--:--");
