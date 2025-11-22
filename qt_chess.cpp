@@ -501,7 +501,7 @@ void Qt_Chess::onStartButtonClicked() {
             m_timeControlPanel->hide();
         }
         
-        // Show time displays above and below the board
+        // Show time displays on left and right sides of the board
         if (m_whiteTimeLabel && m_blackTimeLabel) {
             m_whiteTimeLabel->show();
             m_blackTimeLabel->show();
@@ -976,6 +976,11 @@ void Qt_Chess::updateSquareSizes() {
         int timeLabelHeight = qMax(MIN_TIME_LABEL_HEIGHT, qMin(MAX_TIME_LABEL_HEIGHT, squareSize / 2));
         m_whiteTimeLabel->setMinimumHeight(timeLabelHeight);
         m_blackTimeLabel->setMinimumHeight(timeLabelHeight);
+        
+        // Set minimum width for horizontal positioning (ensure time text fits)
+        int timeLabelWidth = qMax(100, squareSize);  // At least 100px or square size
+        m_whiteTimeLabel->setMinimumWidth(timeLabelWidth);
+        m_blackTimeLabel->setMinimumWidth(timeLabelWidth);
     }
     
     // Update new game button font size to scale with board
