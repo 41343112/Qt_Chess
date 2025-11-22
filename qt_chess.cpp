@@ -123,7 +123,7 @@ void Qt_Chess::setupUI() {
     QVBoxLayout* leftPanelLayout = new QVBoxLayout(m_timeControlPanel);
     leftPanelLayout->setContentsMargins(0, 0, 0, 0);
     setupTimeControlUI(leftPanelLayout);
-    contentLayout->addWidget(m_timeControlPanel, 1);  // Less space for control panel
+    contentLayout->addWidget(m_timeControlPanel, 0);  // Fixed size - no stretch
     
     // Chess board container with time displays on left and right
     m_boardContainer = new QWidget(this);
