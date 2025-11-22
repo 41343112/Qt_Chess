@@ -466,7 +466,7 @@ void Qt_Chess::onNewGameClicked() {
     // Check if time control is enabled
     m_timeControlEnabled = (m_whiteTimeMs > 0 || m_blackTimeMs > 0);
     
-    // Always enable start button for new games
+    // Enable start button after board reset
     if (m_startButton) {
         m_startButton->setEnabled(true);
         m_startButton->setText("開始");
