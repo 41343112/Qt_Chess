@@ -241,35 +241,14 @@ void Qt_Chess::updateStatus() {
     QString playerName = (currentPlayer == PieceColor::White) ? "白方" : "黑方";
     
     if (m_chessBoard.isCheckmate(currentPlayer)) {
-        // Stop timer when game ends
-        stopTimer();
-        m_timerStarted = false;
-        if (m_startButton) {
-            m_startButton->setText("遊戲結束");
-            m_startButton->setEnabled(false);
-        }
-        
+        handleGameEnd();
         QString winner = (currentPlayer == PieceColor::White) ? "黑方" : "白方";
         QMessageBox::information(this, "遊戲結束", QString("將死！%1獲勝！").arg(winner));
     } else if (m_chessBoard.isStalemate(currentPlayer)) {
-        // Stop timer when game ends
-        stopTimer();
-        m_timerStarted = false;
-        if (m_startButton) {
-            m_startButton->setText("遊戲結束");
-            m_startButton->setEnabled(false);
-        }
-        
+        handleGameEnd();
         QMessageBox::information(this, "遊戲結束", "逼和！對局和棋。");
     } else if (m_chessBoard.isInsufficientMaterial()) {
-        // Stop timer when game ends
-        stopTimer();
-        m_timerStarted = false;
-        if (m_startButton) {
-            m_startButton->setText("遊戲結束");
-            m_startButton->setEnabled(false);
-        }
-        
+        handleGameEnd();
         QMessageBox::information(this, "遊戲結束", "子力不足以將死！對局和棋。");
     }
 }
@@ -1616,6 +1595,16 @@ void Qt_Chess::applyIncrement() {
         m_whiteTimeMs += m_incrementMs;
     } else {
         m_blackTimeMs += m_incrementMs;
+    }
+}
+
+void Qt_Chess::handleGameEnd() {
+    // Stop timer when game ends
+    stopTimer();
+    m_timerStarted = false;
+    if (m_startButton) {
+        m_startButton->setText("遊戲結束");
+        m_startButton->setEnabled(false);
     }
 }
 
