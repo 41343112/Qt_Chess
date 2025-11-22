@@ -146,10 +146,13 @@ void Qt_Chess::setupMenuBar() {
     settingsMenu->addAction(flipBoardAction);
 }
 
-void Qt_Chess::updateSquareColor(int row, int col) {
-    bool isLight = (row + col) % 2 == 0;
+void Qt_Chess::updateSquareColor(int displayRow, int displayCol) {
+    // Calculate logical coordinates to determine the correct light/dark pattern
+    int logicalRow = getLogicalRow(displayRow);
+    int logicalCol = getLogicalCol(displayCol);
+    bool isLight = (logicalRow + logicalCol) % 2 == 0;
     QColor color = isLight ? m_boardColorSettings.lightSquareColor : m_boardColorSettings.darkSquareColor;
-    m_squares[row][col]->setStyleSheet(
+    m_squares[displayRow][displayCol]->setStyleSheet(
         QString("QPushButton { background-color: %1; border: 1px solid #333; }").arg(color.name())
     );
 }
@@ -232,7 +235,8 @@ void Qt_Chess::highlightValidMoves() {
                 bool isCapture = isCaptureMove(m_selectedSquare, targetSquare);
                 int displayRow = getDisplayRow(logicalRow);
                 int displayCol = getDisplayCol(logicalCol);
-                bool isLight = (displayRow + displayCol) % 2 == 0;
+                // Use logical coordinates to determine light/dark square
+                bool isLight = (logicalRow + logicalCol) % 2 == 0;
                 
                 if (isCapture) {
                     // Highlight capture moves in red
