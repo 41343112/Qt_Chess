@@ -46,6 +46,7 @@ protected:
 private slots:
     void onSquareClicked(int row, int col);
     void onNewGameClicked();
+    void onGiveUpClicked();
     void onSoundSettingsClicked();
     void onPieceIconSettingsClicked();
     void onBoardColorSettingsClicked();
@@ -67,8 +68,10 @@ private:
     bool m_wasSelectedBeforeDrag;
     
     QPushButton* m_newGameButton;
+    QPushButton* m_giveUpButton;
     QWidget* m_boardWidget;
     QMenuBar* m_menuBar;
+    bool m_gameStarted;  // Track if game has started
     
     // Sound effects
     QSoundEffect m_moveSound;
