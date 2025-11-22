@@ -63,6 +63,7 @@ private:
     
     QPushButton* m_newGameButton;
     QWidget* m_boardWidget;
+    QWidget* m_timeControl;  // Time control panel widget displayed alongside the board
     QMenuBar* m_menuBar;
     
     // Sound effects

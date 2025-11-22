@@ -32,6 +32,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_dragLabel(nullptr)
     , m_wasSelectedBeforeDrag(false)
     , m_boardWidget(nullptr)
+    , m_timeControl(nullptr)
     , m_menuBar(nullptr)
     , m_isBoardFlipped(false)
 {
@@ -65,8 +66,14 @@ void Qt_Chess::setupUI() {
     QWidget* centralWidget = new QWidget(this);
     QVBoxLayout* mainLayout = new QVBoxLayout(centralWidget);
     
+    // Create center area widget to hold board and time control side-by-side
+    QWidget* centerWidget = new QWidget(this);
+    QHBoxLayout* centerLayout = new QHBoxLayout(centerWidget);
+    centerLayout->setSpacing(10);  // Space between board and time control
+    centerLayout->setContentsMargins(0, 0, 0, 0);
+    
     // Chess board
-    m_boardWidget = new QWidget(this);
+    m_boardWidget = new QWidget(centerWidget);
     m_boardWidget->setMouseTracking(true);
     QGridLayout* gridLayout = new QGridLayout(m_boardWidget);
     gridLayout->setSpacing(0);
@@ -102,7 +109,33 @@ void Qt_Chess::setupUI() {
         }
     }
     
-    mainLayout->addWidget(m_boardWidget, 0, Qt::AlignCenter);
+    // Add board to center layout
+    centerLayout->addWidget(m_boardWidget, 0, Qt::AlignCenter);
+    
+    // Create time control panel with vertical layout
+    m_timeControl = new QWidget(centerWidget);
+    QVBoxLayout* timeControlLayout = new QVBoxLayout(m_timeControl);
+    timeControlLayout->setContentsMargins(5, 5, 5, 5);
+    
+    // Set minimum width and size policy for time control
+    m_timeControl->setMinimumWidth(200);
+    m_timeControl->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+    
+    // Placeholder label for time control (to be populated with actual time controls later)
+    QLabel* timeControlLabel = new QLabel("Time Control", m_timeControl);
+    timeControlLabel->setAlignment(Qt::AlignCenter);
+    QFont labelFont;
+    labelFont.setPointSize(12);
+    labelFont.setBold(true);
+    timeControlLabel->setFont(labelFont);
+    timeControlLayout->addWidget(timeControlLabel);
+    timeControlLayout->addStretch();
+    
+    // Add time control to center layout (on the right side of the board)
+    centerLayout->addWidget(m_timeControl);
+    
+    // Add center area to main layout
+    mainLayout->addWidget(centerWidget, 0, Qt::AlignCenter);
     
     // New game button
     m_newGameButton = new QPushButton("新遊戲", this);
@@ -692,6 +725,18 @@ void Qt_Chess::updateSquareSizes() {
     reservedHeight += 50;
     
     int availableWidth = central->width();
+    
+    // Subtract time control width from available width when visible
+    // This ensures the board squares are sized based on the remaining space
+    int sidePanelWidth = 0;
+    if (m_timeControl && m_timeControl->isVisible()) {
+        sidePanelWidth = m_timeControl->width();
+    }
+    availableWidth -= sidePanelWidth;
+    
+    // Clamp availableWidth to be non-negative
+    availableWidth = qMax(availableWidth, 0);
+    
     int availableHeight = central->height() - reservedHeight;
     
     // Calculate the size for each square (use the smaller dimension to keep squares square)
