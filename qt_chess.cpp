@@ -1089,12 +1089,12 @@ void Qt_Chess::applyBoardColorSettings() {
 }
 
 void Qt_Chess::loadBoardFlipSettings() {
-    QSettings settings("QtChess", "ChessGame");
+    QSettings settings("Qt_Chess", "ChessGame");
     m_isBoardFlipped = settings.value("boardFlipped", false).toBool();
 }
 
 void Qt_Chess::saveBoardFlipSettings() {
-    QSettings settings("QtChess", "ChessGame");
+    QSettings settings("Qt_Chess", "ChessGame");
     settings.setValue("boardFlipped", m_isBoardFlipped);
 }
 
