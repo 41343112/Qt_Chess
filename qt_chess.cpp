@@ -95,7 +95,7 @@ void Qt_Chess::setupUI() {
     // Create horizontal layout for time controls and board
     QHBoxLayout* contentLayout = new QHBoxLayout();
     
-    // Left panel for time controls (wrapped in a widget for easy show/hide)
+    // Left panel for time controls
     m_timeControlPanel = new QWidget(this);
     m_timeControlPanel->setMaximumWidth(300);  // Limit panel width
     QVBoxLayout* leftPanelLayout = new QVBoxLayout(m_timeControlPanel);
