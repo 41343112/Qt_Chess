@@ -31,11 +31,11 @@ namespace {
     
     // Layout constants for window sizing
     const int LEFT_PANEL_MAX_WIDTH = 200;  // Maximum width of new game button panel
-    const int RIGHT_PANEL_MAX_WIDTH = 300; // Maximum width of time control panel
-    const int PANEL_SPACING = 20;          // Spacing between panels
-    const int BASE_MARGINS = 30;           // Base layout margins (excluding board container's 2*BOARD_CONTAINER_MARGIN)
+    const int RIGHT_PANEL_MAX_WIDTH = 600; // Maximum width of time control panel
+    const int PANEL_SPACING = 0;          // Spacing between panels
+    const int BASE_MARGINS = 0;           // Base layout margins (excluding board container's 2*BOARD_CONTAINER_MARGIN)
     const int TIME_LABEL_SPACING = 10;     // Spacing around time labels
-    const int BOARD_CONTAINER_MARGIN = 5;  // Board container margin on each side (total horizontal: 2*5=10px)
+    const int BOARD_CONTAINER_MARGIN = 0;  // Board container margin on each side (total horizontal: 2*5=10px)
     
     // Scaling constants for UI elements
     const int MIN_SQUARE_SIZE = 30;        // Minimum size for chess board squares
@@ -45,7 +45,7 @@ namespace {
     const int UI_FONT_SCALE_DIVISOR = 5;   // Divisor for scaling UI fonts based on square size
     const int MIN_TIME_LABEL_HEIGHT = 30;  // Minimum height for time labels
     const int MAX_TIME_LABEL_HEIGHT = 50;  // Maximum height for time labels
-    const int MIN_TIME_LABEL_WIDTH = 100;  // Minimum width for time labels (horizontal positioning)
+    const int MIN_TIME_LABEL_WIDTH = 0;  // Minimum width for time labels (horizontal positioning)
 }
 
 Qt_Chess::Qt_Chess(QWidget *parent)
@@ -87,7 +87,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     //              RIGHT_PANEL_MAX_WIDTH (300) + 2*PANEL_SPACING (40) + BASE_MARGINS (30) + 
     //              board container margins (2*BOARD_CONTAINER_MARGIN=10) = 824
     // Height: board (244) + time labels (~80) + spacing (~60) = ~384, using 420 for comfortable sizing
-    setMinimumSize(824, 420);
+    setMinimumSize(900, 660);
     
     setMouseTracking(true);
     
