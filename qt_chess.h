@@ -17,6 +17,7 @@
 #include "soundsettingsdialog.h"
 #include "pieceiconsettingsdialog.h"
 #include "boardcolorsettingsdialog.h"
+#include "aspectratiowidget.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -64,6 +65,8 @@ private:
     QPushButton* m_newGameButton;
     QWidget* m_boardWidget;
     QMenuBar* m_menuBar;
+    QWidget* m_leftPanel;
+    AspectRatioWidget* m_boardContainer;
     
     // Sound effects
     QSoundEffect m_moveSound;

@@ -15,7 +15,8 @@ SOURCES += \
     chessboard.cpp \
     soundsettingsdialog.cpp \
     pieceiconsettingsdialog.cpp \
-    boardcolorsettingsdialog.cpp
+    boardcolorsettingsdialog.cpp \
+    aspectratiowidget.cpp
 
 HEADERS += \
     qt_chess.h \
@@ -23,7 +24,8 @@ HEADERS += \
     chessboard.h \
     soundsettingsdialog.h \
     pieceiconsettingsdialog.h \
-    boardcolorsettingsdialog.h
+    boardcolorsettingsdialog.h \
+    aspectratiowidget.h
 
 FORMS += \
     qt_chess.ui

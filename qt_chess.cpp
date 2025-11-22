@@ -33,6 +33,8 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_wasSelectedBeforeDrag(false)
     , m_boardWidget(nullptr)
     , m_menuBar(nullptr)
+    , m_leftPanel(nullptr)
+    , m_boardContainer(nullptr)
     , m_isBoardFlipped(false)
 {
     ui->setupUi(this);
@@ -63,7 +65,55 @@ Qt_Chess::~Qt_Chess()
 
 void Qt_Chess::setupUI() {
     QWidget* centralWidget = new QWidget(this);
-    QVBoxLayout* mainLayout = new QVBoxLayout(centralWidget);
+    QHBoxLayout* mainLayout = new QHBoxLayout(centralWidget);
+    mainLayout->setContentsMargins(8, 8, 8, 8);
+    mainLayout->setSpacing(12);
+    
+    // Left panel for time controls and game info
+    m_leftPanel = new QWidget(this);
+    m_leftPanel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    m_leftPanel->setMinimumWidth(80);
+    m_leftPanel->setMaximumWidth(200);
+    
+    QVBoxLayout* leftLayout = new QVBoxLayout(m_leftPanel);
+    leftLayout->setContentsMargins(8, 8, 8, 8);
+    leftLayout->setSpacing(12);
+    
+    // Add time control labels (placeholder for now)
+    QLabel* whiteTimeLabel = new QLabel("白方時間", m_leftPanel);
+    QLabel* whiteTimeValue = new QLabel("--:--", m_leftPanel);
+    QLabel* blackTimeLabel = new QLabel("黑方時間", m_leftPanel);
+    QLabel* blackTimeValue = new QLabel("--:--", m_leftPanel);
+    
+    QFont timeFont;
+    timeFont.setPointSize(12);
+    timeFont.setBold(true);
+    whiteTimeLabel->setFont(timeFont);
+    whiteTimeValue->setFont(timeFont);
+    blackTimeLabel->setFont(timeFont);
+    blackTimeValue->setFont(timeFont);
+    
+    whiteTimeLabel->setAlignment(Qt::AlignCenter);
+    whiteTimeValue->setAlignment(Qt::AlignCenter);
+    blackTimeLabel->setAlignment(Qt::AlignCenter);
+    blackTimeValue->setAlignment(Qt::AlignCenter);
+    
+    leftLayout->addWidget(whiteTimeLabel);
+    leftLayout->addWidget(whiteTimeValue);
+    leftLayout->addSpacing(20);
+    leftLayout->addWidget(blackTimeLabel);
+    leftLayout->addWidget(blackTimeValue);
+    leftLayout->addStretch();
+    
+    // New game button in left panel
+    m_newGameButton = new QPushButton("新遊戲", m_leftPanel);
+    m_newGameButton->setMinimumHeight(40);
+    QFont buttonFont;
+    buttonFont.setPointSize(14);
+    buttonFont.setBold(true);
+    m_newGameButton->setFont(buttonFont);
+    connect(m_newGameButton, &QPushButton::clicked, this, &Qt_Chess::onNewGameClicked);
+    leftLayout->addWidget(m_newGameButton);
     
     // Chess board
     m_boardWidget = new QWidget(this);
@@ -102,17 +152,12 @@ void Qt_Chess::setupUI() {
         }
     }
     
-    mainLayout->addWidget(m_boardWidget, 0, Qt::AlignCenter);
+    // Wrap board in AspectRatioWidget to maintain square shape
+    m_boardContainer = new AspectRatioWidget(m_boardWidget, this);
     
-    // New game button
-    m_newGameButton = new QPushButton("新遊戲", this);
-    m_newGameButton->setMinimumHeight(40);
-    QFont buttonFont;
-    buttonFont.setPointSize(14);
-    buttonFont.setBold(true);
-    m_newGameButton->setFont(buttonFont);
-    connect(m_newGameButton, &QPushButton::clicked, this, &Qt_Chess::onNewGameClicked);
-    mainLayout->addWidget(m_newGameButton);
+    // Add widgets to main horizontal layout
+    mainLayout->addWidget(m_leftPanel);
+    mainLayout->addWidget(m_boardContainer, 1);  // stretch=1 to take remaining space
     
     setCentralWidget(centralWidget);
 }
@@ -677,25 +722,15 @@ void Qt_Chess::resizeEvent(QResizeEvent *event) {
 }
 
 void Qt_Chess::updateSquareSizes() {
-    if (!m_boardWidget || m_squares.empty()) return;
+    if (!m_boardWidget || m_squares.empty() || !m_boardContainer) return;
     
-    // Get the central widget
-    QWidget* central = centralWidget();
-    if (!central) return;
-    
-    // Calculate available space for the board
-    // Account for the new game button
-    int reservedHeight = 0;
-    if (m_newGameButton) reservedHeight += m_newGameButton->minimumHeight();
-    
-    // Add some padding for layout margins and spacing (estimate ~50px)
-    reservedHeight += 50;
-    
-    int availableWidth = central->width();
-    int availableHeight = central->height() - reservedHeight;
+    // The AspectRatioWidget handles keeping the board square
+    // We just need to calculate the square size based on the board widget's actual size
+    int boardWidth = m_boardWidget->width();
+    int boardHeight = m_boardWidget->height();
     
     // Calculate the size for each square (use the smaller dimension to keep squares square)
-    int squareSize = qMin(availableWidth, availableHeight) / 8;
+    int squareSize = qMin(boardWidth, boardHeight) / 8;
     
     // Ensure minimum and reasonable maximum size
     squareSize = qMax(squareSize, 35);
