@@ -1573,8 +1573,8 @@ void Qt_Chess::handleGameEnd() {
     stopTimer();
     m_timerStarted = false;
     
-    // Show new game button if timer was running
-    if (m_newGameButton && !m_newGameButton->isVisible()) {
+    // Show new game button to allow starting a new game
+    if (m_newGameButton) {
         m_newGameButton->show();
     }
     
