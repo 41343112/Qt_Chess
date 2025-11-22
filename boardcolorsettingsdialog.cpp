@@ -6,11 +6,17 @@
 #include <QFrame>
 #include <QVector>
 
-// UI Style Constants
+// Constants
 namespace {
     const QString HOVER_BORDER_COLOR = "#4A90E2";
     const QString HOVER_BACKGROUND_COLOR = "#F0F0F0";
     const QString PRESSED_BACKGROUND_COLOR = "#E0E0E0";
+    const int MAX_CUSTOM_SLOTS = 3;
+    
+    // Helper function to generate settings key prefix for custom slots
+    QString getCustomSlotPrefix(int slotIndex) {
+        return QString("customSlot%1_").arg(slotIndex + 1);
+    }
 }
 
 BoardColorSettingsDialog::BoardColorSettingsDialog(QWidget *parent)
@@ -292,7 +298,7 @@ void BoardColorSettingsDialog::onAccept() {
     
     // Check custom slots
     if (!matchesExistingScheme) {
-        for (int i = 0; i < 3; ++i) {
+        for (int i = 0; i < MAX_CUSTOM_SLOTS; ++i) {
             if (m_settings.lightSquareColor == m_customSlots[i].lightSquareColor && 
                 m_settings.darkSquareColor == m_customSlots[i].darkSquareColor) {
                 matchesExistingScheme = true;
@@ -432,8 +438,8 @@ BoardColorSettingsDialog::BoardColorSettings BoardColorSettingsDialog::getPreset
 void BoardColorSettingsDialog::loadCustomSlots() {
     QSettings settings("Qt_Chess", "BoardColorSettings");
     
-    for (int i = 0; i < 3; ++i) {
-        QString prefix = QString("customSlot%1_").arg(i + 1);
+    for (int i = 0; i < MAX_CUSTOM_SLOTS; ++i) {
+        QString prefix = getCustomSlotPrefix(i);
         
         QString lightColorStr = settings.value(prefix + "lightColor", "#F0D9B5").toString();
         QString darkColorStr = settings.value(prefix + "darkColor", "#B58863").toString();
@@ -456,8 +462,8 @@ void BoardColorSettingsDialog::loadCustomSlots() {
 void BoardColorSettingsDialog::saveCustomSlots() {
     QSettings settings("Qt_Chess", "BoardColorSettings");
     
-    for (int i = 0; i < 3; ++i) {
-        QString prefix = QString("customSlot%1_").arg(i + 1);
+    for (int i = 0; i < MAX_CUSTOM_SLOTS; ++i) {
+        QString prefix = getCustomSlotPrefix(i);
         
         settings.setValue(prefix + "lightColor", m_customSlots[i].lightSquareColor.name());
         settings.setValue(prefix + "darkColor", m_customSlots[i].darkSquareColor.name());
