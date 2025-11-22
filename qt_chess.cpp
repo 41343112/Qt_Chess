@@ -1693,15 +1693,15 @@ void Qt_Chess::resetToConfigurationState() {
         m_timeControlPanel->show();
     }
     
-    // Show new game button (for time expiration case)
+    // Show new game button
     if (m_newGameButton) {
         m_newGameButton->show();
     }
     
     // Re-enable start button if time control is active
-    if (m_startButton && m_timeControlEnabled) {
+    if (m_startButton) {
         m_startButton->setText("開始");
-        m_startButton->setEnabled(true);
+        m_startButton->setEnabled(m_timeControlEnabled);
     }
     
     // Hide time displays
