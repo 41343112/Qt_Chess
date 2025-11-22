@@ -1313,8 +1313,8 @@ void Qt_Chess::positionTimeDisplaysOnBoard() {
         m_whiteTimeLabel->move(boardPos.x() + boardWidth - m_whiteTimeLabel->width() - 10, 
                                boardPos.y() + boardHeight - m_whiteTimeLabel->height() - 10);
     } else {
-        // Default position if board isn't sized yet
-        m_whiteTimeLabel->move(boardPos.x() + 10, boardPos.y() + 10);
+        // Default position if board isn't sized yet (offset to avoid overlap with black label)
+        m_whiteTimeLabel->move(boardPos.x() + 120, boardPos.y() + 10);
     }
     m_whiteTimeLabel->raise();  // Ensure it's on top
 }
@@ -1395,6 +1395,11 @@ void Qt_Chess::onGameTimerTick() {
             m_whiteTimeMs = 0;
             updateTimeDisplays();
             stopTimer();
+            m_timerStarted = false;  // Reset timer state
+            if (m_startButton) {
+                m_startButton->setText("開始");
+                m_startButton->setEnabled(true);
+            }
             QMessageBox::information(this, "時間到", "白方超時！黑方獲勝！");
             return;
         }
@@ -1404,6 +1409,11 @@ void Qt_Chess::onGameTimerTick() {
             m_blackTimeMs = 0;
             updateTimeDisplays();
             stopTimer();
+            m_timerStarted = false;  // Reset timer state
+            if (m_startButton) {
+                m_startButton->setText("開始");
+                m_startButton->setEnabled(true);
+            }
             QMessageBox::information(this, "時間到", "黑方超時！白方獲勝！");
             return;
         }
