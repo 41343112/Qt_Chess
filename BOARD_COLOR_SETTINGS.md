@@ -44,10 +44,11 @@ When "Custom" mode is selected or custom preview is clicked:
 
 ### Dialog Layout
 1. **Preset Schemes Section**: Visual previews with 7 preset color schemes
-2. **Preset Previews**: Seven clickable 2×2 mini previews displayed in one row:
+2. **Preset Previews**: Seven clickable 2×2 mini previews displayed horizontally
    - Classic, Blue-Gray, Green-White, Purple-Pink, Wood-Dark, Ocean-Blue, Light Theme
    - Hover effect shows blue border indicating they are interactive
    - Click to instantly apply that color scheme
+   - Note: On smaller screens, the dialog may need to be resized to view all presets
 3. **Custom Colors Section**: Two color buttons for light and dark squares (still available)
 4. **Main Preview**: Large 2×2 preview grid (80×80 pixels per square)
 5. **Buttons**: Reset to Defaults, OK, Cancel

@@ -79,6 +79,9 @@ The dialog shows preview grids for all color schemes:
    │█░│ │█░│ │█░│ │█░│ │█░│ │█░│ │█░│
    └──┘ └──┘ └──┘ └──┘ └──┘ └──┘ └──┘
    經典  藍灰  綠白  紫粉  木紋  海洋  淺色
+   
+   Note: All presets are displayed horizontally. 
+   Resize dialog window if needed to view all options.
 
 2. One large preview (80×80 per square)
    ┌────────┬────────┐

@@ -55,7 +55,7 @@ void BoardColorSettingsDialog::setupUI() {
     QGroupBox* schemeGroup = new QGroupBox("預設配色方案", this);
     QVBoxLayout* schemeLayout = new QVBoxLayout(schemeGroup);
     
-    // Preset previews layout - first row with 3 presets
+    // Preset previews layout - all presets in horizontal layout
     QHBoxLayout* presetsLayout = new QHBoxLayout();
     presetsLayout->addWidget(createPresetPreview(ColorScheme::Classic, "經典"));
     presetsLayout->addWidget(createPresetPreview(ColorScheme::BlueGray, "藍灰"));
