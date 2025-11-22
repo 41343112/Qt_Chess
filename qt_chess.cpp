@@ -62,13 +62,17 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_isBoardFlipped(false)
     , m_whiteTimeLimitSlider(nullptr)
     , m_whiteTimeLimitLabel(nullptr)
+    , m_whiteTimeLimitTitleLabel(nullptr)
     , m_blackTimeLimitSlider(nullptr)
     , m_blackTimeLimitLabel(nullptr)
+    , m_blackTimeLimitTitleLabel(nullptr)
     , m_incrementSlider(nullptr)
     , m_incrementLabel(nullptr)
+    , m_incrementTitleLabel(nullptr)
     , m_whiteTimeLabel(nullptr)
     , m_blackTimeLabel(nullptr)
     , m_startButton(nullptr)
+    , m_timeControlGroup(nullptr)
     , m_gameTimer(nullptr)
     , m_whiteTimeMs(0)
     , m_blackTimeMs(0)
@@ -994,6 +998,46 @@ void Qt_Chess::updateSquareSizes() {
         buttonFont.setBold(true);
         m_newGameButton->setFont(buttonFont);
     }
+    
+    // Update time control panel labels and start button font sizes to scale with board
+    if (m_whiteTimeLimitLabel && m_blackTimeLimitLabel && m_incrementLabel) {
+        int controlFontSize = qMax(MIN_UI_FONT_SIZE, qMin(MAX_UI_FONT_SIZE, squareSize / UI_FONT_SCALE_DIVISOR));
+        QFont controlFont;
+        controlFont.setPointSize(controlFontSize);
+        
+        // Update value labels
+        m_whiteTimeLimitLabel->setFont(controlFont);
+        m_blackTimeLimitLabel->setFont(controlFont);
+        m_incrementLabel->setFont(controlFont);
+        
+        // Update title labels
+        if (m_whiteTimeLimitTitleLabel) {
+            m_whiteTimeLimitTitleLabel->setFont(controlFont);
+        }
+        if (m_blackTimeLimitTitleLabel) {
+            m_blackTimeLimitTitleLabel->setFont(controlFont);
+        }
+        if (m_incrementTitleLabel) {
+            m_incrementTitleLabel->setFont(controlFont);
+        }
+    }
+    
+    // Update time control group box title font
+    if (m_timeControlGroup) {
+        int groupFontSize = qMax(MIN_UI_FONT_SIZE, qMin(MAX_UI_FONT_SIZE, squareSize / UI_FONT_SCALE_DIVISOR));
+        QFont groupFont = m_timeControlGroup->font();
+        groupFont.setPointSize(groupFontSize);
+        m_timeControlGroup->setFont(groupFont);
+    }
+    
+    // Update start button font size to scale with board
+    if (m_startButton) {
+        int startButtonFontSize = qMax(MIN_UI_FONT_SIZE, qMin(MAX_UI_FONT_SIZE, squareSize / UI_FONT_SCALE_DIVISOR));
+        QFont startButtonFont = m_startButton->font();
+        startButtonFont.setPointSize(startButtonFontSize);
+        startButtonFont.setBold(true);
+        m_startButton->setFont(startButtonFont);
+    }
 }
 
 void Qt_Chess::initializeSounds() {
@@ -1387,16 +1431,16 @@ void Qt_Chess::onFlipBoardClicked() {
 
 void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
     // Time control group box
-    QGroupBox* timeControlGroup = new QGroupBox("時間控制", this);
-    QVBoxLayout* timeControlLayout = new QVBoxLayout(timeControlGroup);
+    m_timeControlGroup = new QGroupBox("時間控制", this);
+    QVBoxLayout* timeControlLayout = new QVBoxLayout(m_timeControlGroup);
     
     QFont labelFont;
     labelFont.setPointSize(10);
     
     // White time label and slider
-    QLabel* whiteTimeLimitTitleLabel = new QLabel("白方時間:", this);
-    whiteTimeLimitTitleLabel->setFont(labelFont);
-    timeControlLayout->addWidget(whiteTimeLimitTitleLabel);
+    m_whiteTimeLimitTitleLabel = new QLabel("白方時間:", this);
+    m_whiteTimeLimitTitleLabel->setFont(labelFont);
+    timeControlLayout->addWidget(m_whiteTimeLimitTitleLabel);
     
     m_whiteTimeLimitLabel = new QLabel("不限時", this);
     m_whiteTimeLimitLabel->setFont(labelFont);
@@ -1415,9 +1459,9 @@ void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
     timeControlLayout->addWidget(m_whiteTimeLimitSlider);
     
     // Black time label and slider
-    QLabel* blackTimeLimitTitleLabel = new QLabel("黑方時間:", this);
-    blackTimeLimitTitleLabel->setFont(labelFont);
-    timeControlLayout->addWidget(blackTimeLimitTitleLabel);
+    m_blackTimeLimitTitleLabel = new QLabel("黑方時間:", this);
+    m_blackTimeLimitTitleLabel->setFont(labelFont);
+    timeControlLayout->addWidget(m_blackTimeLimitTitleLabel);
     
     m_blackTimeLimitLabel = new QLabel("不限時", this);
     m_blackTimeLimitLabel->setFont(labelFont);
@@ -1435,9 +1479,9 @@ void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
     timeControlLayout->addWidget(m_blackTimeLimitSlider);
     
     // Increment label and slider
-    QLabel* incrementTitleLabel = new QLabel("每著加秒:", this);
-    incrementTitleLabel->setFont(labelFont);
-    timeControlLayout->addWidget(incrementTitleLabel);
+    m_incrementTitleLabel = new QLabel("每著加秒:", this);
+    m_incrementTitleLabel->setFont(labelFont);
+    timeControlLayout->addWidget(m_incrementTitleLabel);
     
     m_incrementLabel = new QLabel("0秒", this);
     m_incrementLabel->setFont(labelFont);
@@ -1457,7 +1501,7 @@ void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
     // Add stretch to fill remaining space in the group box
     timeControlLayout->addStretch();
     
-    timeControlPanelLayout->addWidget(timeControlGroup, 1);
+    timeControlPanelLayout->addWidget(m_timeControlGroup, 1);
     
     // Start button - placed at the bottom of the time control panel, outside the group box
     m_startButton = new QPushButton("開始", this);

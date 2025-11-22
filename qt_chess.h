@@ -91,13 +91,17 @@ private:
     // Time control
     QSlider* m_whiteTimeLimitSlider;  // Separate slider for white's time
     QLabel* m_whiteTimeLimitLabel;
+    QLabel* m_whiteTimeLimitTitleLabel;  // "白方時間:" label
     QSlider* m_blackTimeLimitSlider;  // Separate slider for black's time
     QLabel* m_blackTimeLimitLabel;
+    QLabel* m_blackTimeLimitTitleLabel;  // "黑方時間:" label
     QSlider* m_incrementSlider;
     QLabel* m_incrementLabel;
+    QLabel* m_incrementTitleLabel;  // "每著加秒:" label
     QLabel* m_whiteTimeLabel;
     QLabel* m_blackTimeLabel;
     QPushButton* m_startButton;
+    QGroupBox* m_timeControlGroup;  // Group box for time control settings
     QTimer* m_gameTimer;
     int m_whiteTimeMs;  // White's remaining time in milliseconds
     int m_blackTimeMs;  // Black's remaining time in milliseconds
