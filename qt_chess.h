@@ -17,6 +17,7 @@
 #include "soundsettingsdialog.h"
 #include "pieceiconsettingsdialog.h"
 #include "boardcolorsettingsdialog.h"
+#include "boardpresetdialog.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -45,6 +46,7 @@ private slots:
     void onSoundSettingsClicked();
     void onPieceIconSettingsClicked();
     void onBoardColorSettingsClicked();
+    void onBoardPresetClicked();
 
 private:
     Ui::Qt_Chess *ui;

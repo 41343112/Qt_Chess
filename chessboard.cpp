@@ -7,13 +7,39 @@ ChessBoard::ChessBoard()
 }
 
 void ChessBoard::initializeBoard() {
+    initializeBoard(BoardPreset::Standard);
+}
+
+void ChessBoard::initializeBoard(BoardPreset preset) {
+    clearBoard();
+    
+    switch (preset) {
+        case BoardPreset::Standard:
+            initializeStandardBoard();
+            break;
+        case BoardPreset::MidGame:
+            initializeMidGameBoard();
+            break;
+        case BoardPreset::EndGame:
+            initializeEndGameBoard();
+            break;
+    }
+    
+    m_currentPlayer = PieceColor::White;
+    m_enPassantTarget = QPoint(-1, -1);
+}
+
+void ChessBoard::clearBoard() {
     // Initialize empty board
     for (int row = 0; row < 8; ++row) {
         for (int col = 0; col < 8; ++col) {
             m_board[row][col] = ChessPiece(PieceType::None, PieceColor::None);
         }
     }
-    
+}
+
+void ChessBoard::initializeStandardBoard() {
+void ChessBoard::initializeStandardBoard() {
     // Setup black pieces (row 0 and 1)
     m_board[0][0] = ChessPiece(PieceType::Rook, PieceColor::Black);
     m_board[0][1] = ChessPiece(PieceType::Knight, PieceColor::Black);
@@ -41,9 +67,78 @@ void ChessBoard::initializeBoard() {
     m_board[7][5] = ChessPiece(PieceType::Bishop, PieceColor::White);
     m_board[7][6] = ChessPiece(PieceType::Knight, PieceColor::White);
     m_board[7][7] = ChessPiece(PieceType::Rook, PieceColor::White);
+}
+
+void ChessBoard::initializeMidGameBoard() {
+    // Mid-game tactical position - Sicilian Defense-like position
+    // This is a common mid-game position with both sides having active play
     
-    m_currentPlayer = PieceColor::White;
-    m_enPassantTarget = QPoint(-1, -1);
+    // Black pieces
+    m_board[0][0] = ChessPiece(PieceType::Rook, PieceColor::Black);
+    m_board[0][4] = ChessPiece(PieceType::King, PieceColor::Black);
+    m_board[0][7] = ChessPiece(PieceType::Rook, PieceColor::Black);
+    m_board[1][0] = ChessPiece(PieceType::Pawn, PieceColor::Black);
+    m_board[1][1] = ChessPiece(PieceType::Pawn, PieceColor::Black);
+    m_board[1][5] = ChessPiece(PieceType::Pawn, PieceColor::Black);
+    m_board[1][6] = ChessPiece(PieceType::Pawn, PieceColor::Black);
+    m_board[1][7] = ChessPiece(PieceType::Pawn, PieceColor::Black);
+    m_board[2][2] = ChessPiece(PieceType::Bishop, PieceColor::Black);
+    m_board[2][3] = ChessPiece(PieceType::Queen, PieceColor::Black);
+    m_board[3][2] = ChessPiece(PieceType::Knight, PieceColor::Black);
+    m_board[3][4] = ChessPiece(PieceType::Pawn, PieceColor::Black);
+    m_board[4][3] = ChessPiece(PieceType::Pawn, PieceColor::Black);
+    m_board[4][5] = ChessPiece(PieceType::Bishop, PieceColor::Black);
+    
+    // White pieces
+    m_board[7][0] = ChessPiece(PieceType::Rook, PieceColor::White);
+    m_board[7][4] = ChessPiece(PieceType::King, PieceColor::White);
+    m_board[7][7] = ChessPiece(PieceType::Rook, PieceColor::White);
+    m_board[6][0] = ChessPiece(PieceType::Pawn, PieceColor::White);
+    m_board[6][1] = ChessPiece(PieceType::Pawn, PieceColor::White);
+    m_board[6][5] = ChessPiece(PieceType::Pawn, PieceColor::White);
+    m_board[6][6] = ChessPiece(PieceType::Pawn, PieceColor::White);
+    m_board[6][7] = ChessPiece(PieceType::Pawn, PieceColor::White);
+    m_board[5][2] = ChessPiece(PieceType::Bishop, PieceColor::White);
+    m_board[5][3] = ChessPiece(PieceType::Queen, PieceColor::White);
+    m_board[4][2] = ChessPiece(PieceType::Knight, PieceColor::White);
+    m_board[4][4] = ChessPiece(PieceType::Pawn, PieceColor::White);
+    m_board[3][3] = ChessPiece(PieceType::Pawn, PieceColor::White);
+    m_board[3][5] = ChessPiece(PieceType::Bishop, PieceColor::White);
+    
+    // Mark pieces as moved (since this is mid-game)
+    for (int row = 0; row < 8; ++row) {
+        for (int col = 0; col < 8; ++col) {
+            if (m_board[row][col].getType() != PieceType::None) {
+                m_board[row][col].setMoved(true);
+            }
+        }
+    }
+}
+
+void ChessBoard::initializeEndGameBoard() {
+    // King and pawn endgame - classic endgame practice position
+    // White has a passed pawn and slight advantage
+    
+    // Black pieces
+    m_board[0][4] = ChessPiece(PieceType::King, PieceColor::Black);
+    m_board[3][1] = ChessPiece(PieceType::Pawn, PieceColor::Black);
+    m_board[3][6] = ChessPiece(PieceType::Pawn, PieceColor::Black);
+    
+    // White pieces
+    m_board[7][4] = ChessPiece(PieceType::King, PieceColor::White);
+    m_board[5][2] = ChessPiece(PieceType::Pawn, PieceColor::White);
+    m_board[5][3] = ChessPiece(PieceType::Pawn, PieceColor::White);
+    m_board[5][5] = ChessPiece(PieceType::Pawn, PieceColor::White);
+    
+    // Mark all pieces as moved
+    for (int row = 0; row < 8; ++row) {
+        for (int col = 0; col < 8; ++col) {
+            if (m_board[row][col].getType() != PieceType::None) {
+                m_board[row][col].setMoved(true);
+            }
+        }
+    }
+}
 }
 
 const ChessPiece& ChessBoard::getPiece(int row, int col) const {

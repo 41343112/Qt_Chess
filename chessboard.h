@@ -5,11 +5,18 @@
 #include <QPoint>
 #include <vector>
 
+enum class BoardPreset {
+    Standard,       // 標準開局 - Standard starting position
+    MidGame,        // 中局練習 - Mid-game tactical position
+    EndGame         // 殘局練習 - Endgame position
+};
+
 class ChessBoard {
 public:
     ChessBoard();
     
     void initializeBoard();
+    void initializeBoard(BoardPreset preset);
     const ChessPiece& getPiece(int row, int col) const;
     ChessPiece& getPiece(int row, int col);
     
@@ -39,6 +46,12 @@ private:
     bool hasAnyValidMoves(PieceColor color) const;
     bool canPieceMove(const QPoint& pos) const;
     bool canCastle(const QPoint& from, const QPoint& to) const;
+    
+    // Preset board initialization methods
+    void initializeStandardBoard();
+    void initializeMidGameBoard();
+    void initializeEndGameBoard();
+    void clearBoard();
 };
 
 #endif // CHESSBOARD_H

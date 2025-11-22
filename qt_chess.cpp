@@ -3,6 +3,7 @@
 #include "soundsettingsdialog.h"
 #include "pieceiconsettingsdialog.h"
 #include "boardcolorsettingsdialog.h"
+#include "boardpresetdialog.h"
 #include <QMessageBox>
 #include <QFont>
 #include <QDialog>
@@ -117,6 +118,14 @@ void Qt_Chess::setupUI() {
 
 void Qt_Chess::setupMenuBar() {
     m_menuBar = menuBar();
+    
+    // Game menu
+    QMenu* gameMenu = m_menuBar->addMenu("遊戲");
+    
+    // Board preset action
+    QAction* boardPresetAction = new QAction("選擇棋盤佈局", this);
+    connect(boardPresetAction, &QAction::triggered, this, &Qt_Chess::onBoardPresetClicked);
+    gameMenu->addAction(boardPresetAction);
     
     // Settings menu
     QMenu* settingsMenu = m_menuBar->addMenu("設定");
@@ -322,6 +331,18 @@ void Qt_Chess::onBoardColorSettingsClicked() {
     if (dialog.exec() == QDialog::Accepted) {
         m_boardColorSettings = dialog.getSettings();
         applyBoardColorSettings();
+    }
+}
+
+void Qt_Chess::onBoardPresetClicked() {
+    BoardPresetDialog dialog(this);
+    
+    if (dialog.exec() == QDialog::Accepted) {
+        BoardPreset preset = dialog.getSelectedPreset();
+        m_chessBoard.initializeBoard(preset);
+        m_pieceSelected = false;
+        updateBoard();
+        updateStatus();
     }
 }
 
