@@ -45,6 +45,7 @@ namespace {
     const int UI_FONT_SCALE_DIVISOR = 5;   // Divisor for scaling UI fonts based on square size
     const int MIN_TIME_LABEL_HEIGHT = 30;  // Minimum height for time labels
     const int MAX_TIME_LABEL_HEIGHT = 50;  // Maximum height for time labels
+    const int MIN_TIME_LABEL_WIDTH = 100;  // Minimum width for time labels (horizontal positioning)
 }
 
 Qt_Chess::Qt_Chess(QWidget *parent)
@@ -124,10 +125,10 @@ void Qt_Chess::setupUI() {
     setupTimeControlUI(leftPanelLayout);
     contentLayout->addWidget(m_timeControlPanel, 1);  // Less space for control panel
     
-    // Chess board container with time displays above and below
+    // Chess board container with time displays on left and right
     m_boardContainer = new QWidget(this);
     m_boardContainer->setMouseTracking(true);
-    QVBoxLayout* boardContainerLayout = new QVBoxLayout(m_boardContainer);
+    QHBoxLayout* boardContainerLayout = new QHBoxLayout(m_boardContainer);
     boardContainerLayout->setContentsMargins(BOARD_CONTAINER_MARGIN, BOARD_CONTAINER_MARGIN, 
                                              BOARD_CONTAINER_MARGIN, BOARD_CONTAINER_MARGIN);
     boardContainerLayout->setSpacing(TIME_LABEL_SPACING);  // Consistent spacing between elements
@@ -137,7 +138,7 @@ void Qt_Chess::setupUI() {
     timeFont.setPointSize(14);
     timeFont.setBold(true);
     
-    // Black time label (above board) - initially hidden
+    // Black time label (left side - opponent's time) - initially hidden
     m_blackTimeLabel = new QLabel("--:--", m_boardContainer);
     m_blackTimeLabel->setFont(timeFont);
     m_blackTimeLabel->setAlignment(Qt::AlignCenter);
@@ -183,10 +184,12 @@ void Qt_Chess::setupUI() {
         }
     }
     
-    // Add board to container layout, centered
-    boardContainerLayout->addWidget(m_boardWidget, 0, Qt::AlignCenter);
+    // Add board to container layout
+    // Stretch factor 1 allows board to expand and fill available horizontal space
+    // while time labels (stretch factor 0) maintain their minimum sizes
+    boardContainerLayout->addWidget(m_boardWidget, 1, Qt::AlignCenter);
     
-    // White time label (below board) - initially hidden
+    // White time label (right side - player's time) - initially hidden
     m_whiteTimeLabel = new QLabel("--:--", m_boardContainer);
     m_whiteTimeLabel->setFont(timeFont);
     m_whiteTimeLabel->setAlignment(Qt::AlignCenter);
@@ -501,7 +504,7 @@ void Qt_Chess::onStartButtonClicked() {
             m_timeControlPanel->hide();
         }
         
-        // Show time displays above and below the board
+        // Show time displays on left and right sides of the board
         if (m_whiteTimeLabel && m_blackTimeLabel) {
             m_whiteTimeLabel->show();
             m_blackTimeLabel->show();
@@ -913,12 +916,12 @@ void Qt_Chess::updateSquareSizes() {
     // Add base margins for layout spacing (board container margins are part of board widget size)
     reservedWidth += BASE_MARGINS;
     
-    // Account for time labels height if visible, plus spacing
+    // Account for time labels width if visible, plus spacing (now positioned horizontally)
     if (m_whiteTimeLabel && m_whiteTimeLabel->isVisible()) {
-        reservedHeight += m_whiteTimeLabel->minimumHeight() + TIME_LABEL_SPACING;
+        reservedWidth += m_whiteTimeLabel->minimumWidth() + TIME_LABEL_SPACING;
     }
     if (m_blackTimeLabel && m_blackTimeLabel->isVisible()) {
-        reservedHeight += m_blackTimeLabel->minimumHeight() + TIME_LABEL_SPACING;
+        reservedWidth += m_blackTimeLabel->minimumWidth() + TIME_LABEL_SPACING;
     }
     
     // Add some padding for layout margins and spacing
@@ -976,6 +979,11 @@ void Qt_Chess::updateSquareSizes() {
         int timeLabelHeight = qMax(MIN_TIME_LABEL_HEIGHT, qMin(MAX_TIME_LABEL_HEIGHT, squareSize / 2));
         m_whiteTimeLabel->setMinimumHeight(timeLabelHeight);
         m_blackTimeLabel->setMinimumHeight(timeLabelHeight);
+        
+        // Set minimum width for horizontal positioning (ensure time text fits)
+        int timeLabelWidth = qMax(MIN_TIME_LABEL_WIDTH, squareSize);  // At least MIN_TIME_LABEL_WIDTH or square size
+        m_whiteTimeLabel->setMinimumWidth(timeLabelWidth);
+        m_blackTimeLabel->setMinimumWidth(timeLabelWidth);
     }
     
     // Update new game button font size to scale with board
