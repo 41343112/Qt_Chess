@@ -28,6 +28,8 @@ namespace {
     const int MAX_SLIDER_POSITION = 31; // Slider range: 0 (unlimited), 1 (30s), 2-31 (1-30 min)
     const int MAX_MINUTES = 30; // Maximum time limit in minutes
     const int TIME_LABEL_MARGIN = 10; // Margin for overlay time labels from board edge
+    const int REDUCED_TIME_LABEL_MARGIN = TIME_LABEL_MARGIN / 2; // Reduced margin for closer positioning to board edge
+    const QString GAME_ENDED_TEXT = "遊戲結束"; // Text shown when game ends
 }
 
 Qt_Chess::Qt_Chess(QWidget *parent)
@@ -1513,11 +1515,11 @@ void Qt_Chess::positionOverlayTimeLabels() {
     
     // Black time label - left side, slightly towards top (less margin from top)
     m_blackTimeLabel->move(boardRect.x() + TIME_LABEL_MARGIN, 
-                          boardRect.y() + TIME_LABEL_MARGIN / 2);
+                          boardRect.y() + REDUCED_TIME_LABEL_MARGIN);
     
     // White time label - right side, slightly towards bottom (less margin from bottom)
     int whiteX = boardRect.right() - m_whiteTimeLabel->width() - TIME_LABEL_MARGIN;
-    int whiteY = boardRect.bottom() - m_whiteTimeLabel->height() - TIME_LABEL_MARGIN / 2;
+    int whiteY = boardRect.bottom() - m_whiteTimeLabel->height() - REDUCED_TIME_LABEL_MARGIN;
     m_whiteTimeLabel->move(whiteX, whiteY);
 }
 
@@ -1603,7 +1605,7 @@ void Qt_Chess::handleGameEnd() {
     stopTimer();
     m_timerStarted = false;
     if (m_startButton) {
-        m_startButton->setText("遊戲結束");
+        m_startButton->setText(GAME_ENDED_TEXT);
         m_startButton->setEnabled(false);
     }
 }
