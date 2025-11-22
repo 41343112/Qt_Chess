@@ -38,10 +38,10 @@ namespace {
     const int BOARD_CONTAINER_MARGIN = 0;  // Board container margin on each side (total horizontal: 2*5=10px)
     
     // Scaling constants for UI elements
-    const int MIN_SQUARE_SIZE = 30;        // Minimum size for chess board squares
+    const int MIN_SQUARE_SIZE = 40;        // Minimum size for chess board squares
     const int MAX_SQUARE_SIZE = 180;       // Maximum size for chess board squares
     const int MIN_UI_FONT_SIZE = 10;       // Minimum font size for UI elements
-    const int MAX_UI_FONT_SIZE = 16;       // Maximum font size for UI elements
+    const int MAX_UI_FONT_SIZE = 20;       // Maximum font size for UI elements
     const int UI_FONT_SCALE_DIVISOR = 5;   // Divisor for scaling UI fonts based on square size
     const int MIN_TIME_LABEL_HEIGHT = 30;  // Minimum height for time labels
     const int MAX_TIME_LABEL_HEIGHT = 50;  // Maximum height for time labels
