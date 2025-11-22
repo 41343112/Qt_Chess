@@ -16,10 +16,13 @@ Users can choose from 4 options:
 - A real-time 2×2 preview grid shows how the board will look
 - Updates instantly when colors are changed
 - Each preset also has its own mini 2×2 preview thumbnail
+- **NEW: Preview thumbnails are clickable** - click to instantly apply that color scheme
 
 ### 3. Custom Color Picker
-When "Custom" mode is selected:
-- Two color buttons allow users to select light and dark square colors
+When "Custom" mode is selected or custom preview is clicked:
+- **NEW: Click the "自訂" (Custom) preview thumbnail to open color pickers directly**
+- Two sequential color picker dialogs allow users to select light and dark square colors
+- Original method: Two color buttons allow users to select colors individually
 - Color picker dialog opens when clicking the buttons
 - Preview updates in real-time
 
@@ -37,8 +40,11 @@ When "Custom" mode is selected:
 
 ### Dialog Layout
 1. **Preset Schemes Section**: Dropdown menu with 3 presets + custom option
-2. **Preset Previews**: Three 2×2 mini previews showing each preset
-3. **Custom Colors Section**: Two color buttons for light and dark squares
+2. **Preset Previews**: **NEW: Four clickable 2×2 mini previews** (Classic, Blue-Gray, Green-White, Custom)
+   - Hover effect shows blue border indicating they are interactive
+   - Click to instantly apply that color scheme
+   - Custom preview shows colorful gradient pattern
+3. **Custom Colors Section**: Two color buttons for light and dark squares (still available)
 4. **Main Preview**: Large 2×2 preview grid (80×80 pixels per square)
 5. **Buttons**: Reset to Defaults, OK, Cancel
 
@@ -87,8 +93,9 @@ struct BoardColorSettings {
 - `getDefaultSettings()`: Returns default (Classic) color scheme
 - `getPresetSettings(ColorScheme)`: Returns preset colors for a given scheme
 - `updatePreview()`: Updates the 2×2 preview grid
-- `createPresetPreview()`: Creates mini preview thumbnails for presets
+- `createPresetPreview()`: **NEW: Creates clickable QPushButton previews** with hover effects
 - `applyPresetColorScheme()`: Applies a selected preset
+- `onPresetPreviewClicked()`: **NEW: Handles clicks on preset preview thumbnails**
 
 ## Integration Points
 

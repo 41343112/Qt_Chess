@@ -10,11 +10,12 @@
 │  │                                           │    │
 │  │  配色方案: [經典棕褐色 ▼]                 │    │
 │  │                                           │    │
-│  │  ┌────┐  ┌────┐  ┌────┐                 │    │
-│  │  │░▓│  │░▓│  │░▓│                 │    │
-│  │  │▓░│  │▓░│  │▓░│                 │    │
-│  │  └────┘  └────┘  └────┘                 │    │
-│  │   經典     藍灰     綠白                  │    │
+│  │  ┌────┐  ┌────┐  ┌────┐  ┌────┐         │    │
+│  │  │░▓│  │░▓│  │░▓│  │◆◇│         │    │
+│  │  │▓░│  │▓░│  │▓░│  │◇◆│         │    │
+│  │  └────┘  └────┘  └────┘  └────┘         │    │
+│  │   經典     藍灰     綠白     自訂          │    │
+│  │  (Clickable preset previews)            │    │
 │  │                                           │    │
 │  └───────────────────────────────────────────┘    │
 │                                                     │
@@ -85,6 +86,18 @@
 └──┴──┘
 ```
 
+### 4. 自訂顏色 (Custom)
+- User-defined colors via color picker
+- Shows colorful gradient preview (Red, Cyan, Green, Yellow)
+- Clicking this preview opens color picker dialogs
+```
+┌──┬──┐
+│◆◆│◇◇│  ◆ = Colorful gradient indicator
+├──┼──┤  ◇ = (Shows this is customizable)
+│◇◇│◆◆│
+└──┴──┘
+```
+
 ## Dialog Features
 
 ### Interactive Elements
@@ -94,9 +107,12 @@
    - Auto-applies preset colors when selected
 
 2. **Preset Preview Thumbnails**
-   - Three small 2×2 grids (30×30 pixels per square)
-   - Show visual representation of each preset
-   - Help users quickly identify desired color scheme
+   - Four small 2×2 grids (30×30 pixels per square)
+   - Show visual representation of each preset + custom option
+   - **NOW CLICKABLE**: Click any preview to apply that color scheme
+   - Hover effect shows blue border to indicate interactivity
+   - Custom preview shows colorful gradient pattern
+   - Help users quickly select desired color scheme with one click
 
 3. **Custom Color Buttons**
    - Two buttons showing current light/dark colors
@@ -119,14 +135,33 @@
 
 ## User Interaction Flow
 
-### Selecting a Preset
+### Selecting a Preset (NEW: Direct Click)
+1. User opens dialog
+2. **User clicks on any preset preview thumbnail (經典, 藍灰, or 綠白)**
+3. That color scheme is immediately applied
+4. Preview updates immediately
+5. Dropdown auto-updates to show selected scheme
+6. User clicks "確定" to apply
+
+### Selecting a Preset (Original Method)
 1. User opens dialog
 2. User selects preset from dropdown (e.g., "藍灰配色")
 3. Preview updates immediately
 4. Custom color buttons are disabled
 5. User clicks "確定" to apply
 
-### Creating Custom Colors
+### Creating Custom Colors (NEW: Direct Click on Custom Preview)
+1. User opens dialog
+2. **User clicks on the "自訂" (Custom) preview thumbnail**
+3. First color picker dialog opens for light square color
+4. User selects desired light color
+5. Second color picker dialog opens for dark square color
+6. User selects desired dark color
+7. Preview updates with new colors
+8. Dropdown shows "自訂顏色"
+9. User clicks "確定" to apply
+
+### Creating Custom Colors (Original Method)
 1. User opens dialog
 2. User selects "自訂顏色" from dropdown OR clicks a color button
 3. Mode switches to Custom
@@ -156,10 +191,17 @@
   - Background color set via stylesheet
 
 ### Preset Mini Previews
-- Each preset has its own mini grid
-- 2 rows × 2 columns
+- Each preset has its own clickable button
+- 2 rows × 2 columns per preview
 - 30×30 pixels per square
 - Arranged horizontally with labels below
+- **Interactive Features:**
+  - Implemented as QPushButton with flat style
+  - Cursor changes to pointing hand on hover
+  - Blue border (#4A90E2) appears on hover
+  - Background color changes on hover/press
+  - Lambda function connects click to onPresetPreviewClicked()
+  - Custom preview shows multi-color gradient (#FF6B6B, #4ECDC4, #95E1D3, #FFE66D)
 
 ### Color Buttons
 - QPushButton with:
