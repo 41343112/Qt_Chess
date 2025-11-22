@@ -13,6 +13,15 @@ namespace {
     const QString PRESSED_BACKGROUND_COLOR = "#E0E0E0";
     const int MAX_CUSTOM_SLOTS = 3;
     
+    // Preset color schemes (not including custom slots)
+    const QVector<BoardColorSettingsDialog::ColorScheme> PRESET_SCHEMES = {
+        BoardColorSettingsDialog::ColorScheme::Classic,
+        BoardColorSettingsDialog::ColorScheme::BlueGray,
+        BoardColorSettingsDialog::ColorScheme::GreenWhite,
+        BoardColorSettingsDialog::ColorScheme::Wooden,
+        BoardColorSettingsDialog::ColorScheme::DarkMode
+    };
+    
     // Helper function to generate settings key prefix for custom slots
     QString getCustomSlotPrefix(int slotIndex) {
         return QString("customSlot%1_").arg(slotIndex + 1);
@@ -277,16 +286,8 @@ void BoardColorSettingsDialog::onAccept() {
     // Check if the current colors match any preset or custom slot
     bool matchesExistingScheme = false;
     
-    // Check all presets (Classic through DarkMode)
-    QVector<ColorScheme> presets = {
-        ColorScheme::Classic,
-        ColorScheme::BlueGray,
-        ColorScheme::GreenWhite,
-        ColorScheme::Wooden,
-        ColorScheme::DarkMode
-    };
-    
-    for (ColorScheme scheme : presets) {
+    // Check all presets
+    for (ColorScheme scheme : PRESET_SCHEMES) {
         BoardColorSettings preset = getPresetSettings(scheme);
         if (m_settings.lightSquareColor == preset.lightSquareColor && 
             m_settings.darkSquareColor == preset.darkSquareColor) {
