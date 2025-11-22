@@ -4,18 +4,13 @@
 #include <QGroupBox>
 #include <QColorDialog>
 #include <QFrame>
+#include <QVector>
 
 // UI Style Constants
 namespace {
     const QString HOVER_BORDER_COLOR = "#4A90E2";
     const QString HOVER_BACKGROUND_COLOR = "#F0F0F0";
     const QString PRESSED_BACKGROUND_COLOR = "#E0E0E0";
-    
-    // Custom preview gradient colors
-    const QColor CUSTOM_COLOR_TOP_LEFT = QColor("#FF6B6B");     // Red
-    const QColor CUSTOM_COLOR_TOP_RIGHT = QColor("#4ECDC4");    // Cyan
-    const QColor CUSTOM_COLOR_BOTTOM_LEFT = QColor("#95E1D3");  // Light green
-    const QColor CUSTOM_COLOR_BOTTOM_RIGHT = QColor("#FFE66D"); // Yellow
 }
 
 BoardColorSettingsDialog::BoardColorSettingsDialog(QWidget *parent)
@@ -273,12 +268,19 @@ void BoardColorSettingsDialog::onResetToDefaults() {
 }
 
 void BoardColorSettingsDialog::onAccept() {
-    // Check if the current colors don't match any preset or custom slot
+    // Check if the current colors match any preset or custom slot
     bool matchesAnyPreset = false;
     
-    // Check all presets
-    for (int i = static_cast<int>(ColorScheme::Classic); i <= static_cast<int>(ColorScheme::DarkMode); ++i) {
-        ColorScheme scheme = static_cast<ColorScheme>(i);
+    // Check all presets (Classic through DarkMode)
+    QVector<ColorScheme> presets = {
+        ColorScheme::Classic,
+        ColorScheme::BlueGray,
+        ColorScheme::GreenWhite,
+        ColorScheme::Wooden,
+        ColorScheme::DarkMode
+    };
+    
+    for (const ColorScheme& scheme : presets) {
         BoardColorSettings preset = getPresetSettings(scheme);
         if (m_settings.lightSquareColor == preset.lightSquareColor && 
             m_settings.darkSquareColor == preset.darkSquareColor) {
