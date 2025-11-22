@@ -117,35 +117,22 @@ void Qt_Chess::setupUI() {
     // Create horizontal layout for time controls, board, and new game button
     QHBoxLayout* contentLayout = new QHBoxLayout();
     
-    // Left panel for time controls
+    // Left panel for time controls - ALWAYS VISIBLE
     m_timeControlPanel = new QWidget(this);
     m_timeControlPanel->setMaximumWidth(LEFT_PANEL_MAX_WIDTH);  // Limit panel width
+    m_timeControlPanel->setMinimumWidth(LEFT_PANEL_MAX_WIDTH);  // Ensure consistent width
     QVBoxLayout* leftPanelLayout = new QVBoxLayout(m_timeControlPanel);
     leftPanelLayout->setContentsMargins(0, 0, 0, 0);
     setupTimeControlUI(leftPanelLayout);
-    contentLayout->addWidget(m_timeControlPanel, 1);  // Less space for control panel
+    contentLayout->addWidget(m_timeControlPanel, 0);  // Stretch factor 0 to keep fixed width
     
-    // Chess board container with time displays on left and right
+    // Chess board container - board only, no time labels
     m_boardContainer = new QWidget(this);
     m_boardContainer->setMouseTracking(true);
-    QHBoxLayout* boardContainerLayout = new QHBoxLayout(m_boardContainer);
+    QVBoxLayout* boardContainerLayout = new QVBoxLayout(m_boardContainer);
     boardContainerLayout->setContentsMargins(BOARD_CONTAINER_MARGIN, BOARD_CONTAINER_MARGIN, 
                                              BOARD_CONTAINER_MARGIN, BOARD_CONTAINER_MARGIN);
-    boardContainerLayout->setSpacing(TIME_LABEL_SPACING);  // Consistent spacing between elements
-    
-    // Time display font
-    QFont timeFont;
-    timeFont.setPointSize(14);
-    timeFont.setBold(true);
-    
-    // Black time label (left side - opponent's time) - initially hidden
-    m_blackTimeLabel = new QLabel("--:--", m_boardContainer);
-    m_blackTimeLabel->setFont(timeFont);
-    m_blackTimeLabel->setAlignment(Qt::AlignCenter);
-    m_blackTimeLabel->setStyleSheet("QLabel { background-color: rgba(51, 51, 51, 200); color: #FFF; padding: 8px; border-radius: 5px; }");
-    m_blackTimeLabel->setMinimumSize(100, 40);
-    m_blackTimeLabel->hide();  // Initially hidden
-    boardContainerLayout->addWidget(m_blackTimeLabel, 0, Qt::AlignTop);
+    boardContainerLayout->setSpacing(0);
     
     // Chess board
     m_boardWidget = new QWidget(m_boardContainer);
@@ -184,26 +171,15 @@ void Qt_Chess::setupUI() {
         }
     }
     
-    // Add board to container layout
-    // Stretch factor 1 allows board to expand and fill available horizontal space
-    // while time labels (stretch factor 0) maintain their minimum sizes
-    boardContainerLayout->addWidget(m_boardWidget, 1, Qt::AlignCenter);
+    // Add board to container layout - centered
+    boardContainerLayout->addWidget(m_boardWidget, 0, Qt::AlignCenter);
     
-    // White time label (right side - player's time) - initially hidden
-    m_whiteTimeLabel = new QLabel("--:--", m_boardContainer);
-    m_whiteTimeLabel->setFont(timeFont);
-    m_whiteTimeLabel->setAlignment(Qt::AlignCenter);
-    m_whiteTimeLabel->setStyleSheet("QLabel { background-color: rgba(51, 51, 51, 200); color: #FFF; padding: 8px; border-radius: 5px; }");
-    m_whiteTimeLabel->setMinimumSize(100, 40);
-    m_whiteTimeLabel->hide();  // Initially hidden
-    boardContainerLayout->addWidget(m_whiteTimeLabel, 0, Qt::AlignBottom);
-    
-    contentLayout->addWidget(m_boardContainer, 2);  // Give board more space (2:1 ratio)
-    contentLayout->setAlignment(m_boardContainer, Qt::AlignCenter);  // Center the board container
+    contentLayout->addWidget(m_boardContainer, 1);  // Stretch factor 1 to fill remaining space and center board
     
     // Right panel for new game button - positioned in the middle
     QWidget* rightPanel = new QWidget(this);
     rightPanel->setMaximumWidth(RIGHT_PANEL_MAX_WIDTH);  // Limit panel width
+    rightPanel->setMinimumWidth(RIGHT_PANEL_MAX_WIDTH);  // Ensure consistent width
     QVBoxLayout* rightPanelLayout = new QVBoxLayout(rightPanel);
     rightPanelLayout->setContentsMargins(0, 0, 0, 0);
     
@@ -225,7 +201,7 @@ void Qt_Chess::setupUI() {
     // Add stretch below the button to keep it centered
     rightPanelLayout->addStretch(1);
     
-    contentLayout->addWidget(rightPanel, 1);  // Right panel gets same space as left panel
+    contentLayout->addWidget(rightPanel, 0);  // Stretch factor 0 to keep fixed width
     
     mainLayout->addLayout(contentLayout);
     
@@ -445,14 +421,17 @@ void Qt_Chess::onNewGameClicked() {
     stopTimer();
     m_timerStarted = false;
     
-    // Show time control panel
-    if (m_timeControlPanel) {
-        m_timeControlPanel->show();
+    // Show time control configuration group, hide game time group
+    QGroupBox* timeControlGroup = m_timeControlPanel->findChild<QGroupBox*>("timeControlGroup");
+    QGroupBox* gameTimeGroup = m_timeControlPanel->findChild<QGroupBox*>("gameTimeGroup");
+    
+    if (timeControlGroup) {
+        timeControlGroup->show();
     }
     
-    // Hide time displays
-    if (m_whiteTimeLabel) m_whiteTimeLabel->hide();
-    if (m_blackTimeLabel) m_blackTimeLabel->hide();
+    if (gameTimeGroup) {
+        gameTimeGroup->hide();
+    }
     
     // Hide new game button
     if (m_newGameButton) m_newGameButton->hide();
@@ -499,15 +478,16 @@ void Qt_Chess::onStartButtonClicked() {
         m_timerStarted = true;
         startTimer();
         
-        // Hide time control panel
-        if (m_timeControlPanel) {
-            m_timeControlPanel->hide();
+        // Hide time control configuration group, show game time group
+        QGroupBox* timeControlGroup = m_timeControlPanel->findChild<QGroupBox*>("timeControlGroup");
+        QGroupBox* gameTimeGroup = m_timeControlPanel->findChild<QGroupBox*>("gameTimeGroup");
+        
+        if (timeControlGroup) {
+            timeControlGroup->hide();
         }
         
-        // Show time displays on left and right sides of the board
-        if (m_whiteTimeLabel && m_blackTimeLabel) {
-            m_whiteTimeLabel->show();
-            m_blackTimeLabel->show();
+        if (gameTimeGroup) {
+            gameTimeGroup->show();
         }
         
         // Show new game button
@@ -900,29 +880,18 @@ void Qt_Chess::updateSquareSizes() {
     int reservedWidth = 0;
     int reservedHeight = 0;
     
-    // Account for left panel width if visible
-    if (m_timeControlPanel && m_timeControlPanel->isVisible()) {
+    // Account for left panel width (always visible)
+    if (m_timeControlPanel) {
         reservedWidth += LEFT_PANEL_MAX_WIDTH;  // Reserve full width for time control panel
         reservedWidth += PANEL_SPACING;         // Spacing after left panel
     }
     
-    // Account for right panel width (where new game button is)
-    // Reserve space only if new game button is visible or could be visible
-    if (m_newGameButton) {
-        reservedWidth += RIGHT_PANEL_MAX_WIDTH;  // Right panel space
-        reservedWidth += PANEL_SPACING;          // Spacing before right panel
-    }
+    // Account for right panel width (always visible)
+    reservedWidth += RIGHT_PANEL_MAX_WIDTH;  // Right panel space
+    reservedWidth += PANEL_SPACING;          // Spacing before right panel
     
     // Add base margins for layout spacing (board container margins are part of board widget size)
     reservedWidth += BASE_MARGINS;
-    
-    // Account for time labels width if visible, plus spacing (now positioned horizontally)
-    if (m_whiteTimeLabel && m_whiteTimeLabel->isVisible()) {
-        reservedWidth += m_whiteTimeLabel->minimumWidth() + TIME_LABEL_SPACING;
-    }
-    if (m_blackTimeLabel && m_blackTimeLabel->isVisible()) {
-        reservedWidth += m_blackTimeLabel->minimumWidth() + TIME_LABEL_SPACING;
-    }
     
     // Add some padding for layout margins and spacing
     reservedHeight += BASE_MARGINS;
@@ -979,11 +948,6 @@ void Qt_Chess::updateSquareSizes() {
         int timeLabelHeight = qMax(MIN_TIME_LABEL_HEIGHT, qMin(MAX_TIME_LABEL_HEIGHT, squareSize / 2));
         m_whiteTimeLabel->setMinimumHeight(timeLabelHeight);
         m_blackTimeLabel->setMinimumHeight(timeLabelHeight);
-        
-        // Set minimum width for horizontal positioning (ensure time text fits)
-        int timeLabelWidth = qMax(MIN_TIME_LABEL_WIDTH, squareSize);  // At least MIN_TIME_LABEL_WIDTH or square size
-        m_whiteTimeLabel->setMinimumWidth(timeLabelWidth);
-        m_blackTimeLabel->setMinimumWidth(timeLabelWidth);
     }
     
     // Update new game button font size to scale with board
@@ -1386,8 +1350,46 @@ void Qt_Chess::onFlipBoardClicked() {
 }
 
 void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
-    // Time control group box
-    QGroupBox* timeControlGroup = new QGroupBox("時間控制", this);
+    // Game time displays group box - shown during gameplay
+    QGroupBox* gameTimeGroup = new QGroupBox("對局時間", this);
+    QVBoxLayout* gameTimeLayout = new QVBoxLayout(gameTimeGroup);
+    
+    QFont timeFont;
+    timeFont.setPointSize(14);
+    timeFont.setBold(true);
+    
+    // Black time display (opponent's time at top)
+    QLabel* blackTimeTitle = new QLabel("黑方:", this);
+    blackTimeTitle->setFont(timeFont);
+    gameTimeLayout->addWidget(blackTimeTitle);
+    
+    m_blackTimeLabel = new QLabel("--:--", this);
+    m_blackTimeLabel->setFont(timeFont);
+    m_blackTimeLabel->setAlignment(Qt::AlignCenter);
+    m_blackTimeLabel->setStyleSheet("QLabel { background-color: rgba(51, 51, 51, 200); color: #FFF; padding: 12px; border-radius: 5px; }");
+    m_blackTimeLabel->setMinimumSize(100, 50);
+    gameTimeLayout->addWidget(m_blackTimeLabel);
+    
+    gameTimeLayout->addSpacing(10);
+    
+    // White time display (player's time at bottom)
+    QLabel* whiteTimeTitle = new QLabel("白方:", this);
+    whiteTimeTitle->setFont(timeFont);
+    gameTimeLayout->addWidget(whiteTimeTitle);
+    
+    m_whiteTimeLabel = new QLabel("--:--", this);
+    m_whiteTimeLabel->setFont(timeFont);
+    m_whiteTimeLabel->setAlignment(Qt::AlignCenter);
+    m_whiteTimeLabel->setStyleSheet("QLabel { background-color: rgba(51, 51, 51, 200); color: #FFF; padding: 12px; border-radius: 5px; }");
+    m_whiteTimeLabel->setMinimumSize(100, 50);
+    gameTimeLayout->addWidget(m_whiteTimeLabel);
+    
+    gameTimeLayout->addStretch();
+    gameTimeGroup->hide();  // Initially hidden until game starts
+    timeControlPanelLayout->addWidget(gameTimeGroup, 1);
+    
+    // Time control configuration group box
+    QGroupBox* timeControlGroup = new QGroupBox("時間設定", this);
     QVBoxLayout* timeControlLayout = new QVBoxLayout(timeControlGroup);
     
     QFont labelFont;
@@ -1469,6 +1471,10 @@ void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
     m_startButton->setEnabled(false);  // Initially disabled
     connect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onStartButtonClicked);
     timeControlPanelLayout->addWidget(m_startButton, 0);  // Stretch factor 0 to maintain button height
+    
+    // Store reference to the game time group for showing/hiding
+    gameTimeGroup->setObjectName("gameTimeGroup");
+    timeControlGroup->setObjectName("timeControlGroup");
     
     // Initialize game timer
     m_gameTimer = new QTimer(this);
@@ -1778,9 +1784,16 @@ void Qt_Chess::saveTimeControlSettings() {
 }
 
 void Qt_Chess::showTimeControlAfterTimeout() {
-    // Show time control panel so user can adjust settings
-    if (m_timeControlPanel) {
-        m_timeControlPanel->show();
+    // Show time control configuration group, hide game time group
+    QGroupBox* timeControlGroup = m_timeControlPanel->findChild<QGroupBox*>("timeControlGroup");
+    QGroupBox* gameTimeGroup = m_timeControlPanel->findChild<QGroupBox*>("gameTimeGroup");
+    
+    if (timeControlGroup) {
+        timeControlGroup->show();
+    }
+    
+    if (gameTimeGroup) {
+        gameTimeGroup->hide();
     }
     
     // Show new game button so user can quickly start a new game
@@ -1793,8 +1806,4 @@ void Qt_Chess::showTimeControlAfterTimeout() {
         m_startButton->setText("開始");
         m_startButton->setEnabled(m_timeControlEnabled);
     }
-    
-    // Hide time displays since game is over
-    if (m_whiteTimeLabel) m_whiteTimeLabel->hide();
-    if (m_blackTimeLabel) m_blackTimeLabel->hide();
 }
