@@ -1225,6 +1225,7 @@ void Qt_Chess::setupTimeControlUI(QVBoxLayout* rightPanelLayout) {
     m_timeLimitLabel->setAlignment(Qt::AlignCenter);
     timeControlLayout->addWidget(m_timeLimitLabel);
     
+    // Horizontal slider for total time - fills available width
     m_timeLimitSlider = new QSlider(Qt::Horizontal, this);
     m_timeLimitSlider->setMinimum(0);  // 0 = unlimited
     m_timeLimitSlider->setMaximum(MAX_TIME_LIMIT_SECONDS);  // Max 60 minutes
@@ -1244,6 +1245,7 @@ void Qt_Chess::setupTimeControlUI(QVBoxLayout* rightPanelLayout) {
     m_incrementLabel->setAlignment(Qt::AlignCenter);
     timeControlLayout->addWidget(m_incrementLabel);
     
+    // Horizontal slider for increment - fills available width
     m_incrementSlider = new QSlider(Qt::Horizontal, this);
     m_incrementSlider->setMinimum(0);
     m_incrementSlider->setMaximum(60);
