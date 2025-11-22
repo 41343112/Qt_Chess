@@ -66,13 +66,13 @@ private:
     QWidget* m_boardWidget;
     QMenuBar* m_menuBar;
     
-    // Timer for game clock
-    QTimer* m_gameTimer;
-    QLabel* m_whiteTimeLabel;
-    QLabel* m_blackTimeLabel;
-    int m_whiteTimeSeconds;
-    int m_blackTimeSeconds;
-    bool m_timerRunning;
+    // Game clock timer components
+    QTimer* m_gameTimer;                // Timer that triggers every second to update display
+    QLabel* m_whiteTimeLabel;           // Label displaying white player's elapsed time
+    QLabel* m_blackTimeLabel;           // Label displaying black player's elapsed time
+    int m_whiteTimeSeconds;             // Total elapsed time for white player in seconds
+    int m_blackTimeSeconds;             // Total elapsed time for black player in seconds
+    bool m_timerRunning;                // Flag indicating if timer is currently active
     
     // Sound effects
     QSoundEffect m_moveSound;

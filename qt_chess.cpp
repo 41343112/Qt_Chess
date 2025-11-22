@@ -20,6 +20,7 @@
 namespace {
     const QString CHECK_HIGHLIGHT_STYLE = "QPushButton { background-color: #FF6B6B; border: 2px solid #FF0000; }";
     const int DEFAULT_ICON_SIZE = 40; // Default fallback icon size in pixels
+    const QString TIMER_LABEL_STYLE = "QLabel { background-color: #F0F0F0; border: 2px solid #333; border-radius: 5px; padding: 10px; font-size: 18px; font-weight: bold; }";
 }
 
 Qt_Chess::Qt_Chess(QWidget *parent)
@@ -72,7 +73,7 @@ void Qt_Chess::setupUI() {
     // Left side - White player timer
     m_whiteTimeLabel = new QLabel("白方\n00:00", this);
     m_whiteTimeLabel->setAlignment(Qt::AlignCenter);
-    m_whiteTimeLabel->setStyleSheet("QLabel { background-color: #F0F0F0; border: 2px solid #333; border-radius: 5px; padding: 10px; font-size: 18px; font-weight: bold; }");
+    m_whiteTimeLabel->setStyleSheet(TIMER_LABEL_STYLE);
     m_whiteTimeLabel->setMinimumWidth(80);
     m_whiteTimeLabel->setMinimumHeight(100);
     mainLayout->addWidget(m_whiteTimeLabel);
@@ -126,7 +127,7 @@ void Qt_Chess::setupUI() {
     
     m_blackTimeLabel = new QLabel("黑方\n00:00", this);
     m_blackTimeLabel->setAlignment(Qt::AlignCenter);
-    m_blackTimeLabel->setStyleSheet("QLabel { background-color: #F0F0F0; border: 2px solid #333; border-radius: 5px; padding: 10px; font-size: 18px; font-weight: bold; }");
+    m_blackTimeLabel->setStyleSheet(TIMER_LABEL_STYLE);
     m_blackTimeLabel->setMinimumWidth(80);
     m_blackTimeLabel->setMinimumHeight(100);
     rightLayout->addWidget(m_blackTimeLabel);
