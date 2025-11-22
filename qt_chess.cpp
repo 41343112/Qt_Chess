@@ -65,6 +65,8 @@ Qt_Chess::~Qt_Chess()
 
 void Qt_Chess::setupUI() {
     QWidget* centralWidget = new QWidget(this);
+    // Changed from vertical to horizontal layout to accommodate left control panel
+    // This allows the left panel to size based on content while board takes remaining space
     QHBoxLayout* mainLayout = new QHBoxLayout(centralWidget);
     mainLayout->setContentsMargins(8, 8, 8, 8);
     mainLayout->setSpacing(12);

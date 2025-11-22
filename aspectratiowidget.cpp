@@ -7,6 +7,8 @@ AspectRatioWidget::AspectRatioWidget(QWidget *childWidget, QWidget *parent)
     : QWidget(parent)
 {
     setContentsMargins(0, 0, 0, 0);
+    // Layout is needed to properly integrate with Qt's layout system and size hints
+    // Actual positioning is done manually in resizeEvent() to maintain aspect ratio and centering
     QVBoxLayout *lay = new QVBoxLayout(this);
     lay->setContentsMargins(0, 0, 0, 0);
     lay->setSpacing(0);
@@ -23,7 +25,8 @@ void AspectRatioWidget::setContentWidget(QWidget *w)
     if (m_content) {
         m_content->setParent(this);
         m_content->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-        layout()->addWidget(m_content, 0, Qt::AlignCenter);
+        // Note: Manual geometry positioning in resizeEvent handles actual placement
+        layout()->addWidget(m_content);
     }
     updateGeometry();
 }
