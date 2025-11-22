@@ -41,6 +41,7 @@ void BoardColorSettingsDialog::setupUI() {
     presetsLayout->addWidget(createPresetPreview(ColorScheme::Classic, "經典"));
     presetsLayout->addWidget(createPresetPreview(ColorScheme::BlueGray, "藍灰"));
     presetsLayout->addWidget(createPresetPreview(ColorScheme::GreenWhite, "綠白"));
+    presetsLayout->addWidget(createPresetPreview(ColorScheme::Custom, "自訂"));
     presetsLayout->addStretch();
     schemeLayout->addLayout(presetsLayout);
     
@@ -118,42 +119,89 @@ void BoardColorSettingsDialog::setupUI() {
     updatePreview();
 }
 
-QWidget* BoardColorSettingsDialog::createPresetPreview(ColorScheme scheme, const QString& label) {
-    QWidget* container = new QWidget(this);
-    QVBoxLayout* layout = new QVBoxLayout(container);
-    layout->setContentsMargins(5, 5, 5, 5);
+QPushButton* BoardColorSettingsDialog::createPresetPreview(ColorScheme scheme, const QString& label) {
+    QPushButton* button = new QPushButton(this);
+    button->setFlat(true);
+    button->setCursor(Qt::PointingHandCursor);
+    button->setFixedSize(80, 95);  // Width for 2x2 grid + label
     
+    // Create content widget
+    QWidget* contentWidget = new QWidget(button);
+    QVBoxLayout* layout = new QVBoxLayout(contentWidget);
+    layout->setContentsMargins(5, 5, 5, 5);
+    layout->setSpacing(5);
+    
+    // Get preset colors or use custom indicator
     BoardColorSettings presetSettings = getPresetSettings(scheme);
     
     // Create 2x2 mini preview
-    QWidget* previewWidget = new QWidget(this);
+    QWidget* previewWidget = new QWidget(contentWidget);
     QGridLayout* grid = new QGridLayout(previewWidget);
     grid->setSpacing(0);
     grid->setContentsMargins(0, 0, 0, 0);
     
-    for (int row = 0; row < 2; ++row) {
-        for (int col = 0; col < 2; ++col) {
-            QLabel* square = new QLabel(this);
-            square->setMinimumSize(30, 30);
-            square->setMaximumSize(30, 30);
-            square->setFrameStyle(QFrame::Box);
-            square->setLineWidth(1);
-            
-            bool isLight = (row + col) % 2 == 0;
-            QColor color = isLight ? presetSettings.lightSquareColor : presetSettings.darkSquareColor;
-            square->setStyleSheet(QString("QLabel { background-color: %1; }").arg(color.name()));
-            
-            grid->addWidget(square, row, col);
+    if (scheme == ColorScheme::Custom) {
+        // For custom scheme, show a color palette icon or gradient
+        for (int row = 0; row < 2; ++row) {
+            for (int col = 0; col < 2; ++col) {
+                QLabel* square = new QLabel(contentWidget);
+                square->setMinimumSize(30, 30);
+                square->setMaximumSize(30, 30);
+                square->setFrameStyle(QFrame::Box);
+                square->setLineWidth(1);
+                
+                // Create a colorful pattern for custom option
+                QColor color;
+                if (row == 0 && col == 0) color = QColor("#FF6B6B");  // Red
+                else if (row == 0 && col == 1) color = QColor("#4ECDC4");  // Cyan
+                else if (row == 1 && col == 0) color = QColor("#95E1D3");  // Light green
+                else color = QColor("#FFE66D");  // Yellow
+                
+                square->setStyleSheet(QString("QLabel { background-color: %1; }").arg(color.name()));
+                grid->addWidget(square, row, col);
+            }
+        }
+    } else {
+        // For preset schemes, show the actual colors
+        for (int row = 0; row < 2; ++row) {
+            for (int col = 0; col < 2; ++col) {
+                QLabel* square = new QLabel(contentWidget);
+                square->setMinimumSize(30, 30);
+                square->setMaximumSize(30, 30);
+                square->setFrameStyle(QFrame::Box);
+                square->setLineWidth(1);
+                
+                bool isLight = (row + col) % 2 == 0;
+                QColor color = isLight ? presetSettings.lightSquareColor : presetSettings.darkSquareColor;
+                square->setStyleSheet(QString("QLabel { background-color: %1; }").arg(color.name()));
+                
+                grid->addWidget(square, row, col);
+            }
         }
     }
     
     layout->addWidget(previewWidget, 0, Qt::AlignCenter);
     
-    QLabel* nameLabel = new QLabel(label, this);
+    QLabel* nameLabel = new QLabel(label, contentWidget);
     nameLabel->setAlignment(Qt::AlignCenter);
     layout->addWidget(nameLabel);
     
-    return container;
+    // Set content widget geometry to fill button
+    contentWidget->setGeometry(0, 0, 80, 95);
+    
+    // Add hover effect
+    button->setStyleSheet(
+        "QPushButton { border: 2px solid transparent; border-radius: 5px; background-color: transparent; }"
+        "QPushButton:hover { border: 2px solid #4A90E2; background-color: #F0F0F0; }"
+        "QPushButton:pressed { background-color: #E0E0E0; }"
+    );
+    
+    // Connect click event
+    connect(button, &QPushButton::clicked, this, [this, scheme]() {
+        onPresetPreviewClicked(scheme);
+    });
+    
+    return button;
 }
 
 void BoardColorSettingsDialog::updatePreview() {
@@ -249,6 +297,31 @@ void BoardColorSettingsDialog::onResetToDefaults() {
 
 void BoardColorSettingsDialog::onAccept() {
     accept();
+}
+
+void BoardColorSettingsDialog::onPresetPreviewClicked(ColorScheme scheme) {
+    if (scheme == ColorScheme::Custom) {
+        // When custom preview is clicked, show color picker for light square first
+        QColor lightColor = QColorDialog::getColor(m_settings.lightSquareColor, this, "選擇淺色方格顏色");
+        if (lightColor.isValid()) {
+            m_settings.lightSquareColor = lightColor;
+            
+            // Then show color picker for dark square
+            QColor darkColor = QColorDialog::getColor(m_settings.darkSquareColor, this, "選擇深色方格顏色");
+            if (darkColor.isValid()) {
+                m_settings.darkSquareColor = darkColor;
+            }
+            
+            m_settings.scheme = ColorScheme::Custom;
+            setComboBoxScheme(ColorScheme::Custom);
+            updateColorButtons();
+            updatePreview();
+        }
+    } else {
+        // Apply the preset color scheme
+        applyPresetColorScheme(scheme);
+        setComboBoxScheme(scheme);
+    }
 }
 
 BoardColorSettingsDialog::BoardColorSettings BoardColorSettingsDialog::getSettings() const {

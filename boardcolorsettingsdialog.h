@@ -43,6 +43,7 @@ private slots:
     void onDarkColorClicked();
     void onResetToDefaults();
     void onAccept();
+    void onPresetPreviewClicked(ColorScheme scheme);
 
 private:
     BoardColorSettings m_settings;
@@ -57,7 +58,7 @@ private:
     void updatePreview();
     void updateColorButtons();
     void applyPresetColorScheme(ColorScheme scheme);
-    QWidget* createPresetPreview(ColorScheme scheme, const QString& label);
+    QPushButton* createPresetPreview(ColorScheme scheme, const QString& label);
     void setComboBoxScheme(ColorScheme scheme);
 };
 
