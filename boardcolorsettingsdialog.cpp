@@ -367,9 +367,10 @@ void BoardColorSettingsDialog::onAccept() {
         
         if (nameDialog.exec() == QDialog::Accepted) {
             // Save to the selected custom slot
+            QString customName = nameEdit->text().trimmed();
             m_customSlots[slotIndex] = m_settings;
-            m_customSlots[slotIndex].customName = nameEdit->text().trimmed();
-            m_settings.customName = m_customSlots[slotIndex].customName;
+            m_customSlots[slotIndex].customName = customName;
+            m_settings.customName = customName;
             
             saveCustomSlots();
         } else {
@@ -388,7 +389,7 @@ void BoardColorSettingsDialog::onAccept() {
         QLabel* label = new QLabel("選擇要儲存到哪個自訂槽位：", &saveDialog);
         layout->addWidget(label);
         
-        QRadioButton* slotRadios[MAX_CUSTOM_SLOTS];
+        QVector<QRadioButton*> slotRadios(MAX_CUSTOM_SLOTS);
         for (int i = 0; i < MAX_CUSTOM_SLOTS; ++i) {
             QString slotLabel = QString("自訂%1").arg(i + 1);
             if (!m_customSlots[i].customName.isEmpty()) {
