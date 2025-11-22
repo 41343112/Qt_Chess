@@ -185,9 +185,9 @@ void Qt_Chess::setupUI() {
     }
     
     // Add board to container layout
-    // Stretch factor 1 allows board to expand and fill available horizontal space
-    // while time labels (stretch factor 0) maintain their minimum sizes
-    boardContainerLayout->addWidget(m_boardWidget, 1, Qt::AlignCenter);
+    // Stretch factor 0 to maintain fixed board size based on square sizes
+    // No alignment specified - board will naturally align to the left
+    boardContainerLayout->addWidget(m_boardWidget, 0);
     
     // White time label (right side - player's time) - initially hidden
     m_whiteTimeLabel = new QLabel("--:--", m_boardContainer);
@@ -198,8 +198,9 @@ void Qt_Chess::setupUI() {
     m_whiteTimeLabel->hide();  // Initially hidden
     boardContainerLayout->addWidget(m_whiteTimeLabel, 0, Qt::AlignBottom);
     
-    contentLayout->addWidget(m_boardContainer, 2);  // Give board more space (2:1 ratio)
-    contentLayout->setAlignment(m_boardContainer, Qt::AlignCenter);  // Center the board container
+    // Add spacer after board container to push content to the left
+    contentLayout->addWidget(m_boardContainer, 0);  // No stretch - fixed size based on content
+    contentLayout->addStretch(1);  // Add stretch after board container to push everything left
     
     // Right panel for new game button - positioned in the middle
     QWidget* rightPanel = new QWidget(this);
@@ -225,7 +226,7 @@ void Qt_Chess::setupUI() {
     // Add stretch below the button to keep it centered
     rightPanelLayout->addStretch(1);
     
-    contentLayout->addWidget(rightPanel, 1);  // Right panel gets same space as left panel
+    contentLayout->addWidget(rightPanel, 0);  // Fixed size based on content
     
     mainLayout->addLayout(contentLayout);
     
