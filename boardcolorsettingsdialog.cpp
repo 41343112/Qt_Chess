@@ -59,16 +59,11 @@ void BoardColorSettingsDialog::setupUI() {
     presetsLayout->addWidget(createPresetPreview(ColorScheme::Classic, "經典"));
     presetsLayout->addWidget(createPresetPreview(ColorScheme::BlueGray, "藍灰"));
     presetsLayout->addWidget(createPresetPreview(ColorScheme::GreenWhite, "綠白"));
+    presetsLayout->addWidget(createPresetPreview(ColorScheme::PurplePink, "紫粉"));
+    presetsLayout->addWidget(createPresetPreview(ColorScheme::WoodDark, "木紋深色"));
+    presetsLayout->addWidget(createPresetPreview(ColorScheme::OceanBlue, "海洋藍"));
     presetsLayout->addStretch();
     schemeLayout->addLayout(presetsLayout);
-    
-    // Second row with 3 new presets
-    QHBoxLayout* presetsLayout2 = new QHBoxLayout();
-    presetsLayout2->addWidget(createPresetPreview(ColorScheme::PurplePink, "紫粉"));
-    presetsLayout2->addWidget(createPresetPreview(ColorScheme::WoodDark, "木紋深色"));
-    presetsLayout2->addWidget(createPresetPreview(ColorScheme::OceanBlue, "海洋藍"));
-    presetsLayout2->addStretch();
-    schemeLayout->addLayout(presetsLayout2);
     
     mainLayout->addWidget(schemeGroup);
     
@@ -82,6 +77,8 @@ void BoardColorSettingsDialog::setupUI() {
     customRow1->addWidget(createPresetPreview(ColorScheme::Custom2, "自訂2"));
     customRow1->addWidget(createPresetPreview(ColorScheme::Custom3, "自訂3"));
     customRow1->addWidget(createPresetPreview(ColorScheme::Custom4, "自訂4"));
+
+
     customRow1->addStretch();
     customSlotsLayout->addLayout(customRow1);
     
