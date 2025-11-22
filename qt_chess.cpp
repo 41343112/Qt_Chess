@@ -98,6 +98,8 @@ void Qt_Chess::setupUI() {
     // Chess board container with overlaid time displays
     m_boardContainer = new QWidget(this);
     m_boardContainer->setMouseTracking(true);
+    QVBoxLayout* boardContainerLayout = new QVBoxLayout(m_boardContainer);
+    boardContainerLayout->setContentsMargins(0, 0, 0, 0);
     
     // Use absolute positioning for overlaid time labels
     // Create time labels that will be positioned over the board
@@ -158,6 +160,8 @@ void Qt_Chess::setupUI() {
         }
     }
     
+    // Add board to container layout, centered
+    boardContainerLayout->addWidget(m_boardWidget, 0, Qt::AlignCenter);
     contentLayout->addWidget(m_boardContainer, 1);
     
     // Right panel for time controls (wrapped in a widget for easy show/hide)
