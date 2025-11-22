@@ -53,6 +53,13 @@ A fully functional player-vs-player chess game built with Qt5.
   - Reset to default colors at any time
   - Settings are saved persistently between sessions
   - See [BOARD_COLOR_QUICK_START.md](BOARD_COLOR_QUICK_START.md) for user guide
+- **Board Flip Feature** (反轉棋盤):
+  - Flip the board 180 degrees to view from either player's perspective
+  - Perfect for two-player games where players sit on opposite sides
+  - Accessible via Settings menu → "反轉棋盤" (Flip Board)
+  - All interactions (click, drag-and-drop, highlights) work correctly when flipped
+  - Board flip state persists between sessions
+  - See [BOARD_FLIP_FEATURE.md](BOARD_FLIP_FEATURE.md) for technical details
 
 ## Building
 
@@ -118,6 +125,12 @@ make
     - View thumbnail previews of all preset color schemes
     - Reset to default colors at any time
     - All color settings are saved automatically
+13. **Board Flip**: Click "設定" (Settings) menu > "反轉棋盤" (Flip Board) to:
+    - Rotate the board 180 degrees to view from either player's perspective
+    - Ideal for two-player games where players sit on opposite sides
+    - Click again to restore the original orientation
+    - All game interactions (clicking, dragging, highlights) work correctly when flipped
+    - Board orientation is saved and restored between sessions
 
 ## Game Rules
 
