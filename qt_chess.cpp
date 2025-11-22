@@ -124,10 +124,10 @@ void Qt_Chess::setupUI() {
     setupTimeControlUI(leftPanelLayout);
     contentLayout->addWidget(m_timeControlPanel, 1);  // Less space for control panel
     
-    // Chess board container with time displays above and below
+    // Chess board container with time displays on left and right sides
     m_boardContainer = new QWidget(this);
     m_boardContainer->setMouseTracking(true);
-    QVBoxLayout* boardContainerLayout = new QVBoxLayout(m_boardContainer);
+    QHBoxLayout* boardContainerLayout = new QHBoxLayout(m_boardContainer);
     boardContainerLayout->setContentsMargins(BOARD_CONTAINER_MARGIN, BOARD_CONTAINER_MARGIN, 
                                              BOARD_CONTAINER_MARGIN, BOARD_CONTAINER_MARGIN);
     boardContainerLayout->setSpacing(TIME_LABEL_SPACING);  // Consistent spacing between elements
@@ -137,14 +137,16 @@ void Qt_Chess::setupUI() {
     timeFont.setPointSize(14);
     timeFont.setBold(true);
     
-    // Black time label (above board) - initially hidden
+    // Opponent's time label (left side of board) - initially hidden
+    // Note: Opponent is determined by the current player (Black when White's turn, White when Black's turn)
+    // We'll use blackTimeLabel for opponent time display
     m_blackTimeLabel = new QLabel("--:--", m_boardContainer);
     m_blackTimeLabel->setFont(timeFont);
     m_blackTimeLabel->setAlignment(Qt::AlignCenter);
     m_blackTimeLabel->setStyleSheet("QLabel { background-color: rgba(51, 51, 51, 200); color: #FFF; padding: 8px; border-radius: 5px; }");
     m_blackTimeLabel->setMinimumSize(100, 40);
     m_blackTimeLabel->hide();  // Initially hidden
-    boardContainerLayout->addWidget(m_blackTimeLabel, 0, Qt::AlignCenter);
+    boardContainerLayout->addWidget(m_blackTimeLabel, 0, Qt::AlignVCenter);
     
     // Chess board
     m_boardWidget = new QWidget(m_boardContainer);
@@ -186,14 +188,15 @@ void Qt_Chess::setupUI() {
     // Add board to container layout, centered
     boardContainerLayout->addWidget(m_boardWidget, 0, Qt::AlignCenter);
     
-    // White time label (below board) - initially hidden
+    // My time label (right side of board) - initially hidden
+    // We'll use whiteTimeLabel for player's own time display
     m_whiteTimeLabel = new QLabel("--:--", m_boardContainer);
     m_whiteTimeLabel->setFont(timeFont);
     m_whiteTimeLabel->setAlignment(Qt::AlignCenter);
     m_whiteTimeLabel->setStyleSheet("QLabel { background-color: rgba(51, 51, 51, 200); color: #FFF; padding: 8px; border-radius: 5px; }");
     m_whiteTimeLabel->setMinimumSize(100, 40);
     m_whiteTimeLabel->hide();  // Initially hidden
-    boardContainerLayout->addWidget(m_whiteTimeLabel, 0, Qt::AlignCenter);
+    boardContainerLayout->addWidget(m_whiteTimeLabel, 0, Qt::AlignVCenter);
     
     contentLayout->addWidget(m_boardContainer, 2);  // Give board more space (2:1 ratio)
     contentLayout->setAlignment(m_boardContainer, Qt::AlignCenter);  // Center the board container
@@ -913,12 +916,13 @@ void Qt_Chess::updateSquareSizes() {
     // Add base margins for layout spacing (board container margins are part of board widget size)
     reservedWidth += BASE_MARGINS;
     
-    // Account for time labels height if visible, plus spacing
+    // Account for time labels width if visible, plus spacing
+    // Time labels are now on the left and right sides of the board
     if (m_whiteTimeLabel && m_whiteTimeLabel->isVisible()) {
-        reservedHeight += m_whiteTimeLabel->minimumHeight() + TIME_LABEL_SPACING;
+        reservedWidth += m_whiteTimeLabel->minimumWidth() + TIME_LABEL_SPACING;
     }
     if (m_blackTimeLabel && m_blackTimeLabel->isVisible()) {
-        reservedHeight += m_blackTimeLabel->minimumHeight() + TIME_LABEL_SPACING;
+        reservedWidth += m_blackTimeLabel->minimumWidth() + TIME_LABEL_SPACING;
     }
     
     // Add some padding for layout margins and spacing
