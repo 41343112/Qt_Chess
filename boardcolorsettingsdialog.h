@@ -6,7 +6,6 @@
 #include <QLabel>
 #include <QGridLayout>
 #include <QColor>
-#include <QComboBox>
 #include <QButtonGroup>
 #include <QRadioButton>
 
@@ -27,7 +26,11 @@ public:
         Classic,      // Classic brown/beige (default)
         BlueGray,     // Blue and gray
         GreenWhite,   // Green and white
-        Custom        // Custom user-selected colors
+        Wooden,       // Wooden brown
+        DarkMode,     // Dark mode
+        Custom1,      // Custom user-selected colors slot 1
+        Custom2,      // Custom user-selected colors slot 2
+        Custom3       // Custom user-selected colors slot 3
     };
 
     struct BoardColorSettings {
@@ -43,7 +46,6 @@ public:
     static BoardColorSettings getPresetSettings(ColorScheme scheme);
 
 private slots:
-    void onColorSchemeChanged(int index);
     void onLightColorClicked();
     void onDarkColorClicked();
     void onResetToDefaults();
@@ -53,18 +55,22 @@ private slots:
 private:
     BoardColorSettings m_settings;
     
-    QComboBox* m_colorSchemeComboBox;
     QPushButton* m_lightColorButton;
     QPushButton* m_darkColorButton;
     QWidget* m_previewWidget;
     QLabel* m_previewSquares[2][2];  // 2x2 preview grid
+    
+    // Custom color slots storage
+    BoardColorSettings m_customSlots[3];
     
     void setupUI();
     void updatePreview();
     void updateColorButtons();
     void applyPresetColorScheme(ColorScheme scheme);
     QPushButton* createPresetPreview(ColorScheme scheme, const QString& label);
-    void setComboBoxScheme(ColorScheme scheme);
+    void loadCustomSlots();
+    void saveCustomSlots();
+    bool isCustomSlot(ColorScheme scheme) const;
 };
 
 #endif // BOARDCOLORSETTINGSDIALOG_H
