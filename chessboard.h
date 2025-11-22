@@ -52,6 +52,7 @@ private:
     void initializeMidGameBoard();
     void initializeEndGameBoard();
     void clearBoard();
+    void markAllPiecesAsMoved();
 };
 
 #endif // CHESSBOARD_H

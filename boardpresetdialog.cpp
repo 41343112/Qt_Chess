@@ -1,5 +1,6 @@
 #include "boardpresetdialog.h"
 #include <QGroupBox>
+#include <cassert>
 
 BoardPresetDialog::BoardPresetDialog(QWidget *parent)
     : QDialog(parent), m_selectedPreset(BoardPreset::Standard)
@@ -104,6 +105,8 @@ void BoardPresetDialog::onOkClicked()
             m_selectedPreset = BoardPreset::EndGame;
             break;
         default:
+            // This should never happen with controlled radio button selection
+            assert(false && "Invalid board preset selection");
             m_selectedPreset = BoardPreset::Standard;
             break;
     }
