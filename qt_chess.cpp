@@ -94,36 +94,36 @@ void Qt_Chess::setupUI() {
     QWidget* centralWidget = new QWidget(this);
     QVBoxLayout* mainLayout = new QVBoxLayout(centralWidget);
     
-    // Create horizontal layout for board and time controls
+    // Create horizontal layout for time controls and board
     QHBoxLayout* contentLayout = new QHBoxLayout();
     
-    // Chess board container with overlaid time displays
+    // Left panel for time controls (wrapped in a widget for easy show/hide)
+    m_timeControlPanel = new QWidget(this);
+    m_timeControlPanel->setMaximumWidth(300);  // Limit panel width
+    QVBoxLayout* leftPanelLayout = new QVBoxLayout(m_timeControlPanel);
+    leftPanelLayout->setContentsMargins(0, 0, 0, 0);
+    setupTimeControlUI(leftPanelLayout);
+    contentLayout->addWidget(m_timeControlPanel, 1);  // Less space for control panel
+    
+    // Chess board container with time displays above and below
     m_boardContainer = new QWidget(this);
     m_boardContainer->setMouseTracking(true);
     QVBoxLayout* boardContainerLayout = new QVBoxLayout(m_boardContainer);
     boardContainerLayout->setContentsMargins(0, 0, 0, 0);
     
-    // Use absolute positioning for overlaid time labels
-    // Create time labels that will be positioned over the board
+    // Time display font
     QFont timeFont;
     timeFont.setPointSize(14);
     timeFont.setBold(true);
     
-    // Black time label (upper left) - initially hidden
+    // Black time label (above board) - initially hidden
     m_blackTimeLabel = new QLabel("--:--", m_boardContainer);
     m_blackTimeLabel->setFont(timeFont);
     m_blackTimeLabel->setAlignment(Qt::AlignCenter);
     m_blackTimeLabel->setStyleSheet("QLabel { background-color: rgba(51, 51, 51, 200); color: #FFF; padding: 8px; border-radius: 5px; }");
     m_blackTimeLabel->setMinimumSize(100, 40);
     m_blackTimeLabel->hide();  // Initially hidden
-    
-    // White time label (lower right) - initially hidden
-    m_whiteTimeLabel = new QLabel("--:--", m_boardContainer);
-    m_whiteTimeLabel->setFont(timeFont);
-    m_whiteTimeLabel->setAlignment(Qt::AlignCenter);
-    m_whiteTimeLabel->setStyleSheet("QLabel { background-color: rgba(51, 51, 51, 200); color: #FFF; padding: 8px; border-radius: 5px; }");
-    m_whiteTimeLabel->setMinimumSize(100, 40);
-    m_whiteTimeLabel->hide();  // Initially hidden
+    boardContainerLayout->addWidget(m_blackTimeLabel, 0, Qt::AlignCenter);
     
     // Chess board
     m_boardWidget = new QWidget(m_boardContainer);
@@ -164,15 +164,17 @@ void Qt_Chess::setupUI() {
     
     // Add board to container layout, centered
     boardContainerLayout->addWidget(m_boardWidget, 0, Qt::AlignCenter);
-    contentLayout->addWidget(m_boardContainer, 2);  // Give board more space (2:1 ratio)
     
-    // Right panel for time controls (wrapped in a widget for easy show/hide)
-    m_timeControlPanel = new QWidget(this);
-    m_timeControlPanel->setMaximumWidth(300);  // Limit panel width
-    QVBoxLayout* rightPanelLayout = new QVBoxLayout(m_timeControlPanel);
-    rightPanelLayout->setContentsMargins(0, 0, 0, 0);
-    setupTimeControlUI(rightPanelLayout);
-    contentLayout->addWidget(m_timeControlPanel, 1);  // Less space for control panel
+    // White time label (below board) - initially hidden
+    m_whiteTimeLabel = new QLabel("--:--", m_boardContainer);
+    m_whiteTimeLabel->setFont(timeFont);
+    m_whiteTimeLabel->setAlignment(Qt::AlignCenter);
+    m_whiteTimeLabel->setStyleSheet("QLabel { background-color: rgba(51, 51, 51, 200); color: #FFF; padding: 8px; border-radius: 5px; }");
+    m_whiteTimeLabel->setMinimumSize(100, 40);
+    m_whiteTimeLabel->hide();  // Initially hidden
+    boardContainerLayout->addWidget(m_whiteTimeLabel, 0, Qt::AlignCenter);
+    
+    contentLayout->addWidget(m_boardContainer, 2);  // Give board more space (2:1 ratio)
     
     mainLayout->addLayout(contentLayout);
     
@@ -392,10 +394,7 @@ void Qt_Chess::onNewGameClicked() {
     stopTimer();
     m_timerStarted = false;
     
-    // Show time control panel again
-    showTimeControlPanel();
-    
-    // Hide overlaid time displays
+    // Hide time displays
     if (m_whiteTimeLabel) m_whiteTimeLabel->hide();
     if (m_blackTimeLabel) m_blackTimeLabel->hide();
     
@@ -441,18 +440,10 @@ void Qt_Chess::onStartButtonClicked() {
         m_timerStarted = true;
         startTimer();
         
-        // Hide time control panel
-        hideTimeControlPanel();
-        
-        // Show overlaid time displays
+        // Show time displays above and below the board
         if (m_whiteTimeLabel && m_blackTimeLabel) {
             m_whiteTimeLabel->show();
             m_blackTimeLabel->show();
-            m_whiteTimeLabel->raise();  // Bring to front
-            m_blackTimeLabel->raise();  // Bring to front
-            
-            // Position time labels over the board
-            positionOverlayTimeLabels();
         }
         
         updateTimeDisplays();
@@ -821,12 +812,6 @@ void Qt_Chess::mouseReleaseEvent(QMouseEvent *event) {
 void Qt_Chess::resizeEvent(QResizeEvent *event) {
     QMainWindow::resizeEvent(event);
     updateSquareSizes();
-    
-    // Reposition overlaid time labels if they are visible
-    if (m_timerStarted && m_whiteTimeLabel && m_blackTimeLabel && 
-        m_whiteTimeLabel->isVisible() && m_blackTimeLabel->isVisible()) {
-        positionOverlayTimeLabels();
-    }
     
     // Reapply highlights after resize
     if (m_pieceSelected) {
@@ -1541,7 +1526,6 @@ void Qt_Chess::onGameTimerTick() {
                     m_startButton->setText("開始");
                     m_startButton->setEnabled(true);
                 }
-                showTimeControlPanel();
                 if (m_whiteTimeLabel) m_whiteTimeLabel->hide();
                 if (m_blackTimeLabel) m_blackTimeLabel->hide();
                 QMessageBox::information(this, "時間到", "白方超時！黑方獲勝！");
@@ -1561,7 +1545,6 @@ void Qt_Chess::onGameTimerTick() {
                     m_startButton->setText("開始");
                     m_startButton->setEnabled(true);
                 }
-                showTimeControlPanel();
                 if (m_whiteTimeLabel) m_whiteTimeLabel->hide();
                 if (m_blackTimeLabel) m_blackTimeLabel->hide();
                 QMessageBox::information(this, "時間到", "黑方超時！白方獲勝！");
