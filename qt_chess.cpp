@@ -120,10 +120,11 @@ void Qt_Chess::setupUI() {
     // Left panel for time controls
     m_timeControlPanel = new QWidget(this);
     m_timeControlPanel->setMaximumWidth(LEFT_PANEL_MAX_WIDTH);  // Limit panel width
+    m_timeControlPanel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);  // Fixed width, expand height
     QVBoxLayout* leftPanelLayout = new QVBoxLayout(m_timeControlPanel);
     leftPanelLayout->setContentsMargins(0, 0, 0, 0);
     setupTimeControlUI(leftPanelLayout);
-    contentLayout->addWidget(m_timeControlPanel, 1);  // Less space for control panel
+    contentLayout->addWidget(m_timeControlPanel, 0, Qt::AlignTop);  // Align to top with stretch factor 0
     
     // Chess board container with time displays on left and right
     m_boardContainer = new QWidget(this);
@@ -993,6 +994,36 @@ void Qt_Chess::updateSquareSizes() {
         buttonFont.setPointSize(buttonFontSize);
         buttonFont.setBold(true);
         m_newGameButton->setFont(buttonFont);
+    }
+    
+    // Update time control panel to match board height
+    if (m_timeControlPanel && m_boardWidget) {
+        // Calculate the board height (8 squares + 4px for borders)
+        int boardHeight = squareSize * 8 + 4;
+        
+        // Set the time control panel to have the same height as the board
+        // This ensures it always fills the left side of the chessboard
+        m_timeControlPanel->setMinimumHeight(boardHeight);
+        m_timeControlPanel->setMaximumHeight(boardHeight);
+        
+        // Scale font sizes in time control panel based on board size
+        int controlFontSize = qMax(MIN_UI_FONT_SIZE, qMin(MAX_UI_FONT_SIZE, squareSize / UI_FONT_SCALE_DIVISOR));
+        
+        // Update all labels in time control panel
+        QList<QLabel*> labels = m_timeControlPanel->findChildren<QLabel*>();
+        for (QLabel* label : labels) {
+            QFont labelFont = label->font();
+            labelFont.setPointSize(controlFontSize);
+            label->setFont(labelFont);
+        }
+        
+        // Update start button font
+        if (m_startButton) {
+            QFont startButtonFont = m_startButton->font();
+            startButtonFont.setPointSize(controlFontSize);
+            startButtonFont.setBold(true);
+            m_startButton->setFont(startButtonFont);
+        }
     }
 }
 
