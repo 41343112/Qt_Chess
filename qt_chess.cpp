@@ -24,6 +24,8 @@
 namespace {
     const QString CHECK_HIGHLIGHT_STYLE = "QPushButton { background-color: #FF6B6B; border: 2px solid #FF0000; }";
     const int DEFAULT_ICON_SIZE = 40; // Default fallback icon size in pixels
+    const int TIME_DISPLAY_MARGIN = 10; // Margin from board edges for time displays
+    const int TIME_DISPLAY_FALLBACK_OFFSET = 120; // Offset for white time fallback position
 }
 
 Qt_Chess::Qt_Chess(QWidget *parent)
@@ -373,11 +375,13 @@ void Qt_Chess::onNewGameClicked() {
         // Enable start button when time control is active
         if (m_startButton) {
             m_startButton->setEnabled(true);
+            m_startButton->setText("開始");
         }
     } else {
         // Disable start button when time control is not active
         if (m_startButton) {
             m_startButton->setEnabled(false);
+            m_startButton->setText("開始");
         }
     }
     
@@ -1305,16 +1309,16 @@ void Qt_Chess::positionTimeDisplaysOnBoard() {
     int boardHeight = m_boardWidget->height();
     
     // Position black time at top-left of board (offset from board position)
-    m_blackTimeLabel->move(boardPos.x() + 10, boardPos.y() + 10);
+    m_blackTimeLabel->move(boardPos.x() + TIME_DISPLAY_MARGIN, boardPos.y() + TIME_DISPLAY_MARGIN);
     m_blackTimeLabel->raise();  // Ensure it's on top
     
     // Position white time at bottom-right of board
     if (boardHeight > 0 && boardWidth > 0) {
-        m_whiteTimeLabel->move(boardPos.x() + boardWidth - m_whiteTimeLabel->width() - 10, 
-                               boardPos.y() + boardHeight - m_whiteTimeLabel->height() - 10);
+        m_whiteTimeLabel->move(boardPos.x() + boardWidth - m_whiteTimeLabel->width() - TIME_DISPLAY_MARGIN, 
+                               boardPos.y() + boardHeight - m_whiteTimeLabel->height() - TIME_DISPLAY_MARGIN);
     } else {
         // Default position if board isn't sized yet (offset to avoid overlap with black label)
-        m_whiteTimeLabel->move(boardPos.x() + 120, boardPos.y() + 10);
+        m_whiteTimeLabel->move(boardPos.x() + TIME_DISPLAY_FALLBACK_OFFSET, boardPos.y() + TIME_DISPLAY_MARGIN);
     }
     m_whiteTimeLabel->raise();  // Ensure it's on top
 }
