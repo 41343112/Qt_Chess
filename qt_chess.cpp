@@ -2417,6 +2417,8 @@ void Qt_Chess::onReplayLastClicked() {
     }
 }
 
+// 處理退出回放按鈕點擊事件
+// 此函數只在遊戲進行中的回放模式被調用，用於退出回放並恢復到當前遊戲狀態
 void Qt_Chess::onExitReplayClicked() {
     // 退出回放模式並恢復到當前遊戲狀態
     exitReplayMode();
