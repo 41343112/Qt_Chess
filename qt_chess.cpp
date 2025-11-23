@@ -23,6 +23,8 @@
 #include <QFileDialog>
 #include <QDate>
 #include <QTextStream>
+#include <QClipboard>
+#include <QApplication>
 
 namespace {
     const QString CHECK_HIGHLIGHT_STYLE = "QPushButton { background-color: #FF6B6B; border: 2px solid #FF0000; }";
@@ -102,6 +104,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_timeControlPanel(nullptr)
     , m_moveListWidget(nullptr)
     , m_exportPGNButton(nullptr)
+    , m_copyPGNButton(nullptr)
     , m_moveListPanel(nullptr)
 {
     ui->setupUi(this);
@@ -167,7 +170,16 @@ void Qt_Chess::setupUI() {
     connect(m_exportPGNButton, &QPushButton::clicked, this, &Qt_Chess::onExportPGNClicked);
     moveListLayout->addWidget(m_exportPGNButton);
     
+    // 複製棋譜按鈕（初始隱藏）
+    m_copyPGNButton = new QPushButton("複製棋譜", m_moveListPanel);
+    m_copyPGNButton->hide();
+    connect(m_copyPGNButton, &QPushButton::clicked, this, &Qt_Chess::onCopyPGNClicked);
+    moveListLayout->addWidget(m_copyPGNButton);
+    
     contentLayout->addWidget(m_moveListPanel);
+    
+    // 添加伸展以將棋盤置中
+    contentLayout->addStretch(1);
     
     // 棋盤容器，左右兩側顯示時間
     m_boardContainer = new QWidget(this);
@@ -242,8 +254,11 @@ void Qt_Chess::setupUI() {
     m_whiteTimeLabel->hide();  // 初始隱藏
     boardContainerLayout->addWidget(m_whiteTimeLabel, 0, Qt::AlignBottom);
     
-    contentLayout->addWidget(m_boardContainer, 2);  // 給棋盤更多空間（2:1 比例）
-    contentLayout->setAlignment(m_boardContainer, Qt::AlignCenter);  // 將棋盤容器置中
+    // 將棋盤容器添加到內容佈局，不設置伸展因子以保持其自然大小
+    contentLayout->addWidget(m_boardContainer, 0);
+    
+    // 添加伸展以平衡左側的伸展
+    contentLayout->addStretch(1);
     
     // 時間控制的右側面板
     m_timeControlPanel = new QWidget(this);
@@ -507,8 +522,9 @@ void Qt_Chess::onNewGameClicked() {
     // 隱藏放棄按鈕
     if (m_giveUpButton) m_giveUpButton->hide();
     
-    // 隱藏匯出 PGN 按鈕
+    // 隱藏匯出 PGN 按鈕和複製棋譜按鈕
     if (m_exportPGNButton) m_exportPGNButton->hide();
+    if (m_copyPGNButton) m_copyPGNButton->hide();
     
     // 清空棋譜列表
     if (m_moveListWidget) m_moveListWidget->clear();
@@ -1866,9 +1882,12 @@ void Qt_Chess::handleGameEnd() {
     if (m_whiteTimeLabel) m_whiteTimeLabel->hide();
     if (m_blackTimeLabel) m_blackTimeLabel->hide();
     
-    // 顯示匯出 PGN 按鈕
+    // 顯示匯出 PGN 按鈕和複製棋譜按鈕
     if (m_exportPGNButton) {
         m_exportPGNButton->show();
+    }
+    if (m_copyPGNButton) {
+        m_copyPGNButton->show();
     }
 }
 
@@ -2130,4 +2149,18 @@ QString Qt_Chess::generatePGN() const {
     pgn += result + "\n";
     
     return pgn;
+}
+
+void Qt_Chess::onCopyPGNClicked() {
+    copyPGN();
+}
+
+void Qt_Chess::copyPGN() {
+    QString pgn = generatePGN();
+    
+    // 複製到剪貼簿
+    QClipboard* clipboard = QApplication::clipboard();
+    clipboard->setText(pgn);
+    
+    QMessageBox::information(this, "成功", "棋譜已複製到剪貼簿");
 }

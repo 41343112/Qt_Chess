@@ -54,6 +54,7 @@ private slots:
     void onFlipBoardClicked();
     void onStartButtonClicked();
     void onExportPGNClicked();
+    void onCopyPGNClicked();
 
 private:
     Ui::Qt_Chess *ui;
@@ -118,6 +119,7 @@ private:
     // 棋譜面板
     QListWidget* m_moveListWidget;
     QPushButton* m_exportPGNButton;
+    QPushButton* m_copyPGNButton;
     QWidget* m_moveListPanel;
     
     void setupUI();
@@ -177,6 +179,7 @@ private:
     // 棋譜功能
     void updateMoveList();
     void exportPGN();
+    void copyPGN();
     QString generatePGN() const;
 };
 #endif // QT_CHESS_H
