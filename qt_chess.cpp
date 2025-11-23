@@ -506,6 +506,9 @@ void Qt_Chess::onNewGameClicked() {
     updateBoard();
     updateStatus();
     updateTimeDisplays();
+    
+    // 清除任何殘留的高亮顯示（例如選中的棋子、有效移動、將軍警告）
+    clearHighlights();
 }
 
 void Qt_Chess::onGiveUpClicked() {
@@ -999,6 +1002,11 @@ void Qt_Chess::updateSquareSizes() {
     
     // 為佈局邊距和間距添加一些填充
     reservedHeight += BASE_MARGINS;
+    
+    // 考慮選單欄高度（如果存在）以防止全螢幕時棋盤被裁切
+    if (m_menuBar && m_menuBar->isVisible()) {
+        reservedHeight += m_menuBar->height();
+    }
     
     int availableWidth = central->width() - reservedWidth;
     int availableHeight = central->height() - reservedHeight;
