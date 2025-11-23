@@ -46,6 +46,18 @@ namespace {
     const int MIN_TIME_LABEL_HEIGHT = 30;  // Minimum height for time labels
     const int MAX_TIME_LABEL_HEIGHT = 50;  // Maximum height for time labels
     const int MIN_TIME_LABEL_WIDTH = 0;  // Minimum width for time labels (horizontal positioning)
+    
+    // Time control UI scaling constants
+    const int TIME_CONTROL_FONT_DIVISOR = 6;     // Divisor for scaling time control label fonts
+    const int BUTTON_FONT_DIVISOR = 5;           // Divisor for scaling button fonts
+    const int SLIDER_HEIGHT_DIVISOR = 3;         // Divisor for scaling slider heights
+    const int MIN_TIME_CONTROL_FONT = 8;         // Minimum font size for time control labels
+    const int MAX_TIME_CONTROL_FONT = 14;        // Maximum font size for time control labels
+    const int MIN_BUTTON_FONT = 10;              // Minimum font size for buttons
+    const int MAX_BUTTON_FONT = 14;              // Maximum font size for buttons
+    const int MIN_SLIDER_HEIGHT = 20;            // Minimum slider height
+    const int MAX_SLIDER_HEIGHT = 40;            // Maximum slider height
+    const int SLIDER_HANDLE_EXTRA = 10;          // Extra space for slider handle
 }
 
 Qt_Chess::Qt_Chess(QWidget *parent)
@@ -1060,8 +1072,7 @@ void Qt_Chess::updateTimeControlSizes() {
     }
     
     // Calculate font sizes based on square size
-    // Control panel labels: scale from 8pt to 14pt based on square size
-    int controlLabelFontSize = qMax(8, qMin(14, squareSize / 6));
+    int controlLabelFontSize = qMax(MIN_TIME_CONTROL_FONT, qMin(MAX_TIME_CONTROL_FONT, squareSize / TIME_CONTROL_FONT_DIVISOR));
     
     // Update time control panel label fonts
     QFont controlLabelFont;
@@ -1075,24 +1086,22 @@ void Qt_Chess::updateTimeControlSizes() {
     if (m_incrementLabel) m_incrementLabel->setFont(controlLabelFont);
     
     // Update slider heights based on square size
-    // Scale slider height from 20px to 40px based on square size
-    int sliderHeight = qMax(20, qMin(40, squareSize / 3));
+    int sliderHeight = qMax(MIN_SLIDER_HEIGHT, qMin(MAX_SLIDER_HEIGHT, squareSize / SLIDER_HEIGHT_DIVISOR));
     
-    if (m_whiteTimeLimitSlider) {
-        m_whiteTimeLimitSlider->setMinimumHeight(sliderHeight);
-        m_whiteTimeLimitSlider->setMaximumHeight(sliderHeight + 10);  // Allow some extra space for handle
-    }
-    if (m_blackTimeLimitSlider) {
-        m_blackTimeLimitSlider->setMinimumHeight(sliderHeight);
-        m_blackTimeLimitSlider->setMaximumHeight(sliderHeight + 10);
-    }
-    if (m_incrementSlider) {
-        m_incrementSlider->setMinimumHeight(sliderHeight);
-        m_incrementSlider->setMaximumHeight(sliderHeight + 10);
-    }
+    // Helper lambda to set slider height
+    auto setSliderHeight = [sliderHeight](QSlider* slider) {
+        if (slider) {
+            slider->setMinimumHeight(sliderHeight);
+            slider->setMaximumHeight(sliderHeight + SLIDER_HANDLE_EXTRA);
+        }
+    };
+    
+    setSliderHeight(m_whiteTimeLimitSlider);
+    setSliderHeight(m_blackTimeLimitSlider);
+    setSliderHeight(m_incrementSlider);
     
     // Update button fonts
-    int buttonFontSize = qMax(10, qMin(14, squareSize / 5));
+    int buttonFontSize = qMax(MIN_BUTTON_FONT, qMin(MAX_BUTTON_FONT, squareSize / BUTTON_FONT_DIVISOR));
     QFont buttonFont;
     buttonFont.setPointSize(buttonFontSize);
     buttonFont.setBold(true);
@@ -1686,15 +1695,15 @@ void Qt_Chess::updateTimeDisplays() {
         if (ms <= 0) {
             return "不限時";
         }
-        int totalSeconds = ms / 1000;
         
-        // If less than 10 seconds, show decimal format
-        if (totalSeconds < 10) {
+        // If less than 10000 ms (10 seconds), show decimal format
+        if (ms < 10000) {
             double seconds = ms / 1000.0;
             return QString::number(seconds, 'f', 1);  // Show 1 decimal place
         }
         
         // Otherwise show minutes:seconds format
+        int totalSeconds = ms / 1000;
         int minutes = totalSeconds / 60;
         int seconds = totalSeconds % 60;
         return QString("%1:%2").arg(minutes, 2, 10, QChar('0')).arg(seconds, 2, 10, QChar('0'));
