@@ -1943,7 +1943,7 @@ void Qt_Chess::saveTimeControlSettings() {
 }
 
 void Qt_Chess::showTimeControlAfterTimeout() {
-    // Mark game as ended
+    // 標記遊戲已結束
     m_gameStarted = false;
     
     // 顯示時間控制面板 so user can adjust settings
@@ -1956,7 +1956,7 @@ void Qt_Chess::showTimeControlAfterTimeout() {
         m_giveUpButton->hide();
     }
     
-    // Re-enable start button
+    // 重新啟用開始按鈕
     if (m_startButton) {
         m_startButton->setText("開始");
         m_startButton->setEnabled(true);
