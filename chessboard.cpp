@@ -568,11 +568,6 @@ QString ChessBoard::generateAlgebraicNotation(const MoveRecord& move) const {
         // 目標位置
         notation += squareToNotation(move.to);
         
-        // 吃過路兵標記
-        if (move.isEnPassant) {
-            notation += " e.p.";
-        }
-        
         // 升變標記
         if (move.isPromotion) {
             notation += "=" + pieceTypeToNotation(move.promotionType);

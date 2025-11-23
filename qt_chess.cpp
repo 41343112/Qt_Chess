@@ -62,6 +62,9 @@ namespace {
     const int MAX_SLIDER_HEIGHT = 80;            // 滑桿的最大高度
     const int SLIDER_HANDLE_EXTRA = 10;          // 滑桿手柄的額外空間
     const int LOW_TIME_THRESHOLD_MS = 10000;     // 低時間警告的閾值（10 秒）
+    
+    // PGN 格式常數
+    const int PGN_MOVES_PER_LINE = 6;            // PGN 檔案中每行的移動回合數
 }
 
 Qt_Chess::Qt_Chess(QWidget *parent)
@@ -2113,8 +2116,8 @@ QString Qt_Chess::generatePGN() const {
             pgn += QString(" %1").arg(moveHistory[i].algebraicNotation);
             moveNumber++;
             
-            // 每 6 步換行以提高可讀性
-            if (moveNumber % 6 == 1 && i + 1 < moveHistory.size()) {
+            // 每 PGN_MOVES_PER_LINE 步換行以提高可讀性
+            if (moveNumber % PGN_MOVES_PER_LINE == 1 && i + 1 < moveHistory.size()) {
                 pgn += "\n";
             }
         }
