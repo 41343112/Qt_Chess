@@ -2417,7 +2417,16 @@ void Qt_Chess::onReplayNextClicked() {
         enterReplayMode();
     }
     
-    replayToMove(m_replayMoveIndex + 1);
+    const std::vector<MoveRecord>& moveHistory = m_chessBoard.getMoveHistory();
+    int targetIndex = m_replayMoveIndex + 1;
+    
+    // 如果下一步是最後一步，回放到該步後自動退出回放模式
+    if (!moveHistory.empty() && targetIndex >= static_cast<int>(moveHistory.size()) - 1) {
+        replayToMove(moveHistory.size() - 1);
+        exitReplayMode();
+    } else {
+        replayToMove(targetIndex);
+    }
 }
 
 void Qt_Chess::onReplayLastClicked() {
@@ -2428,7 +2437,9 @@ void Qt_Chess::onReplayLastClicked() {
     
     const std::vector<MoveRecord>& moveHistory = m_chessBoard.getMoveHistory();
     if (!moveHistory.empty()) {
+        // 跳到最後一步後自動退出回放模式
         replayToMove(moveHistory.size() - 1);
+        exitReplayMode();
     }
 }
 
