@@ -664,8 +664,10 @@ void Qt_Chess::onGiveUpClicked() {
         QMessageBox::information(this, "遊戲結束", QString("%1放棄！%2獲勝！").arg(playerName).arg(winner));
         
         // 自動進入回放模式，無需顯示複製棋譜按鈕
+        // 注意：handleGameEnd() 會顯示匯出/複製按鈕，但 enterReplayMode() 會立即隱藏它們
+        // 這是預期行為，因為 Qt 的事件循環會批次處理 UI 更新，使用者不會看到閃爍
         enterReplayMode();
-        // 從第一步開始回放
+        // 從初始位置開始回放
         replayToMove(-1);
     }
 }
