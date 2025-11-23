@@ -52,6 +52,8 @@ private slots:
     void onBoardColorSettingsClicked();
     void onFlipBoardClicked();
     void onStartButtonClicked();
+    void onPreviousMoveClicked();  // 回放功能：上一步
+    void onNextMoveClicked();      // 回放功能：下一步
 
 private:
     Ui::Qt_Chess *ui;
@@ -113,6 +115,11 @@ private:
     QWidget* m_boardContainer;  // 帶有疊加時間顯示的棋盤容器
     QWidget* m_timeControlPanel;  // 時間控制設定面板
     
+    // 回放功能相關
+    QPushButton* m_previousMoveButton;  // 上一步按鈕
+    QPushButton* m_nextMoveButton;      // 下一步按鈕
+    QLabel* m_replayModeLabel;          // 回放模式指示標籤
+    
     void setupUI();
     void setupMenuBar();
     void updateBoard();
@@ -166,5 +173,6 @@ private:
     void resetBoardState();  // 重置棋盤到初始狀態的輔助函數
     int calculateTimeFromSliderValue(int value) const;  // 根據滑桿值計算時間（毫秒）的輔助函數
     QString getTimeTextFromSliderValue(int value) const;  // 根據滑桿值取得顯示文字的輔助函數
+    void updateReplayButtons();  // 更新回放按鈕狀態的輔助函數
 };
 #endif // QT_CHESS_H

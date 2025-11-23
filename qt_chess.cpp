@@ -94,6 +94,9 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_timerStarted(false)
     , m_boardContainer(nullptr)
     , m_timeControlPanel(nullptr)
+    , m_previousMoveButton(nullptr)
+    , m_nextMoveButton(nullptr)
+    , m_replayModeLabel(nullptr)
     , m_gameStarted(false)
 {
     ui->setupUi(this);
@@ -119,6 +122,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     updateBoard();
     updateStatus();
     updateTimeDisplays();
+    updateReplayButtons();  // 初始化回放按鈕狀態
 }
 
 Qt_Chess::~Qt_Chess()
@@ -214,6 +218,44 @@ void Qt_Chess::setupUI() {
     
     contentLayout->addWidget(m_boardContainer, 2);  // 給棋盤更多空間（2:1 比例）
     contentLayout->setAlignment(m_boardContainer, Qt::AlignCenter);  // 將棋盤容器置中
+    
+    // 回放控制面板（位於棋盤下方）
+    QWidget* replayPanel = new QWidget(this);
+    QHBoxLayout* replayLayout = new QHBoxLayout(replayPanel);
+    replayLayout->setContentsMargins(0, 5, 0, 0);
+    replayLayout->setSpacing(10);
+    
+    // 上一步按鈕
+    m_previousMoveButton = new QPushButton("◄ 上一步", replayPanel);
+    m_previousMoveButton->setMinimumHeight(35);
+    connect(m_previousMoveButton, &QPushButton::clicked, this, &Qt_Chess::onPreviousMoveClicked);
+    replayLayout->addWidget(m_previousMoveButton);
+    
+    // 回放模式指示標籤
+    m_replayModeLabel = new QLabel("", replayPanel);
+    m_replayModeLabel->setAlignment(Qt::AlignCenter);
+    m_replayModeLabel->setStyleSheet("QLabel { color: #FF6B6B; font-weight: bold; }");
+    m_replayModeLabel->hide();
+    replayLayout->addWidget(m_replayModeLabel, 1);  // 伸展因子 1 使標籤填充空間
+    
+    // 下一步按鈕
+    m_nextMoveButton = new QPushButton("下一步 ►", replayPanel);
+    m_nextMoveButton->setMinimumHeight(35);
+    connect(m_nextMoveButton, &QPushButton::clicked, this, &Qt_Chess::onNextMoveClicked);
+    replayLayout->addWidget(m_nextMoveButton);
+    
+    // 將回放面板添加到主佈局中棋盤下方
+    QVBoxLayout* boardAndReplayLayout = new QVBoxLayout();
+    boardAndReplayLayout->setSpacing(0);
+    boardAndReplayLayout->addWidget(m_boardContainer);
+    boardAndReplayLayout->addWidget(replayPanel);
+    
+    QWidget* boardAndReplayWidget = new QWidget(this);
+    boardAndReplayWidget->setLayout(boardAndReplayLayout);
+    
+    contentLayout->insertWidget(1, boardAndReplayWidget, 2);  // 替換原來的 boardContainer
+    contentLayout->removeWidget(m_boardContainer);  // 移除原來添加的 boardContainer
+    contentLayout->setAlignment(boardAndReplayWidget, Qt::AlignCenter);
     
     // 時間控制的右側面板
     m_timeControlPanel = new QWidget(this);
@@ -436,6 +478,9 @@ void Qt_Chess::onSquareClicked(int displayRow, int displayCol) {
             // 更新時間顯示（計時器僅在已啟動時運行）
             updateTimeDisplays();
             
+            // 更新回放按鈕狀態
+            updateReplayButtons();
+            
             updateStatus();
         } else if (clickedSquare == m_selectedSquare) {
             // 取消選擇棋子
@@ -495,6 +540,7 @@ void Qt_Chess::onNewGameClicked() {
     updateBoard();
     updateStatus();
     updateTimeDisplays();
+    updateReplayButtons();  // 更新回放按鈕狀態
     
     // 清除任何殘留的高亮顯示（例如選中的棋子、有效移動、將軍警告）
     clearHighlights();
@@ -1977,5 +2023,44 @@ QString Qt_Chess::getTimeTextFromSliderValue(int value) const {
         // 值 2-31 代表 1-30 分鐘
         int minutes = value - 1;
         return QString("%1分鐘").arg(minutes);
+    }
+}
+
+// 回放功能實現
+
+void Qt_Chess::onPreviousMoveClicked() {
+    if (m_chessBoard.goToPreviousMove()) {
+        updateBoard();
+        updateReplayButtons();
+    }
+}
+
+void Qt_Chess::onNextMoveClicked() {
+    if (m_chessBoard.goToNextMove()) {
+        updateBoard();
+        updateReplayButtons();
+    }
+}
+
+void Qt_Chess::updateReplayButtons() {
+    // 更新按鈕啟用/禁用狀態
+    if (m_previousMoveButton) {
+        m_previousMoveButton->setEnabled(m_chessBoard.canGoToPreviousMove());
+    }
+    
+    if (m_nextMoveButton) {
+        m_nextMoveButton->setEnabled(m_chessBoard.canGoToNextMove());
+    }
+    
+    // 更新回放模式指示
+    if (m_replayModeLabel) {
+        if (m_chessBoard.isInReplayMode()) {
+            int current = m_chessBoard.getCurrentMoveIndex() + 1;  // 顯示為 1-based
+            int total = m_chessBoard.getTotalMoves();
+            m_replayModeLabel->setText(QString("回放模式 (%1/%2)").arg(current).arg(total));
+            m_replayModeLabel->show();
+        } else {
+            m_replayModeLabel->hide();
+        }
     }
 }

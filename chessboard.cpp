@@ -1,7 +1,8 @@
 #include "chessboard.h"
 
 ChessBoard::ChessBoard()
-    : m_board(8, std::vector<ChessPiece>(8)), m_currentPlayer(PieceColor::White), m_enPassantTarget(-1, -1)
+    : m_board(8, std::vector<ChessPiece>(8)), m_currentPlayer(PieceColor::White), m_enPassantTarget(-1, -1),
+      m_isInReplayMode(false), m_currentMoveIndex(-1)
 {
     initializeBoard();
 }
@@ -44,6 +45,11 @@ void ChessBoard::initializeBoard() {
     
     m_currentPlayer = PieceColor::White;
     m_enPassantTarget = QPoint(-1, -1);
+    
+    // 清除歷史記錄和回放狀態
+    m_moveHistory.clear();
+    m_isInReplayMode = false;
+    m_currentMoveIndex = -1;
 }
 
 const ChessPiece& ChessBoard::getPiece(int row, int col) const {
@@ -159,14 +165,31 @@ bool ChessBoard::isValidMove(const QPoint& from, const QPoint& to) const {
 }
 
 bool ChessBoard::movePiece(const QPoint& from, const QPoint& to) {
+    // 如果在回放模式中，不允許移動
+    if (m_isInReplayMode) {
+        return false;
+    }
+    
     if (!isValidMove(from, to)) return false;
     
     ChessPiece& piece = m_board[from.y()][from.x()];
     PieceType pieceType = piece.getType();
     PieceColor pieceColor = piece.getColor();
     
+    // 創建棋步記錄
+    Move move;
+    move.from = from;
+    move.to = to;
+    move.movedPiece = piece;
+    move.capturedPiece = m_board[to.y()][to.x()];
+    move.prevEnPassantTarget = m_enPassantTarget;
+    move.wasCastling = false;
+    move.wasEnPassant = false;
+    move.promotionType = PieceType::None;
+    
     // 處理王車易位
     if (pieceType == PieceType::King && abs(to.x() - from.x()) == 2) {
+        move.wasCastling = true;
         // 王翼易位
         if (to.x() > from.x()) {
             // 將車從 h 列移到 f 列
@@ -187,8 +210,10 @@ bool ChessBoard::movePiece(const QPoint& from, const QPoint& to) {
     
     // 處理吃過路兵
     if (pieceType == PieceType::Pawn && to == m_enPassantTarget && m_enPassantTarget.x() >= 0) {
+        move.wasEnPassant = true;
         // 移除被吃掉的兵
         int capturedPawnRow = (pieceColor == PieceColor::White) ? to.y() + 1 : to.y() - 1;
+        move.capturedPiece = m_board[capturedPawnRow][to.x()];  // 記錄被吃的兵
         m_board[capturedPawnRow][to.x()] = ChessPiece(PieceType::None, PieceColor::None);
     }
     
@@ -207,6 +232,9 @@ bool ChessBoard::movePiece(const QPoint& from, const QPoint& to) {
     m_board[to.y()][to.x()] = piece;
     m_board[to.y()][to.x()].setMoved(true);
     m_board[from.y()][from.x()] = ChessPiece(PieceType::None, PieceColor::None);
+    
+    // 記錄棋步
+    recordMove(move);
     
     switchPlayer();
     return true;
@@ -310,6 +338,12 @@ void ChessBoard::promotePawn(const QPoint& pos, PieceType newType) {
     PieceColor color = piece.getColor();
     m_board[pos.y()][pos.x()] = ChessPiece(newType, color);
     m_board[pos.y()][pos.x()].setMoved(true);
+    
+    // 更新最後一步的升變類型
+    if (!m_moveHistory.empty() && m_currentMoveIndex >= 0 && 
+        m_currentMoveIndex < static_cast<int>(m_moveHistory.size())) {
+        m_moveHistory[m_currentMoveIndex].promotionType = newType;
+    }
 }
 
 bool ChessBoard::isInsufficientMaterial() const {
@@ -387,4 +421,147 @@ bool ChessBoard::isInsufficientMaterial() const {
     }
     
     return false;
+}
+
+// 回放功能實現
+
+void ChessBoard::recordMove(const Move& move) {
+    // 如果我們不在最新的位置，刪除之後的所有移動
+    if (m_currentMoveIndex < static_cast<int>(m_moveHistory.size()) - 1) {
+        m_moveHistory.erase(m_moveHistory.begin() + m_currentMoveIndex + 1, m_moveHistory.end());
+    }
+    
+    m_moveHistory.push_back(move);
+    m_currentMoveIndex = static_cast<int>(m_moveHistory.size()) - 1;
+    
+    // 確保不在回放模式
+    m_isInReplayMode = false;
+}
+
+bool ChessBoard::canGoToPreviousMove() const {
+    return m_currentMoveIndex >= 0;
+}
+
+bool ChessBoard::canGoToNextMove() const {
+    return m_currentMoveIndex < static_cast<int>(m_moveHistory.size()) - 1;
+}
+
+bool ChessBoard::goToPreviousMove() {
+    if (!canGoToPreviousMove()) {
+        return false;
+    }
+    
+    // 進入回放模式
+    m_isInReplayMode = true;
+    
+    // 撤銷當前移動
+    const Move& move = m_moveHistory[m_currentMoveIndex];
+    undoMove(move);
+    m_currentMoveIndex--;
+    
+    return true;
+}
+
+bool ChessBoard::goToNextMove() {
+    if (!canGoToNextMove()) {
+        return false;
+    }
+    
+    // 應用下一個移動
+    m_currentMoveIndex++;
+    const Move& move = m_moveHistory[m_currentMoveIndex];
+    applyMove(move);
+    
+    // 檢查是否到達最新狀態，如果是則自動退出回放模式
+    if (m_currentMoveIndex == static_cast<int>(m_moveHistory.size()) - 1) {
+        exitReplayMode();
+    }
+    
+    return true;
+}
+
+void ChessBoard::exitReplayMode() {
+    m_isInReplayMode = false;
+}
+
+void ChessBoard::applyMove(const Move& move) {
+    // 執行基本移動
+    m_board[move.to.y()][move.to.x()] = move.movedPiece;
+    m_board[move.to.y()][move.to.x()].setMoved(true);
+    m_board[move.from.y()][move.from.x()] = ChessPiece(PieceType::None, PieceColor::None);
+    
+    // 處理王車易位
+    if (move.wasCastling) {
+        int row = move.from.y();
+        if (move.to.x() > move.from.x()) {
+            // 王翼易位 - 移動車
+            ChessPiece rook(PieceType::Rook, move.movedPiece.getColor());
+            rook.setMoved(true);
+            m_board[row][5] = rook;
+            m_board[row][7] = ChessPiece(PieceType::None, PieceColor::None);
+        } else {
+            // 后翼易位 - 移動車
+            ChessPiece rook(PieceType::Rook, move.movedPiece.getColor());
+            rook.setMoved(true);
+            m_board[row][3] = rook;
+            m_board[row][0] = ChessPiece(PieceType::None, PieceColor::None);
+        }
+    }
+    
+    // 處理吃過路兵
+    if (move.wasEnPassant) {
+        int capturedPawnRow = (move.movedPiece.getColor() == PieceColor::White) ? move.to.y() + 1 : move.to.y() - 1;
+        m_board[capturedPawnRow][move.to.x()] = ChessPiece(PieceType::None, PieceColor::None);
+    }
+    
+    // 處理升變
+    if (move.promotionType != PieceType::None) {
+        m_board[move.to.y()][move.to.x()] = ChessPiece(move.promotionType, move.movedPiece.getColor());
+        m_board[move.to.y()][move.to.x()].setMoved(true);
+    }
+    
+    // 更新吃過路兵目標
+    m_enPassantTarget = move.prevEnPassantTarget;
+    if (move.movedPiece.getType() == PieceType::Pawn && abs(move.to.y() - move.from.y()) == 2) {
+        int targetRow = (move.from.y() + move.to.y()) / 2;
+        m_enPassantTarget = QPoint(move.from.x(), targetRow);
+    }
+    
+    switchPlayer();
+}
+
+void ChessBoard::undoMove(const Move& move) {
+    // 恢復移動的棋子
+    m_board[move.from.y()][move.from.x()] = move.movedPiece;
+    
+    // 恢復被吃的棋子（如果有）
+    if (move.wasEnPassant) {
+        // 吃過路兵 - 恢復被吃的兵
+        int capturedPawnRow = (move.movedPiece.getColor() == PieceColor::White) ? move.to.y() + 1 : move.to.y() - 1;
+        m_board[capturedPawnRow][move.to.x()] = move.capturedPiece;
+        m_board[move.to.y()][move.to.x()] = ChessPiece(PieceType::None, PieceColor::None);
+    } else {
+        m_board[move.to.y()][move.to.x()] = move.capturedPiece;
+    }
+    
+    // 撤銷王車易位
+    if (move.wasCastling) {
+        int row = move.from.y();
+        if (move.to.x() > move.from.x()) {
+            // 王翼易位 - 恢復車
+            ChessPiece rook(PieceType::Rook, move.movedPiece.getColor());
+            m_board[row][7] = rook;
+            m_board[row][5] = ChessPiece(PieceType::None, PieceColor::None);
+        } else {
+            // 后翼易位 - 恢復車
+            ChessPiece rook(PieceType::Rook, move.movedPiece.getColor());
+            m_board[row][0] = rook;
+            m_board[row][3] = ChessPiece(PieceType::None, PieceColor::None);
+        }
+    }
+    
+    // 恢復吃過路兵目標
+    m_enPassantTarget = move.prevEnPassantTarget;
+    
+    switchPlayer();
 }
