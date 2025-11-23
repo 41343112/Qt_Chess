@@ -141,6 +141,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     updateBoard();
     updateStatus();
     updateTimeDisplays();
+    updateReplayButtons();  // 設置回放按鈕初始狀態
 }
 
 Qt_Chess::~Qt_Chess()
@@ -199,14 +200,13 @@ void Qt_Chess::setupUI() {
     connect(m_copyPGNButton, &QPushButton::clicked, this, &Qt_Chess::onCopyPGNClicked);
     moveListLayout->addWidget(m_copyPGNButton);
     
-    // 回放控制按鈕（初始隱藏）
+    // 回放控制按鈕（始終可見）
     m_replayTitle = new QLabel("回放控制", m_moveListPanel);
     m_replayTitle->setAlignment(Qt::AlignCenter);
     QFont replayFont;
     replayFont.setPointSize(10);
     replayFont.setBold(true);
     m_replayTitle->setFont(replayFont);
-    m_replayTitle->hide();
     moveListLayout->addWidget(m_replayTitle);
     
     QWidget* replayButtonContainer = new QWidget(m_moveListPanel);
@@ -216,25 +216,25 @@ void Qt_Chess::setupUI() {
     
     m_replayFirstButton = new QPushButton("⏮", replayButtonContainer);
     m_replayFirstButton->setToolTip("第一步");
-    m_replayFirstButton->hide();
+    m_replayFirstButton->setEnabled(false);  // 初始停用
     connect(m_replayFirstButton, &QPushButton::clicked, this, &Qt_Chess::onReplayFirstClicked);
     replayButtonLayout->addWidget(m_replayFirstButton, 0, 0);
     
     m_replayPrevButton = new QPushButton("◀", replayButtonContainer);
     m_replayPrevButton->setToolTip("上一步");
-    m_replayPrevButton->hide();
+    m_replayPrevButton->setEnabled(false);  // 初始停用
     connect(m_replayPrevButton, &QPushButton::clicked, this, &Qt_Chess::onReplayPrevClicked);
     replayButtonLayout->addWidget(m_replayPrevButton, 0, 1);
     
     m_replayNextButton = new QPushButton("▶", replayButtonContainer);
     m_replayNextButton->setToolTip("下一步");
-    m_replayNextButton->hide();
+    m_replayNextButton->setEnabled(false);  // 初始停用
     connect(m_replayNextButton, &QPushButton::clicked, this, &Qt_Chess::onReplayNextClicked);
     replayButtonLayout->addWidget(m_replayNextButton, 0, 2);
     
     m_replayLastButton = new QPushButton("⏭", replayButtonContainer);
     m_replayLastButton->setToolTip("最後一步");
-    m_replayLastButton->hide();
+    m_replayLastButton->setEnabled(false);  // 初始停用
     connect(m_replayLastButton, &QPushButton::clicked, this, &Qt_Chess::onReplayLastClicked);
     replayButtonLayout->addWidget(m_replayLastButton, 0, 3);
     
@@ -633,6 +633,9 @@ void Qt_Chess::onNewGameClicked() {
     updateStatus();
     updateTimeDisplays();
     
+    // 更新回放按鈕狀態（新遊戲沒有移動歷史）
+    updateReplayButtons();
+    
     // 清除任何殘留的高亮顯示（例如選中的棋子、有效移動、將軍警告）
     clearHighlights();
 }
@@ -712,6 +715,9 @@ void Qt_Chess::onStartButtonClicked() {
             m_startButton->setEnabled(false);
             m_startButton->setText("進行中");
         }
+        
+        // 更新回放按鈕狀態（遊戲開始時停用）
+        updateReplayButtons();
     } else if (!m_timeControlEnabled && !m_gameStarted) {
         // 重置棋盤到初始狀態（即使沒有時間控制）
         resetBoardState();
@@ -737,6 +743,9 @@ void Qt_Chess::onStartButtonClicked() {
             m_startButton->setEnabled(false);
             m_startButton->setText("進行中");
         }
+        
+        // 更新回放按鈕狀態（遊戲開始時停用）
+        updateReplayButtons();
     }
 }
 
@@ -1983,6 +1992,9 @@ void Qt_Chess::handleGameEnd() {
     if (m_copyPGNButton) {
         m_copyPGNButton->show();
     }
+    
+    // 更新回放按鈕狀態（遊戲結束後可以回放）
+    updateReplayButtons();
 }
 
 void Qt_Chess::loadTimeControlSettings() {
@@ -2162,6 +2174,9 @@ void Qt_Chess::updateMoveList() {
     
     // 自動捲動到最新的移動
     m_moveListWidget->scrollToBottom();
+    
+    // 更新回放按鈕狀態
+    updateReplayButtons();
 }
 
 void Qt_Chess::onExportPGNClicked() {
@@ -2271,12 +2286,7 @@ void Qt_Chess::enterReplayMode() {
     // 儲存當前棋盤狀態
     saveBoardState();
     
-    // 顯示回放控制按鈕
-    if (m_replayTitle) m_replayTitle->show();
-    if (m_replayFirstButton) m_replayFirstButton->show();
-    if (m_replayPrevButton) m_replayPrevButton->show();
-    if (m_replayNextButton) m_replayNextButton->show();
-    if (m_replayLastButton) m_replayLastButton->show();
+    // 顯示退出回放按鈕
     if (m_exitReplayButton) m_exitReplayButton->show();
     
     // 隱藏遊戲控制按鈕
@@ -2293,12 +2303,7 @@ void Qt_Chess::exitReplayMode() {
     // 恢復棋盤狀態
     restoreBoardState();
     
-    // 隱藏回放控制按鈕
-    if (m_replayTitle) m_replayTitle->hide();
-    if (m_replayFirstButton) m_replayFirstButton->hide();
-    if (m_replayPrevButton) m_replayPrevButton->hide();
-    if (m_replayNextButton) m_replayNextButton->hide();
-    if (m_replayLastButton) m_replayLastButton->hide();
+    // 隱藏退出回放按鈕
     if (m_exitReplayButton) m_exitReplayButton->hide();
     
     // 顯示遊戲控制按鈕
@@ -2307,6 +2312,9 @@ void Qt_Chess::exitReplayMode() {
     
     // 取消棋譜列表的選擇
     m_moveListWidget->clearSelection();
+    
+    // 更新回放按鈕狀態
+    updateReplayButtons();
 }
 
 void Qt_Chess::replayToMove(int moveIndex) {
@@ -2349,18 +2357,50 @@ void Qt_Chess::replayToMove(int moveIndex) {
 }
 
 void Qt_Chess::onReplayFirstClicked() {
+    // 如果遊戲正在進行，不允許回放
+    if (m_gameStarted) return;
+    
+    // 如果尚未進入回放模式，先進入
+    if (!m_isReplayMode) {
+        enterReplayMode();
+    }
+    
     replayToMove(-1);  // 初始狀態
 }
 
 void Qt_Chess::onReplayPrevClicked() {
+    // 如果遊戲正在進行，不允許回放
+    if (m_gameStarted) return;
+    
+    // 如果尚未進入回放模式，先進入
+    if (!m_isReplayMode) {
+        enterReplayMode();
+    }
+    
     replayToMove(m_replayMoveIndex - 1);
 }
 
 void Qt_Chess::onReplayNextClicked() {
+    // 如果遊戲正在進行，不允許回放
+    if (m_gameStarted) return;
+    
+    // 如果尚未進入回放模式，先進入
+    if (!m_isReplayMode) {
+        enterReplayMode();
+    }
+    
     replayToMove(m_replayMoveIndex + 1);
 }
 
 void Qt_Chess::onReplayLastClicked() {
+    // 如果遊戲正在進行，不允許回放
+    if (m_gameStarted) return;
+    
+    // 如果尚未進入回放模式，先進入
+    if (!m_isReplayMode) {
+        enterReplayMode();
+    }
+    
     const std::vector<MoveRecord>& moveHistory = m_chessBoard.getMoveHistory();
     if (!moveHistory.empty()) {
         replayToMove(moveHistory.size() - 1);
@@ -2374,18 +2414,44 @@ void Qt_Chess::onExitReplayClicked() {
 void Qt_Chess::updateReplayButtons() {
     const std::vector<MoveRecord>& moveHistory = m_chessBoard.getMoveHistory();
     
-    // 啟用/停用按鈕基於當前位置
-    if (m_replayFirstButton) {
-        m_replayFirstButton->setEnabled(m_replayMoveIndex >= 0);
+    // 如果遊戲正在進行，停用所有回放按鈕
+    if (m_gameStarted) {
+        if (m_replayFirstButton) m_replayFirstButton->setEnabled(false);
+        if (m_replayPrevButton) m_replayPrevButton->setEnabled(false);
+        if (m_replayNextButton) m_replayNextButton->setEnabled(false);
+        if (m_replayLastButton) m_replayLastButton->setEnabled(false);
+        return;
     }
-    if (m_replayPrevButton) {
-        m_replayPrevButton->setEnabled(m_replayMoveIndex >= 0);
+    
+    // 如果沒有棋步歷史，停用所有按鈕
+    if (moveHistory.empty()) {
+        if (m_replayFirstButton) m_replayFirstButton->setEnabled(false);
+        if (m_replayPrevButton) m_replayPrevButton->setEnabled(false);
+        if (m_replayNextButton) m_replayNextButton->setEnabled(false);
+        if (m_replayLastButton) m_replayLastButton->setEnabled(false);
+        return;
     }
-    if (m_replayNextButton) {
-        m_replayNextButton->setEnabled(m_replayMoveIndex < static_cast<int>(moveHistory.size()) - 1);
-    }
-    if (m_replayLastButton) {
-        m_replayLastButton->setEnabled(m_replayMoveIndex < static_cast<int>(moveHistory.size()) - 1);
+    
+    // 在回放模式中，根據當前位置啟用/停用按鈕
+    if (m_isReplayMode) {
+        if (m_replayFirstButton) {
+            m_replayFirstButton->setEnabled(m_replayMoveIndex >= 0);
+        }
+        if (m_replayPrevButton) {
+            m_replayPrevButton->setEnabled(m_replayMoveIndex >= 0);
+        }
+        if (m_replayNextButton) {
+            m_replayNextButton->setEnabled(m_replayMoveIndex < static_cast<int>(moveHistory.size()) - 1);
+        }
+        if (m_replayLastButton) {
+            m_replayLastButton->setEnabled(m_replayMoveIndex < static_cast<int>(moveHistory.size()) - 1);
+        }
+    } else {
+        // 不在回放模式但遊戲已結束，啟用所有按鈕以允許進入回放
+        if (m_replayFirstButton) m_replayFirstButton->setEnabled(true);
+        if (m_replayPrevButton) m_replayPrevButton->setEnabled(true);
+        if (m_replayNextButton) m_replayNextButton->setEnabled(true);
+        if (m_replayLastButton) m_replayLastButton->setEnabled(true);
     }
 }
 
