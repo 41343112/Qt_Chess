@@ -557,6 +557,29 @@ void Qt_Chess::onStartButtonClicked() {
         // 重置棋盤到初始狀態
         resetBoardState();
         
+        // 根據滑桿值重置時間
+        if (m_whiteTimeLimitSlider) {
+            int value = m_whiteTimeLimitSlider->value();
+            if (value == 0) {
+                m_whiteTimeMs = 0;
+            } else if (value == 1) {
+                m_whiteTimeMs = 30 * 1000;
+            } else {
+                m_whiteTimeMs = (value - 1) * 60 * 1000;
+            }
+        }
+        
+        if (m_blackTimeLimitSlider) {
+            int value = m_blackTimeLimitSlider->value();
+            if (value == 0) {
+                m_blackTimeMs = 0;
+            } else if (value == 1) {
+                m_blackTimeMs = 30 * 1000;
+            } else {
+                m_blackTimeMs = (value - 1) * 60 * 1000;
+            }
+        }
+        
         m_timerStarted = true;
         m_gameStarted = true;  // 標記遊戲已開始
         startTimer();
@@ -586,6 +609,10 @@ void Qt_Chess::onStartButtonClicked() {
     } else if (!m_timeControlEnabled && !m_gameStarted) {
         // 重置棋盤到初始狀態（即使沒有時間控制）
         resetBoardState();
+        
+        // 重置時間值為 0（無限制）
+        m_whiteTimeMs = 0;
+        m_blackTimeMs = 0;
         
         // 即使沒有時間控制也允許遊戲開始
         m_gameStarted = true;
