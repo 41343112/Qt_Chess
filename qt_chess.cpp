@@ -2307,7 +2307,8 @@ void Qt_Chess::exitReplayMode() {
 }
 
 void Qt_Chess::replayToMove(int moveIndex) {
-    const std::vector<MoveRecord>& moveHistory = m_chessBoard.getMoveHistory();
+    // 保存移動歷史的副本，因為 initializeBoard() 會清除它
+    std::vector<MoveRecord> moveHistory = m_chessBoard.getMoveHistory();
     
     // 限制索引範圍
     if (moveIndex < -1) moveIndex = -1;
@@ -2330,6 +2331,10 @@ void Qt_Chess::replayToMove(int moveIndex) {
             m_chessBoard.promotePawn(move.to, move.promotionType);
         }
     }
+    
+    // 恢復移動歷史，因為 movePiece 會記錄新的移動
+    // 我們需要保持原始的移動歷史用於回放
+    m_chessBoard.setMoveHistory(moveHistory);
     
     // 更新顯示
     updateBoard();
