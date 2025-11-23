@@ -133,7 +133,6 @@ private:
     int m_replayMoveIndex;  // 當前回放的棋步索引（-1 表示初始狀態）
     std::vector<std::vector<ChessPiece>> m_savedBoardState;  // 儲存進入回放前的棋盤狀態
     PieceColor m_savedCurrentPlayer;  // 儲存進入回放前的當前玩家
-    bool m_savedTimerWasActive;  // 儲存進入回放前計時器是否在運行
     
     void setupUI();
     void setupMenuBar();
