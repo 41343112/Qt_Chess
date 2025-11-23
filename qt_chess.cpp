@@ -183,6 +183,7 @@ void Qt_Chess::setupUI() {
     }
     
     // 將棋盤添加到容器佈局
+    // 伸展因子 1 允許棋盤擴展並填充可用空間
     boardContainerLayout->addWidget(m_boardWidget, 1, Qt::AlignCenter);
     
     contentLayout->addWidget(m_boardContainer, 2);  // 給棋盤更多空間（2:1 比例）
@@ -1587,7 +1588,9 @@ void Qt_Chess::onBlackTimeLimitChanged(int value) {
 }
 
 void Qt_Chess::updateTimeDisplays() {
-    // Time display labels have been removed
+    // Time display labels have been removed from the UI.
+    // This function is preserved as a no-op to maintain compatibility
+    // with existing code that calls it after moves and timer updates.
     return;
 }
 
