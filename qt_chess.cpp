@@ -2300,7 +2300,7 @@ void Qt_Chess::exitReplayMode() {
     // Export/Copy PGN 按鈕在回放模式中也保持可見
     
     // 取消棋譜列表的選擇
-    if (m_moveListWidget) m_moveListWidget->clearSelection();
+    m_moveListWidget->clearSelection();
     
     // 更新回放按鈕狀態
     updateReplayButtons();
