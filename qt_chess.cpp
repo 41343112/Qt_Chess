@@ -2350,6 +2350,8 @@ void Qt_Chess::replayToMove(int moveIndex) {
     }
     
     // 如果已經在最新一步，自動退出回放模式
+    // 注意：moveHistory.empty() 的檢查是必要的，以處理空棋譜的邊界情況
+    // exitReplayMode() 會再次呼叫 updateBoard()，但這是可接受的冗餘，以保持程式碼簡潔性
     if (m_isReplayMode && !moveHistory.empty() && m_replayMoveIndex == static_cast<int>(moveHistory.size()) - 1) {
         exitReplayMode();
     }
