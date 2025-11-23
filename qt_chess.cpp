@@ -106,6 +106,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_exportPGNButton(nullptr)
     , m_copyPGNButton(nullptr)
     , m_moveListPanel(nullptr)
+    , m_replayTitle(nullptr)
     , m_replayFirstButton(nullptr)
     , m_replayPrevButton(nullptr)
     , m_replayNextButton(nullptr)
@@ -193,14 +194,14 @@ void Qt_Chess::setupUI() {
     moveListLayout->addWidget(m_copyPGNButton);
     
     // 回放控制按鈕（初始隱藏）
-    QLabel* replayTitle = new QLabel("回放控制", m_moveListPanel);
-    replayTitle->setAlignment(Qt::AlignCenter);
+    m_replayTitle = new QLabel("回放控制", m_moveListPanel);
+    m_replayTitle->setAlignment(Qt::AlignCenter);
     QFont replayFont;
     replayFont.setPointSize(10);
     replayFont.setBold(true);
-    replayTitle->setFont(replayFont);
-    replayTitle->hide();
-    moveListLayout->addWidget(replayTitle);
+    m_replayTitle->setFont(replayFont);
+    m_replayTitle->hide();
+    moveListLayout->addWidget(m_replayTitle);
     
     QWidget* replayButtonContainer = new QWidget(m_moveListPanel);
     QGridLayout* replayButtonLayout = new QGridLayout(replayButtonContainer);
@@ -2278,6 +2279,7 @@ void Qt_Chess::enterReplayMode() {
     saveBoardState();
     
     // 顯示回放控制按鈕
+    if (m_replayTitle) m_replayTitle->show();
     if (m_replayFirstButton) m_replayFirstButton->show();
     if (m_replayPrevButton) m_replayPrevButton->show();
     if (m_replayNextButton) m_replayNextButton->show();
@@ -2299,6 +2301,7 @@ void Qt_Chess::exitReplayMode() {
     restoreBoardState();
     
     // 隱藏回放控制按鈕
+    if (m_replayTitle) m_replayTitle->hide();
     if (m_replayFirstButton) m_replayFirstButton->hide();
     if (m_replayPrevButton) m_replayPrevButton->hide();
     if (m_replayNextButton) m_replayNextButton->hide();
@@ -2413,6 +2416,9 @@ void Qt_Chess::restoreBoardState() {
             m_chessBoard.getPiece(row, col) = m_savedBoardState[row][col];
         }
     }
+    
+    // 恢復當前玩家
+    m_chessBoard.setCurrentPlayer(m_savedCurrentPlayer);
     
     // 更新顯示
     updateBoard();

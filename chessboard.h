@@ -43,6 +43,7 @@ public:
     bool isValidMove(const QPoint& from, const QPoint& to) const;
     
     PieceColor getCurrentPlayer() const { return m_currentPlayer; }
+    void setCurrentPlayer(PieceColor player) { m_currentPlayer = player; }
     bool isInCheck(PieceColor color) const;
     bool isCheckmate(PieceColor color) const;
     bool isStalemate(PieceColor color) const;

@@ -123,6 +123,7 @@ private:
     QWidget* m_moveListPanel;
     
     // 回放控制
+    QLabel* m_replayTitle;
     QPushButton* m_replayFirstButton;
     QPushButton* m_replayPrevButton;
     QPushButton* m_replayNextButton;
