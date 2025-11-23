@@ -1617,22 +1617,8 @@ void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
 void Qt_Chess::onWhiteTimeLimitChanged(int value) {
     if (!m_whiteTimeLimitSlider || !m_whiteTimeLimitLabel) return;
     
-    QString timeText;
-    
-    if (value == 0) {
-        // 無限制時間
-        timeText = "不限時";
-    } else if (value == 1) {
-        // 30 秒
-        timeText = "30秒";
-    } else {
-        // 值 2-31 代表 1-30 分鐘
-        int minutes = value - 1;
-        timeText = QString("%1分鐘").arg(minutes);
-    }
-    
     m_whiteTimeMs = calculateTimeFromSliderValue(value);
-    m_whiteTimeLimitLabel->setText(timeText);
+    m_whiteTimeLimitLabel->setText(getTimeTextFromSliderValue(value));
     
     // 更新 time control enabled state
     m_timeControlEnabled = (m_whiteTimeMs > 0 || m_blackTimeMs > 0);
@@ -1651,22 +1637,8 @@ void Qt_Chess::onWhiteTimeLimitChanged(int value) {
 void Qt_Chess::onBlackTimeLimitChanged(int value) {
     if (!m_blackTimeLimitSlider || !m_blackTimeLimitLabel) return;
     
-    QString timeText;
-    
-    if (value == 0) {
-        // 無限制時間
-        timeText = "不限時";
-    } else if (value == 1) {
-        // 30 秒
-        timeText = "30秒";
-    } else {
-        // 值 2-31 代表 1-30 分鐘
-        int minutes = value - 1;
-        timeText = QString("%1分鐘").arg(minutes);
-    }
-    
     m_blackTimeMs = calculateTimeFromSliderValue(value);
-    m_blackTimeLimitLabel->setText(timeText);
+    m_blackTimeLimitLabel->setText(getTimeTextFromSliderValue(value));
     
     // 更新 time control enabled state
     m_timeControlEnabled = (m_whiteTimeMs > 0 || m_blackTimeMs > 0);
@@ -1981,6 +1953,12 @@ void Qt_Chess::resetBoardState() {
 int Qt_Chess::calculateTimeFromSliderValue(int value) const {
     // 根據滑桿值計算時間（毫秒）
     // 滑桿位置：0=無限制，1=30秒，2-31=1-30分鐘
+    
+    // 驗證輸入範圍
+    if (value < 0 || value > MAX_SLIDER_POSITION) {
+        return 0;  // 無效輸入，返回無限制
+    }
+    
     if (value == 0) {
         return 0;  // 無限制
     } else if (value == 1) {
@@ -1988,5 +1966,21 @@ int Qt_Chess::calculateTimeFromSliderValue(int value) const {
     } else {
         // 值 2-31 代表 1-30 分鐘
         return (value - 1) * 60 * 1000;
+    }
+}
+
+QString Qt_Chess::getTimeTextFromSliderValue(int value) const {
+    // 根據滑桿值取得顯示文字
+    // 滑桿位置：0=無限制，1=30秒，2-31=1-30分鐘
+    
+    if (value == 0) {
+        return "不限時";
+    } else if (value == 1) {
+        return "30秒";
+    } else if (value >= 2 && value <= MAX_SLIDER_POSITION) {
+        int minutes = value - 1;
+        return QString("%1分鐘").arg(minutes);
+    } else {
+        return "不限時";  // 無效輸入，返回不限時
     }
 }
