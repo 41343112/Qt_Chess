@@ -100,11 +100,10 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     resize(900, 660);  // 增加寬度以容納時間控制面板
     
     // 設置最小視窗大小以確保所有內容都能完整顯示而不被裁切
-    // 計算：LEFT_PANEL_MAX_WIDTH (200) + 最小棋盤 (8*MIN_SQUARE_SIZE+4=244) + 
-    //       RIGHT_PANEL_MAX_WIDTH (300) + 2*PANEL_SPACING (0) + BASE_MARGINS (0) + 
-    //       棋盤容器邊距 (2*BOARD_CONTAINER_MARGIN=0) = 744
-    // 高度：棋盤 (244) + 時間標籤 (~80) + 間距 (~0) = ~324，使用 400 以舒適調整大小
-    setMinimumSize(744, 400);
+    // 寬度計算：最小棋盤 (8*MIN_SQUARE_SIZE+4=244) + 可選時間標籤 (~200) +
+    //       RIGHT_PANEL_MAX_WIDTH (600) + 間距 (0) = ~1044
+    // 高度計算：棋盤 (244) + 選單欄 (~30) + 緩衝空間 (~126) = ~400
+    setMinimumSize(1044, 400);
     
     setMouseTracking(true);
     
