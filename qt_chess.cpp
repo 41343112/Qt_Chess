@@ -23,42 +23,42 @@
 
 namespace {
     const QString CHECK_HIGHLIGHT_STYLE = "QPushButton { background-color: #FF6B6B; border: 2px solid #FF0000; }";
-    const int DEFAULT_ICON_SIZE = 40; // Default fallback icon size in pixels
-    const int MAX_TIME_LIMIT_SECONDS = 1800; // Maximum time limit: 30 minutes
-    const int MAX_SLIDER_POSITION = 31; // Slider range: 0 (unlimited), 1 (30s), 2-31 (1-30 min)
-    const int MAX_MINUTES = 30; // Maximum time limit in minutes
-    const QString GAME_ENDED_TEXT = "遊戲結束"; // Text shown when game ends
+    const int DEFAULT_ICON_SIZE = 40; // 預設圖示大小（像素）
+    const int MAX_TIME_LIMIT_SECONDS = 1800; // 最大時間限制：30 分鐘
+    const int MAX_SLIDER_POSITION = 31; // 滑桿範圍：0（無限制）、1（30秒）、2-31（1-30 分鐘）
+    const int MAX_MINUTES = 30; // 最大時間限制（分鐘）
+    const QString GAME_ENDED_TEXT = "遊戲結束"; // 遊戲結束時顯示的文字
     
-    // Layout constants for window sizing
-    const int LEFT_PANEL_MAX_WIDTH = 200;  // Maximum width of new game button panel
-    const int RIGHT_PANEL_MAX_WIDTH = 600; // Maximum width of time control panel
-    const int PANEL_SPACING = 0;          // Spacing between panels
-    const int BASE_MARGINS = 0;           // Base layout margins (excluding board container's 2*BOARD_CONTAINER_MARGIN)
-    const int TIME_LABEL_SPACING = 10;     // Spacing around time labels
-    const int BOARD_CONTAINER_MARGIN = 0;  // Board container margin on each side (total horizontal: 2*5=10px)
+    // 視窗大小的佈局常數
+    const int LEFT_PANEL_MAX_WIDTH = 200;  // 新遊戲按鈕面板的最大寬度
+    const int RIGHT_PANEL_MAX_WIDTH = 600; // 時間控制面板的最大寬度
+    const int PANEL_SPACING = 0;          // 面板之間的間距
+    const int BASE_MARGINS = 0;           // 基本佈局邊距（不包括棋盤容器的 2*BOARD_CONTAINER_MARGIN）
+    const int TIME_LABEL_SPACING = 10;     // 時間標籤周圍的間距
+    const int BOARD_CONTAINER_MARGIN = 0;  // 棋盤容器每側的邊距（總水平：2*5=10px）
     
-    // Scaling constants for UI elements
-    const int MIN_SQUARE_SIZE = 40;        // Minimum size for chess board squares
-    const int MAX_SQUARE_SIZE = 180;       // Maximum size for chess board squares
-    const int MIN_UI_FONT_SIZE = 10;       // Minimum font size for UI elements
-    const int MAX_UI_FONT_SIZE = 20;       // Maximum font size for UI elements
-    const int UI_FONT_SCALE_DIVISOR = 5;   // Divisor for scaling UI fonts based on square size
-    const int MIN_TIME_LABEL_HEIGHT = 30;  // Minimum height for time labels
-    const int MAX_TIME_LABEL_HEIGHT = 50;  // Maximum height for time labels
-    const int MIN_TIME_LABEL_WIDTH = 0;  // Minimum width for time labels (horizontal positioning)
+    // UI 元素的縮放常數
+    const int MIN_SQUARE_SIZE = 40;        // 棋盤格子的最小大小
+    const int MAX_SQUARE_SIZE = 180;       // 棋盤格子的最大大小
+    const int MIN_UI_FONT_SIZE = 10;       // UI 元素的最小字體大小
+    const int MAX_UI_FONT_SIZE = 20;       // UI 元素的最大字體大小
+    const int UI_FONT_SCALE_DIVISOR = 5;   // 根據格子大小縮放 UI 字體的除數
+    const int MIN_TIME_LABEL_HEIGHT = 30;  // 時間標籤的最小高度
+    const int MAX_TIME_LABEL_HEIGHT = 50;  // 時間標籤的最大高度
+    const int MIN_TIME_LABEL_WIDTH = 0;  // 時間標籤的最小寬度（水平定位）
     
-    // Time control UI scaling constants
-    const int TIME_CONTROL_FONT_DIVISOR = 6;     // Divisor for scaling time control label fonts
-    const int BUTTON_FONT_DIVISOR = 5;           // Divisor for scaling button fonts
-    const int SLIDER_HEIGHT_DIVISOR = 3;         // Divisor for scaling slider heights
-    const int MIN_TIME_CONTROL_FONT = 8;         // Minimum font size for time control labels
-    const int MAX_TIME_CONTROL_FONT = 14;        // Maximum font size for time control labels
-    const int MIN_BUTTON_FONT = 10;              // Minimum font size for buttons
-    const int MAX_BUTTON_FONT = 14;              // Maximum font size for buttons
-    const int MIN_SLIDER_HEIGHT = 20;            // Minimum slider height
-    const int MAX_SLIDER_HEIGHT = 40;            // Maximum slider height
-    const int SLIDER_HANDLE_EXTRA = 10;          // Extra space for slider handle
-    const int LOW_TIME_THRESHOLD_MS = 10000;     // Threshold for low time warning (10 seconds)
+    // 時間控制 UI 縮放常數
+    const int TIME_CONTROL_FONT_DIVISOR = 6;     // 縮放時間控制標籤字體的除數
+    const int BUTTON_FONT_DIVISOR = 5;           // 縮放按鈕字體的除數
+    const int SLIDER_HEIGHT_DIVISOR = 3;         // 縮放滑桿高度的除數
+    const int MIN_TIME_CONTROL_FONT = 8;         // 時間控制標籤的最小字體大小
+    const int MAX_TIME_CONTROL_FONT = 14;        // 時間控制標籤的最大字體大小
+    const int MIN_BUTTON_FONT = 10;              // 按鈕的最小字體大小
+    const int MAX_BUTTON_FONT = 14;              // 按鈕的最大字體大小
+    const int MIN_SLIDER_HEIGHT = 20;            // 滑桿的最小高度
+    const int MAX_SLIDER_HEIGHT = 40;            // 滑桿的最大高度
+    const int SLIDER_HANDLE_EXTRA = 10;          // 滑桿手柄的額外空間
+    const int LOW_TIME_THRESHOLD_MS = 10000;     // 低時間警告的閾值（10 秒）
 }
 
 Qt_Chess::Qt_Chess(QWidget *parent)
