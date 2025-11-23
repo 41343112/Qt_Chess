@@ -114,6 +114,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_isReplayMode(false)
     , m_replayMoveIndex(-1)
     , m_savedCurrentPlayer(PieceColor::White)
+    , m_savedTimerRunning(false)
 {
     ui->setupUi(this);
     setWindowTitle("國際象棋 - 雙人對弈");
@@ -1927,6 +1928,9 @@ void Qt_Chess::onIncrementChanged(int value) {
 void Qt_Chess::onGameTimerTick() {
     if (!m_timeControlEnabled) return;
     
+    // 在回放模式中不要更新時間
+    if (m_isReplayMode) return;
+    
     // 減少當前玩家的時間
     PieceColor currentPlayer = m_chessBoard.getCurrentPlayer();
     if (currentPlayer == PieceColor::White) {
@@ -2316,6 +2320,12 @@ void Qt_Chess::enterReplayMode() {
     // 儲存當前棋盤狀態
     saveBoardState();
     
+    // 儲存計時器運行狀態並停止計時器
+    m_savedTimerRunning = (m_gameTimer && m_gameTimer->isActive());
+    if (m_savedTimerRunning) {
+        stopTimer();
+    }
+    
     // 在回放模式中，不再禁用時間控制滑桿
 }
 
@@ -2327,6 +2337,11 @@ void Qt_Chess::exitReplayMode() {
     
     // 恢復棋盤狀態
     restoreBoardState();
+    
+    // 恢復計時器運行狀態
+    if (m_savedTimerRunning && m_timeControlEnabled && m_timerStarted) {
+        startTimer();
+    }
     
     // 取消棋譜列表的選擇
     m_moveListWidget->clearSelection();
