@@ -111,7 +111,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_replayPrevButton(nullptr)
     , m_replayNextButton(nullptr)
     , m_replayLastButton(nullptr)
-    , m_exitReplayButton(nullptr)
+    // m_exitReplayButton removed - replay mode stays active until new game
     , m_isReplayMode(false)
     , m_replayMoveIndex(-1)
     , m_savedCurrentPlayer(PieceColor::White)
@@ -240,10 +240,7 @@ void Qt_Chess::setupUI() {
     
     moveListLayout->addWidget(replayButtonContainer);
     
-    m_exitReplayButton = new QPushButton("退出回放", m_moveListPanel);
-    m_exitReplayButton->hide();
-    connect(m_exitReplayButton, &QPushButton::clicked, this, &Qt_Chess::onExitReplayClicked);
-    moveListLayout->addWidget(m_exitReplayButton);
+    // Note: Exit Replay button removed - replay mode stays active until new game starts
     
     contentLayout->addWidget(m_moveListPanel);
     
@@ -584,6 +581,11 @@ void Qt_Chess::onSquareClicked(int displayRow, int displayCol) {
 }
 
 void Qt_Chess::onNewGameClicked() {
+    // 如果在回放模式中，先退出
+    if (m_isReplayMode) {
+        exitReplayMode();
+    }
+    
     m_chessBoard.initializeBoard();
     m_pieceSelected = false;
     m_gameStarted = false;  // 重置遊戲開始狀態
@@ -666,12 +668,7 @@ void Qt_Chess::onGiveUpClicked() {
         QString winner = (currentPlayer == PieceColor::White) ? "黑方" : "白方";
         QMessageBox::information(this, "遊戲結束", QString("%1放棄！%2獲勝！").arg(playerName).arg(winner));
         
-        // 自動進入回放模式，無需顯示複製棋譜按鈕
-        // 注意：handleGameEnd() 會顯示匯出/複製按鈕，但 enterReplayMode() 會立即隱藏它們
-        // 這是預期行為，因為 Qt 的事件循環會批次處理 UI 更新，使用者不會看到閃爍
-        enterReplayMode();
-        // 從初始位置開始回放
-        replayToMove(-1);
+        // 不再自動進入回放模式，用戶可以根據需要點擊回放按鈕
     }
 }
 
@@ -2286,12 +2283,8 @@ void Qt_Chess::enterReplayMode() {
     // 儲存當前棋盤狀態
     saveBoardState();
     
-    // 顯示退出回放按鈕
-    if (m_exitReplayButton) m_exitReplayButton->show();
-    
-    // 隱藏遊戲控制按鈕
-    if (m_exportPGNButton) m_exportPGNButton->hide();
-    if (m_copyPGNButton) m_copyPGNButton->hide();
+    // 回放模式將始終保持開啟，因此不再顯示退出回放按鈕
+    // Export/Copy PGN 按鈕在回放模式中也保持可見
 }
 
 void Qt_Chess::exitReplayMode() {
@@ -2303,12 +2296,8 @@ void Qt_Chess::exitReplayMode() {
     // 恢復棋盤狀態
     restoreBoardState();
     
-    // 隱藏退出回放按鈕
-    if (m_exitReplayButton) m_exitReplayButton->hide();
-    
-    // 顯示遊戲控制按鈕
-    if (m_exportPGNButton) m_exportPGNButton->show();
-    if (m_copyPGNButton) m_copyPGNButton->show();
+    // 不再需要隱藏退出回放按鈕或顯示遊戲控制按鈕
+    // Export/Copy PGN 按鈕在回放模式中也保持可見
     
     // 取消棋譜列表的選擇
     m_moveListWidget->clearSelection();
@@ -2407,9 +2396,7 @@ void Qt_Chess::onReplayLastClicked() {
     }
 }
 
-void Qt_Chess::onExitReplayClicked() {
-    exitReplayMode();
-}
+// onExitReplayClicked() removed - replay mode stays active until new game
 
 void Qt_Chess::updateReplayButtons() {
     const std::vector<MoveRecord>& moveHistory = m_chessBoard.getMoveHistory();
