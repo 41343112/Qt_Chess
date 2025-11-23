@@ -120,11 +120,11 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     resize(900, 660);  // 增加寬度以容納時間控制面板
     
     // 設置最小視窗大小以確保所有內容都能完整顯示而不被裁切
-    // 計算：LEFT_PANEL_MAX_WIDTH (200) + 最小棋盤 (8*MIN_SQUARE_SIZE+4=244) + 
-    //       RIGHT_PANEL_MAX_WIDTH (300) + 2*PANEL_SPACING (40) + BASE_MARGINS (30) + 
-    //       棋盤容器邊距 (2*BOARD_CONTAINER_MARGIN=10) = 824
-    // 高度：棋盤 (244) + 時間標籤 (~80) + 間距 (~60) = ~384，使用 420 以舒適調整大小
-    setMinimumSize(824, 420);
+    // 計算：LEFT_PANEL_MAX_WIDTH (200) + 最小棋盤 (8*MIN_SQUARE_SIZE=320) + 
+    //       RIGHT_PANEL_MAX_WIDTH (600) + 2*PANEL_SPACING (20) + BASE_MARGINS (10) = 1150
+    // 注意：已清除棋盤向外的區域邊距
+    // 高度：棋盤 (320) + 選單欄 (~30) + 邊距 (~20) = ~370
+    setMinimumSize(1150, 370);
     
     setMouseTracking(true);
     
@@ -245,9 +245,10 @@ void Qt_Chess::setupUI() {
     // 棋盤容器，左右兩側顯示時間
     m_boardContainer = new QWidget(this);
     m_boardContainer->setMouseTracking(true);
+    // 清除棋盤容器外的區域 - 設置透明背景
+    m_boardContainer->setStyleSheet("QWidget { background-color: transparent; }");
     QHBoxLayout* boardContainerLayout = new QHBoxLayout(m_boardContainer);
-    boardContainerLayout->setContentsMargins(BOARD_CONTAINER_MARGIN, BOARD_CONTAINER_MARGIN, 
-                                             BOARD_CONTAINER_MARGIN, BOARD_CONTAINER_MARGIN);
+    boardContainerLayout->setContentsMargins(0, 0, 0, 0);  // 清除容器邊距
     boardContainerLayout->setSpacing(TIME_LABEL_SPACING);  // 元素之間的一致間距
     
     // 時間顯示字體
@@ -267,9 +268,11 @@ void Qt_Chess::setupUI() {
     // 國際象棋棋盤
     m_boardWidget = new QWidget(m_boardContainer);
     m_boardWidget->setMouseTracking(true);
+    // 清除棋盤外的區域 - 設置透明背景，確保棋盤邊距區域沒有可見背景
+    m_boardWidget->setStyleSheet("QWidget { background-color: transparent; }");
     QGridLayout* gridLayout = new QGridLayout(m_boardWidget);
     gridLayout->setSpacing(0);
-    gridLayout->setContentsMargins(2, 2, 2, 2);  // 所有邊添加 2px 邊距以防止邊框被裁切
+    gridLayout->setContentsMargins(0, 0, 0, 0);  // 清除棋盤向外的區域 - 移除邊距
     
     m_squares.resize(8, std::vector<QPushButton*>(8));
     
@@ -1243,8 +1246,8 @@ void Qt_Chess::updateSquareSizes() {
     }
     
     // 更新 the board widget size to fit the squares exactly
-    // 添加 4 個額外像素（每側 2px）以防止格子高亮時邊框被裁切
-    m_boardWidget->setFixedSize(squareSize * 8 + 4, squareSize * 8 + 4);
+    // 清除向外的區域 - 不添加額外空間，讓棋盤格子緊密相連
+    m_boardWidget->setFixedSize(squareSize * 8, squareSize * 8);
     
     // 更新 time label font sizes to scale with board size
     if (m_whiteTimeLabel && m_blackTimeLabel) {
