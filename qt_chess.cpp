@@ -555,10 +555,7 @@ void Qt_Chess::onGiveUpClicked() {
 void Qt_Chess::onStartButtonClicked() {
     if (m_timeControlEnabled && !m_timerStarted) {
         // 重置棋盤到初始狀態
-        m_chessBoard.initializeBoard();
-        m_pieceSelected = false;
-        updateBoard();
-        clearHighlights();
+        resetBoardState();
         
         m_timerStarted = true;
         m_gameStarted = true;  // 標記遊戲已開始
@@ -588,10 +585,7 @@ void Qt_Chess::onStartButtonClicked() {
         }
     } else if (!m_timeControlEnabled && !m_gameStarted) {
         // 重置棋盤到初始狀態（即使沒有時間控制）
-        m_chessBoard.initializeBoard();
-        m_pieceSelected = false;
-        updateBoard();
-        clearHighlights();
+        resetBoardState();
         
         // 即使沒有時間控制也允許遊戲開始
         m_gameStarted = true;
@@ -1720,8 +1714,6 @@ void Qt_Chess::updateTimeDisplays() {
         // 如果少於 LOW_TIME_THRESHOLD_MS（10 秒），顯示格式為 0:秒.小數
         if (ms < LOW_TIME_THRESHOLD_MS) {
             double seconds = ms / 1000.0;
-            int wholeSeconds = static_cast<int>(seconds);
-            double decimalPart = seconds - wholeSeconds;
             return QString("0:%1").arg(seconds, 0, 'f', 1);  // 格式：0:9.8
         }
         
@@ -1989,4 +1981,12 @@ void Qt_Chess::showTimeControlAfterTimeout() {
     // 隱藏時間顯示 since game is over
     if (m_whiteTimeLabel) m_whiteTimeLabel->hide();
     if (m_blackTimeLabel) m_blackTimeLabel->hide();
+}
+
+void Qt_Chess::resetBoardState() {
+    // 重置棋盤到初始狀態
+    m_chessBoard.initializeBoard();
+    m_pieceSelected = false;
+    updateBoard();
+    clearHighlights();
 }
