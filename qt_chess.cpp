@@ -58,6 +58,7 @@ namespace {
     const int MIN_SLIDER_HEIGHT = 20;            // Minimum slider height
     const int MAX_SLIDER_HEIGHT = 40;            // Maximum slider height
     const int SLIDER_HANDLE_EXTRA = 10;          // Extra space for slider handle
+    const int LOW_TIME_THRESHOLD_MS = 10000;     // Threshold for low time warning (10 seconds)
 }
 
 Qt_Chess::Qt_Chess(QWidget *parent)
@@ -1692,12 +1693,12 @@ void Qt_Chess::updateTimeDisplays() {
     // Convert milliseconds to minutes:seconds or show unlimited
     // When time < 10 seconds, show decimal points (e.g., "9.8")
     auto formatTime = [](int ms) -> QString {
-        if (ms <= 0) {
+        if (ms < 0) {
             return "不限時";
         }
         
-        // If less than 10000 ms (10 seconds), show decimal format
-        if (ms < 10000) {
+        // If less than LOW_TIME_THRESHOLD_MS (10 seconds), show decimal format
+        if (ms < LOW_TIME_THRESHOLD_MS) {
             double seconds = ms / 1000.0;
             return QString::number(seconds, 'f', 1);  // Show 1 decimal place
         }
@@ -1719,7 +1720,7 @@ void Qt_Chess::updateTimeDisplays() {
     QString whiteStyle, blackStyle;
     
     // Determine white label style
-    if (m_whiteTimeMs > 0 && m_whiteTimeMs < 10000) {  // Less than 10 seconds
+    if (m_whiteTimeMs > 0 && m_whiteTimeMs < LOW_TIME_THRESHOLD_MS) {  // Less than 10 seconds
         whiteStyle = "QLabel { background-color: rgba(220, 53, 69, 200); color: #FFF; padding: 8px; border-radius: 5px; }";
     } else if (currentPlayer == PieceColor::White) {
         whiteStyle = "QLabel { background-color: rgba(76, 175, 80, 200); color: #FFF; padding: 8px; border-radius: 5px; }";
@@ -1728,7 +1729,7 @@ void Qt_Chess::updateTimeDisplays() {
     }
     
     // Determine black label style
-    if (m_blackTimeMs > 0 && m_blackTimeMs < 10000) {  // Less than 10 seconds
+    if (m_blackTimeMs > 0 && m_blackTimeMs < LOW_TIME_THRESHOLD_MS) {  // Less than 10 seconds
         blackStyle = "QLabel { background-color: rgba(220, 53, 69, 200); color: #FFF; padding: 8px; border-radius: 5px; }";
     } else if (currentPlayer == PieceColor::Black) {
         blackStyle = "QLabel { background-color: rgba(76, 175, 80, 200); color: #FFF; padding: 8px; border-radius: 5px; }";
