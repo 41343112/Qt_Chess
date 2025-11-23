@@ -60,6 +60,7 @@ public:
     // 棋譜記錄
     const std::vector<MoveRecord>& getMoveHistory() const { return m_moveHistory; }
     void clearMoveHistory();
+    void setMoveHistory(const std::vector<MoveRecord>& history);
     QString getMoveNotation(int moveIndex) const;
     QStringList getAllMoveNotations() const;
     

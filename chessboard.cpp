@@ -422,6 +422,10 @@ void ChessBoard::clearMoveHistory() {
     m_moveHistory.clear();
 }
 
+void ChessBoard::setMoveHistory(const std::vector<MoveRecord>& history) {
+    m_moveHistory = history;
+}
+
 QString ChessBoard::getMoveNotation(int moveIndex) const {
     if (moveIndex < 0 || moveIndex >= static_cast<int>(m_moveHistory.size())) {
         return QString();
