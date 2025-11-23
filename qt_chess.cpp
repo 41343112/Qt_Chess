@@ -172,18 +172,17 @@ void Qt_Chess::setupUI() {
     m_moveListWidget = new QListWidget(m_moveListPanel);
     m_moveListWidget->setAlternatingRowColors(true);
     connect(m_moveListWidget, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem* item) {
-        if (!m_gameStarted) {  // 只有在遊戲結束後才允許回放
-            int row = m_moveListWidget->row(item);
-            const std::vector<MoveRecord>& moveHistory = m_chessBoard.getMoveHistory();
-            // 每行包含兩步（白方和黑方），點擊某行會跳到該行的最後一步
-            int moveIndex = row * 2 + 1;  
-            // 確保索引不超出範圍
-            if (moveIndex >= static_cast<int>(moveHistory.size())) {
-                moveIndex = moveHistory.size() - 1;
-            }
-            enterReplayMode();
-            replayToMove(moveIndex);
+        // 允許在遊戲進行中或結束後都可以回放
+        int row = m_moveListWidget->row(item);
+        const std::vector<MoveRecord>& moveHistory = m_chessBoard.getMoveHistory();
+        // 每行包含兩步（白方和黑方），點擊某行會跳到該行的最後一步
+        int moveIndex = row * 2 + 1;  
+        // 確保索引不超出範圍
+        if (moveIndex >= static_cast<int>(moveHistory.size())) {
+            moveIndex = moveHistory.size() - 1;
         }
+        enterReplayMode();
+        replayToMove(moveIndex);
     });
     moveListLayout->addWidget(m_moveListWidget);
     
@@ -2268,6 +2267,11 @@ void Qt_Chess::enterReplayMode() {
     
     m_isReplayMode = true;
     
+    // 暫停計時器（如果正在進行中）
+    if (m_gameTimer && m_gameTimer->isActive()) {
+        m_gameTimer->stop();
+    }
+    
     // 儲存當前棋盤狀態
     saveBoardState();
     
@@ -2292,6 +2296,11 @@ void Qt_Chess::exitReplayMode() {
     
     // 恢復棋盤狀態
     restoreBoardState();
+    
+    // 恢復計時器（如果遊戲進行中且計時器已啟動）
+    if (m_gameStarted && m_timerStarted) {
+        startTimer();
+    }
     
     // 隱藏回放控制按鈕
     if (m_replayTitle) m_replayTitle->hide();
