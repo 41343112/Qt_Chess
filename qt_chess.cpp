@@ -655,33 +655,20 @@ void Qt_Chess::onGiveUpClicked() {
             m_chessBoard.setGameResult(GameResult::BlackResigns);
         }
         
-        // 停止遊戲
-        m_gameStarted = false;
-        stopTimer();
-        m_timerStarted = false;
-        
-        // 顯示時間控制面板
-        if (m_timeControlPanel) {
-            m_timeControlPanel->show();
-        }
-        
-        // 隱藏時間顯示
-        if (m_whiteTimeLabel) m_whiteTimeLabel->hide();
-        if (m_blackTimeLabel) m_blackTimeLabel->hide();
-        
-        // 隱藏放棄按鈕
-        if (m_giveUpButton) m_giveUpButton->hide();
-        
-        // 重新啟用開始按鈕
-        if (m_startButton) {
-            m_startButton->setText("開始");
-            m_startButton->setEnabled(true);
-        }
+        // 處理遊戲結束的通用邏輯
+        handleGameEnd();
         
         // 顯示放棄者的訊息
         QString playerName = (currentPlayer == PieceColor::White) ? "白方" : "黑方";
         QString winner = (currentPlayer == PieceColor::White) ? "黑方" : "白方";
         QMessageBox::information(this, "遊戲結束", QString("%1放棄！%2獲勝！").arg(playerName).arg(winner));
+        
+        // 自動進入回放模式，無需顯示複製棋譜按鈕
+        // 注意：handleGameEnd() 會顯示匯出/複製按鈕，但 enterReplayMode() 會立即隱藏它們
+        // 這是預期行為，因為 Qt 的事件循環會批次處理 UI 更新，使用者不會看到閃爍
+        enterReplayMode();
+        // 從初始位置開始回放
+        replayToMove(-1);
     }
 }
 
