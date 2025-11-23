@@ -1898,6 +1898,9 @@ void Qt_Chess::onIncrementChanged(int value) {
 void Qt_Chess::onGameTimerTick() {
     if (!m_timeControlEnabled) return;
     
+    // 在回放模式中不消耗時間
+    if (m_isReplayMode) return;
+    
     // 減少當前玩家的時間
     PieceColor currentPlayer = m_chessBoard.getCurrentPlayer();
     if (currentPlayer == PieceColor::White) {
