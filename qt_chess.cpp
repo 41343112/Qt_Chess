@@ -2268,9 +2268,7 @@ void Qt_Chess::enterReplayMode() {
     m_isReplayMode = true;
     
     // 暫停計時器（如果正在進行中）
-    if (m_gameTimer && m_gameTimer->isActive()) {
-        m_gameTimer->stop();
-    }
+    stopTimer();
     
     // 儲存當前棋盤狀態
     saveBoardState();
@@ -2298,7 +2296,7 @@ void Qt_Chess::exitReplayMode() {
     restoreBoardState();
     
     // 恢復計時器（如果遊戲進行中且計時器已啟動）
-    if (m_gameStarted && m_timerStarted) {
+    if (m_gameStarted && m_timeControlEnabled && m_timerStarted) {
         startTimer();
     }
     
