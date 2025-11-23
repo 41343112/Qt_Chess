@@ -1152,25 +1152,12 @@ void Qt_Chess::keyPressEvent(QKeyEvent *event) {
     // 處理左右箭頭鍵
     if (event->key() == Qt::Key_Left) {
         // 左箭頭：上一步
-        if (!m_isReplayMode) {
-            // 如果不在回放模式，從最後一步開始倒退
-            onReplayPrevClicked();
-        } else if (m_replayMoveIndex >= 0) {
-            // 已在回放模式，後退一步
-            onReplayPrevClicked();
-        }
+        onReplayPrevClicked();
         event->accept();
         return;
     } else if (event->key() == Qt::Key_Right) {
         // 右箭頭：下一步
-        if (!m_isReplayMode) {
-            // 如果不在回放模式，從第一步開始
-            enterReplayMode();
-            replayToMove(0);
-        } else if (m_replayMoveIndex < static_cast<int>(moveHistory.size()) - 1) {
-            // 已在回放模式，前進一步
-            onReplayNextClicked();
-        }
+        onReplayNextClicked();
         event->accept();
         return;
     }
