@@ -115,7 +115,6 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_isReplayMode(false)
     , m_replayMoveIndex(-1)
     , m_savedCurrentPlayer(PieceColor::White)
-    , m_savedTimerWasActive(false)
 {
     ui->setupUi(this);
     setWindowTitle("國際象棋 - 雙人對弈");
@@ -909,8 +908,17 @@ bool Qt_Chess::eventFilter(QObject *obj, QEvent *event) {
 }
 
 void Qt_Chess::mousePressEvent(QMouseEvent *event) {
-    // 如果在回放模式中，不處理滑鼠事件
+    // 如果在回放模式中，左鍵點擊棋盤會退出回放模式
     if (m_isReplayMode) {
+        if (event->button() == Qt::LeftButton) {
+            QPoint displaySquare = getSquareAtPosition(event->pos());
+            // 檢查點擊是否在棋盤範圍內
+            if (displaySquare.x() >= 0 && displaySquare.y() >= 0 && 
+                displaySquare.x() < 8 && displaySquare.y() < 8) {
+                exitReplayMode();
+                return;
+            }
+        }
         QMainWindow::mousePressEvent(event);
         return;
     }
@@ -2286,12 +2294,10 @@ void Qt_Chess::enterReplayMode() {
     // 儲存當前棋盤狀態
     saveBoardState();
     
-    // 如果遊戲正在進行且計時器正在運行，暫停它
-    // 檢查 m_timerStarted 和 m_gameTimer->isActive() 以確保計時器真的在運行
-    m_savedTimerWasActive = (m_timerStarted && m_gameTimer && m_gameTimer->isActive());
-    if (m_savedTimerWasActive) {
-        stopTimer();
-    }
+    // 在回放模式中，計時器繼續運行，但禁用時間控制滑桿以防止更改
+    if (m_whiteTimeLimitSlider) m_whiteTimeLimitSlider->setEnabled(false);
+    if (m_blackTimeLimitSlider) m_blackTimeLimitSlider->setEnabled(false);
+    if (m_incrementSlider) m_incrementSlider->setEnabled(false);
     
     // 如果遊戲正在進行，顯示退出回放按鈕
     if (m_gameStarted && m_exitReplayButton) {
@@ -2308,11 +2314,10 @@ void Qt_Chess::exitReplayMode() {
     // 恢復棋盤狀態
     restoreBoardState();
     
-    // 如果計時器之前正在運行，恢復它
-    if (m_savedTimerWasActive) {
-        startTimer();
-        m_savedTimerWasActive = false;
-    }
+    // 重新啟用時間控制滑桿
+    if (m_whiteTimeLimitSlider) m_whiteTimeLimitSlider->setEnabled(true);
+    if (m_blackTimeLimitSlider) m_blackTimeLimitSlider->setEnabled(true);
+    if (m_incrementSlider) m_incrementSlider->setEnabled(true);
     
     // 隱藏退出回放按鈕
     if (m_exitReplayButton) {
