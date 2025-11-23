@@ -183,7 +183,6 @@ void Qt_Chess::setupUI() {
     }
     
     // 將棋盤添加到容器佈局
-    // 伸展因子 1 允許棋盤擴展並填充可用的水平空間
     boardContainerLayout->addWidget(m_boardWidget, 1, Qt::AlignCenter);
     
     contentLayout->addWidget(m_boardContainer, 2);  // 給棋盤更多空間（2:1 比例）
@@ -958,6 +957,7 @@ void Qt_Chess::updateSquareSizes() {
     }
     
     // 添加佈局間距的基本邊距（棋盤容器邊距是棋盤元件大小的一部分）
+    reservedWidth += BASE_MARGINS;
     reservedHeight += BASE_MARGINS;
     
     // 考慮選單欄高度（如果存在）以防止全螢幕時棋盤被裁切
