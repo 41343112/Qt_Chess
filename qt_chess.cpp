@@ -2348,6 +2348,12 @@ void Qt_Chess::replayToMove(int moveIndex) {
     } else {
         m_moveListWidget->clearSelection();
     }
+    
+    // 如果已經在最新一步，自動退出回放模式
+    if (m_isReplayMode && !moveHistory.empty() && 
+        m_replayMoveIndex == static_cast<int>(moveHistory.size()) - 1) {
+        exitReplayMode();
+    }
 }
 
 void Qt_Chess::onReplayFirstClicked() {
