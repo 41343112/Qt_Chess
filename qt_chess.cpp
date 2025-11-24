@@ -25,6 +25,7 @@
 #include <QTextStream>
 #include <QClipboard>
 #include <QApplication>
+#include <algorithm>
 
 namespace {
     const QString CHECK_HIGHLIGHT_STYLE = "QPushButton { background-color: #FF6B6B; border: 2px solid #FF0000; }";
@@ -67,6 +68,9 @@ namespace {
     
     // PGN 格式常數
     const int PGN_MOVES_PER_LINE = 6;            // PGN 檔案中每行的移動回合數
+    
+    // 被吃棋子顯示常數
+    const int CAPTURED_PIECE_OVERLAP_PX = -8;     // 被吃棋子重疊的像素數（負值表示向左偏移）
     
     // 獲取面板的實際寬度，如果尚未渲染則使用後備值的輔助函數
     static int getPanelWidth(QWidget* panel) {
@@ -508,8 +512,21 @@ void Qt_Chess::updateStatus() {
 
 void Qt_Chess::updateScoreDisplay() {
     if (m_whiteScoreLabel && m_blackScoreLabel) {
-        m_whiteScoreLabel->setText(QString("白方: %1").arg(m_chessBoard.getWhiteScore()));
-        m_blackScoreLabel->setText(QString("黑方: %1").arg(m_chessBoard.getBlackScore()));
+        int whiteScore = m_chessBoard.getWhiteScore();
+        int blackScore = m_chessBoard.getBlackScore();
+        int scoreDiff = whiteScore - blackScore;
+        
+        // 顯示分數和分差
+        if (scoreDiff > 0) {
+            m_whiteScoreLabel->setText(QString("白方: %1 (+%2)").arg(whiteScore).arg(scoreDiff));
+            m_blackScoreLabel->setText(QString("黑方: %1").arg(blackScore));
+        } else if (scoreDiff < 0) {
+            m_whiteScoreLabel->setText(QString("白方: %1").arg(whiteScore));
+            m_blackScoreLabel->setText(QString("黑方: %1 (+%2)").arg(blackScore).arg(-scoreDiff));
+        } else {
+            m_whiteScoreLabel->setText(QString("白方: %1").arg(whiteScore));
+            m_blackScoreLabel->setText(QString("黑方: %1").arg(blackScore));
+        }
     }
 }
 
@@ -519,23 +536,73 @@ void Qt_Chess::updateCapturedPiecesDisplay() {
     }
     
     // 獲取白方吃掉的棋子（顯示在白方時間上面）
-    const std::vector<PieceType>& whiteCaptured = m_chessBoard.getWhiteCapturedPieces();
+    std::vector<PieceType> whiteCaptured = m_chessBoard.getWhiteCapturedPieces();
+    // 按照棋子價值排序（從小到大）
+    std::sort(whiteCaptured.begin(), whiteCaptured.end(), 
+        [this](PieceType a, PieceType b) {
+            int valueA = m_chessBoard.getPieceValue(a);
+            int valueB = m_chessBoard.getPieceValue(b);
+            if (valueA != valueB) {
+                return valueA < valueB;
+            }
+            // 如果價值相同，按照類型排序以保持一致性
+            return static_cast<int>(a) < static_cast<int>(b);
+        });
+    
+    // 使用HTML格式創建帶有重疊效果的顯示
     QString whiteCapturedText;
-    for (const auto& pieceType : whiteCaptured) {
-        ChessPiece piece(pieceType, PieceColor::Black);  // 白方吃掉的是黑方的棋子
-        whiteCapturedText += piece.getSymbol();
+    if (!whiteCaptured.empty()) {
+        whiteCapturedText = "<div style='display: inline;'>";
+        for (size_t i = 0; i < whiteCaptured.size(); ++i) {
+            ChessPiece piece(whiteCaptured[i], PieceColor::Black);
+            if (i > 0) {
+                // 使用負邊距創建重疊效果
+                whiteCapturedText += QString("<span style='margin-left: %1px;'>%2</span>")
+                    .arg(CAPTURED_PIECE_OVERLAP_PX)
+                    .arg(piece.getSymbol());
+            } else {
+                whiteCapturedText += QString("<span>%1</span>").arg(piece.getSymbol());
+            }
+        }
+        whiteCapturedText += "</div>";
     }
     
     // 獲取黑方吃掉的棋子（顯示在黑方時間下面）
-    const std::vector<PieceType>& blackCaptured = m_chessBoard.getBlackCapturedPieces();
+    std::vector<PieceType> blackCaptured = m_chessBoard.getBlackCapturedPieces();
+    // 按照棋子價值排序（從小到大）
+    std::sort(blackCaptured.begin(), blackCaptured.end(), 
+        [this](PieceType a, PieceType b) {
+            int valueA = m_chessBoard.getPieceValue(a);
+            int valueB = m_chessBoard.getPieceValue(b);
+            if (valueA != valueB) {
+                return valueA < valueB;
+            }
+            return static_cast<int>(a) < static_cast<int>(b);
+        });
+    
+    // 使用HTML格式創建帶有重疊效果的顯示
     QString blackCapturedText;
-    for (const auto& pieceType : blackCaptured) {
-        ChessPiece piece(pieceType, PieceColor::White);  // 黑方吃掉的是白方的棋子
-        blackCapturedText += piece.getSymbol();
+    if (!blackCaptured.empty()) {
+        blackCapturedText = "<div style='display: inline;'>";
+        for (size_t i = 0; i < blackCaptured.size(); ++i) {
+            ChessPiece piece(blackCaptured[i], PieceColor::White);
+            if (i > 0) {
+                // 使用負邊距創建重疊效果
+                blackCapturedText += QString("<span style='margin-left: %1px;'>%2</span>")
+                    .arg(CAPTURED_PIECE_OVERLAP_PX)
+                    .arg(piece.getSymbol());
+            } else {
+                blackCapturedText += QString("<span>%1</span>").arg(piece.getSymbol());
+            }
+        }
+        blackCapturedText += "</div>";
     }
     
-    // 更新標籤
+    // 更新標籤（使用HTML格式）
+    m_whiteCapturedPiecesLabel->setTextFormat(Qt::RichText);
     m_whiteCapturedPiecesLabel->setText(whiteCapturedText);
+    
+    m_blackCapturedPiecesLabel->setTextFormat(Qt::RichText);
     m_blackCapturedPiecesLabel->setText(blackCapturedText);
     
     // 控制標籤的可見性
