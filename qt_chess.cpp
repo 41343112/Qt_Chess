@@ -391,9 +391,9 @@ void Qt_Chess::setupUI() {
     m_timeControlPanel = new QWidget(this);
     m_timeControlPanel->setMinimumWidth(MIN_PANEL_WIDTH);  // 限制最小寬度
     m_timeControlPanel->setMaximumWidth(MAX_PANEL_WIDTH);  // 限制最大寬度
-    QVBoxLayout*  rightPanelLayout = new QVBoxLayout(m_timeControlPanel);
-    rightPanelLayout->setContentsMargins(0, 0, 0, 0);
-    setupTimeControlUI(rightPanelLayout);
+    QVBoxLayout*  timeControlPanelLayout = new QVBoxLayout(m_timeControlPanel);
+    timeControlPanelLayout->setContentsMargins(0, 0, 0, 0);
+    setupTimeControlUI(timeControlPanelLayout);
     m_contentLayout->addWidget(m_timeControlPanel, 1);  // 添加伸展因子以允許縮放
     
     mainLayout->addLayout(m_contentLayout);
