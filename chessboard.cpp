@@ -1,7 +1,7 @@
 #include "chessboard.h"
 
 ChessBoard::ChessBoard()
-    : m_board(8, std::vector<ChessPiece>(8)), m_currentPlayer(PieceColor::White), m_enPassantTarget(-1, -1), m_gameResult(GameResult::InProgress), m_whiteScore(0), m_blackScore(0)
+    : m_board(8, std::vector<ChessPiece>(8)), m_currentPlayer(PieceColor::White), m_enPassantTarget(-1, -1), m_gameResult(GameResult::InProgress), m_whiteScore(0), m_blackScore(0), m_whiteCapturedPieces(), m_blackCapturedPieces()
 {
     initializeBoard();
 }
@@ -48,6 +48,8 @@ void ChessBoard::initializeBoard() {
     m_gameResult = GameResult::InProgress;
     m_whiteScore = 0;
     m_blackScore = 0;
+    m_whiteCapturedPieces.clear();
+    m_blackCapturedPieces.clear();
 }
 
 const ChessPiece& ChessBoard::getPiece(int row, int col) const {
@@ -235,13 +237,15 @@ bool ChessBoard::movePiece(const QPoint& from, const QPoint& to) {
     m_board[to.y()][to.x()].setMoved(true);
     m_board[from.y()][from.x()] = ChessPiece(PieceType::None, PieceColor::None);
     
-    // 更新吃子分數
+    // 更新吃子分數和被吃棋子列表
     if (capturedPieceType != PieceType::None) {
         int pieceValue = getPieceValue(capturedPieceType);
         if (pieceColor == PieceColor::White) {
             m_whiteScore += pieceValue;
+            m_whiteCapturedPieces.push_back(capturedPieceType);
         } else {
             m_blackScore += pieceValue;
+            m_blackCapturedPieces.push_back(capturedPieceType);
         }
     }
     
@@ -655,4 +659,6 @@ int ChessBoard::getPieceValue(PieceType type) const {
 void ChessBoard::resetScores() {
     m_whiteScore = 0;
     m_blackScore = 0;
+    m_whiteCapturedPieces.clear();
+    m_blackCapturedPieces.clear();
 }
