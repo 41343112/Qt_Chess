@@ -63,7 +63,7 @@ namespace {
     const int SLIDER_HANDLE_EXTRA = 10;          // 滑桿手柄的額外空間
     const int LOW_TIME_THRESHOLD_MS = 10000;     // 低時間警告的閾值（10 秒）
     const int MIN_PANEL_FALLBACK_WIDTH = 200;    // 面板寬度的最小後備值（像素）
-    const int MAX_PANEL_WIDTH = 300;              // 左右面板的最大寬度（像素）
+    const int MAX_PANEL_WIDTH = 600;              // 左右面板的最大寬度（像素）
     
     // PGN 格式常數
     const int PGN_MOVES_PER_LINE = 6;            // PGN 檔案中每行的移動回合數
