@@ -36,7 +36,7 @@
   - 輕鬆切換不同的圖標集
   - 隨時重設為預設的 Unicode 符號
   - 設定會在程式關閉後持續保存
-  - 參閱 [ADDING_ICON_SETS.md](ADDING_ICON_SETS.md) 以了解如何新增預設圖標圖片
+  - 參閱 [ADDING_ICON_SETS.md](docs/ADDING_ICON_SETS.md) 以了解如何新增預設圖標圖片
 - **可自訂的棋盤顏色**：
   - 從多種配色方案選項中選擇：
     - 經典棕褐色 - 傳統的棋盤外觀
@@ -52,14 +52,14 @@
   - 為淺色和深色方格挑選任何自訂顏色
   - 隨時重設為預設顏色
   - 設定會在程式關閉後持續保存
-  - 參閱 [BOARD_COLOR_QUICK_START.md](BOARD_COLOR_QUICK_START.md) 以獲得使用指南
+  - 參閱 [BOARD_COLOR_QUICK_START.md](docs/BOARD_COLOR_QUICK_START.md) 以獲得使用指南
 - **棋盤反轉功能**：
   - 將棋盤旋轉 180 度，從任一玩家的視角觀看
   - 非常適合玩家坐在對面的雙人遊戲
   - 透過設定選單 → "反轉棋盤" 存取
   - 反轉時所有互動（點擊、拖放、標示）都能正常運作
   - 棋盤反轉狀態會在程式關閉後持續保存
-  - 參閱 [BOARD_FLIP_FEATURE.md](BOARD_FLIP_FEATURE.md) 以獲得技術細節
+  - 參閱 [BOARD_FLIP_FEATURE.md](docs/BOARD_FLIP_FEATURE.md) 以獲得技術細節
 - **棋譜記錄與回放**：
   - **自動記錄棋譜**：每一步移動都會自動記錄，包括完整的代數記譜法
   - **認輸記錄**：玩家認輸時會正確記錄在遊戲結果中，並反映在 PGN 輸出中

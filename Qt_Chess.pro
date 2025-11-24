@@ -9,24 +9,24 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-    main.cpp \
-    qt_chess.cpp \
-    chesspiece.cpp \
-    chessboard.cpp \
-    soundsettingsdialog.cpp \
-    pieceiconsettingsdialog.cpp \
-    boardcolorsettingsdialog.cpp
+    src/main.cpp \
+    src/qt_chess.cpp \
+    src/chesspiece.cpp \
+    src/chessboard.cpp \
+    src/soundsettingsdialog.cpp \
+    src/pieceiconsettingsdialog.cpp \
+    src/boardcolorsettingsdialog.cpp
 
 HEADERS += \
-    qt_chess.h \
-    chesspiece.h \
-    chessboard.h \
-    soundsettingsdialog.h \
-    pieceiconsettingsdialog.h \
-    boardcolorsettingsdialog.h
+    src/qt_chess.h \
+    src/chesspiece.h \
+    src/chessboard.h \
+    src/soundsettingsdialog.h \
+    src/pieceiconsettingsdialog.h \
+    src/boardcolorsettingsdialog.h
 
 FORMS += \
-    qt_chess.ui
+    src/qt_chess.ui
 
 RESOURCES += \
     resources.qrc
