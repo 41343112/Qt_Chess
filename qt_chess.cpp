@@ -1191,13 +1191,23 @@ void Qt_Chess::updateSquareSizes() {
     
     // 考慮左側面板的實際寬度（棋譜面板）- 總是可見
     if (m_moveListPanel) {
-        // 使用面板的實際寬度
-        reservedWidth += m_moveListPanel->width();
+        // 使用面板的實際寬度，如果尚未渲染則使用 sizeHint
+        int leftPanelWidth = m_moveListPanel->width();
+        if (leftPanelWidth <= 0) {
+            leftPanelWidth = m_moveListPanel->sizeHint().width();
+            if (leftPanelWidth <= 0) leftPanelWidth = 200;  // 最小後備寬度
+        }
+        reservedWidth += leftPanelWidth;
     }
     
     // 如果可見則考慮右側面板的實際寬度（時間控制面板）
     if (m_timeControlPanel && m_timeControlPanel->isVisible()) {
-        reservedWidth += m_timeControlPanel->width();
+        int rightPanelWidth = m_timeControlPanel->width();
+        if (rightPanelWidth <= 0) {
+            rightPanelWidth = m_timeControlPanel->sizeHint().width();
+            if (rightPanelWidth <= 0) rightPanelWidth = 200;  // 最小後備寬度
+        }
+        reservedWidth += rightPanelWidth;
     }
     
     // 添加佈局間距和邊距
