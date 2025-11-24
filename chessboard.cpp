@@ -1,7 +1,7 @@
 #include "chessboard.h"
 
 ChessBoard::ChessBoard()
-    : m_board(8, std::vector<ChessPiece>(8)), m_currentPlayer(PieceColor::White), m_enPassantTarget(-1, -1), m_gameResult(GameResult::InProgress), m_whiteScore(0), m_blackScore(0)
+    : m_board(8, std::vector<ChessPiece>(8)), m_currentPlayer(PieceColor::White), m_enPassantTarget(-1, -1), m_gameResult(GameResult::InProgress), m_whiteScore(0), m_blackScore(0), m_whiteCapturedPieces(), m_blackCapturedPieces()
 {
     initializeBoard();
 }
