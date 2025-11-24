@@ -253,7 +253,7 @@ void Qt_Chess::setupUI() {
     contentLayout->addWidget(m_moveListPanel, 1);  // 添加伸展因子以允許縮放
     
     // 添加左側伸展以保持棋盤居中
-    contentLayout->addStretch(1);
+    contentLayout->addStretch(0);
     
     // 棋盤容器，左右兩側顯示時間
     m_boardContainer = new QWidget(this);
