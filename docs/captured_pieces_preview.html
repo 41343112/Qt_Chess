@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>吃子紀錄預覽 - Captured Pieces Preview</title>
+    <style>
+        body {
+            font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .example-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .example-title {
+            font-weight: bold;
+            font-size: 14pt;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        .captured-display {
+            background-color: #fafafa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .piece-container {
+            position: relative;
+            display: inline-block;
+            height: 20px;
+            white-space: nowrap;
+        }
+        
+        .piece {
+            position: absolute;
+            font-size: 18px;
+            top: 0;
+        }
+        
+        .description {
+            color: #666;
+            font-size: 10pt;
+            margin-top: 10px;
+            font-style: italic;
+        }
+        
+        .board-preview {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 20px;
+            background: linear-gradient(to bottom, #e8e8e8, #f8f8f8);
+            border-radius: 8px;
+        }
+        
+        .side-display {
+            text-align: center;
+        }
+        
+        .side-label {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 12pt;
+        }
+        
+        .captured-pieces-box {
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 10px;
+            min-width: 150px;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .board-icon {
+            font-size: 48pt;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 吃子紀錄預覽圖<br>Captured Pieces Display Preview</h1>
+    
+    <div class="example-container">
+        <div class="example-title">範例 1：無重疊 - 不同類型的棋子 (No Overlap - Different Piece Types)</div>
+        <div class="captured-display">
+            <div class="piece-container" style="width: 90px;">
+                <span class="piece" style="left: 0px;">♟</span>
+                <span class="piece" style="left: 18px;">♞</span>
+                <span class="piece" style="left: 36px;">♝</span>
+                <span class="piece" style="left: 54px;">♜</span>
+                <span class="piece" style="left: 72px;">♛</span>
+            </div>
+        </div>
+        <div class="description">
+            不同類型的棋子正常排列，無重疊效果<br>
+            Different piece types are arranged normally without overlapping
+        </div>
+    </div>
+    
+    <div class="example-container">
+        <div class="example-title">範例 2：重疊效果 - 相同類型的棋子 (Overlap Effect - Same Piece Types)</div>
+        <div class="captured-display">
+            <div class="piece-container" style="width: 60px;">
+                <span class="piece" style="left: 0px;">♟</span>
+                <span class="piece" style="left: 10px;">♟</span>
+                <span class="piece" style="left: 20px;">♟</span>
+            </div>
+        </div>
+        <div class="description">
+            相同類型的棋子會重疊顯示（8像素重疊），創造堆疊效果<br>
+            Same piece types overlap (8px overlap) to create a stacking effect
+        </div>
+    </div>
+    
+    <div class="example-container">
+        <div class="example-title">範例 3：混合顯示 (Mixed Display)</div>
+        <div class="captured-display">
+            <div class="piece-container" style="width: 100px;">
+                <span class="piece" style="left: 0px;">♟</span>
+                <span class="piece" style="left: 10px;">♟</span>
+                <span class="piece" style="left: 28px;">♞</span>
+                <span class="piece" style="left: 38px;">♞</span>
+                <span class="piece" style="left: 56px;">♝</span>
+                <span class="piece" style="left: 74px;">♜</span>
+            </div>
+        </div>
+        <div class="description">
+            2 個兵（重疊）+ 2 個騎士（重疊）+ 1 個主教 + 1 個城堡<br>
+            2 Pawns (overlapped) + 2 Knights (overlapped) + 1 Bishop + 1 Rook
+        </div>
+    </div>
+    
+    <div class="example-container">
+        <div class="example-title">範例 4：實際遊戲中的顯示 (In-Game Display)</div>
+        <div class="board-preview">
+            <div class="side-display">
+                <div class="side-label">黑方時間<br>Black Time</div>
+                <div style="background-color: rgba(51, 51, 51, 0.8); color: white; padding: 8px; border-radius: 5px; margin-bottom: 10px;">
+                    00:15:30
+                </div>
+                <div class="side-label">白方吃的子<br>Captured by White</div>
+                <div class="captured-pieces-box">
+                    <div class="piece-container" style="width: 70px;">
+                        <span class="piece" style="left: 0px;">♟</span>
+                        <span class="piece" style="left: 10px;">♟</span>
+                        <span class="piece" style="left: 20px;">♟</span>
+                        <span class="piece" style="left: 38px;">♞</span>
+                        <span class="piece" style="left: 56px;">♝</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="board-icon">
+                🎲
+            </div>
+            
+            <div class="side-display">
+                <div class="side-label">黑方吃的子<br>Captured by Black</div>
+                <div class="captured-pieces-box">
+                    <div class="piece-container" style="width: 50px;">
+                        <span class="piece" style="left: 0px;">♙</span>
+                        <span class="piece" style="left: 10px;">♙</span>
+                        <span class="piece" style="left: 28px;">♘</span>
+                    </div>
+                </div>
+                <div class="side-label" style="margin-top: 10px;">白方時間<br>White Time</div>
+                <div style="background-color: rgba(51, 51, 51, 0.8); color: white; padding: 8px; border-radius: 5px; margin-top: 10px;">
+                    00:14:22
+                </div>
+            </div>
+        </div>
+        <div class="description">
+            在實際遊戲中，吃子記錄顯示在棋盤兩側，與時間顯示一起<br>
+            In actual gameplay, captured pieces are displayed on both sides of the board, alongside time displays
+        </div>
+    </div>
+    
+    <div class="example-container">
+        <div class="example-title">📌 功能說明 (Feature Description)</div>
+        <div style="padding: 10px; line-height: 1.8;">
+            <ul>
+                <li><strong>自動記錄：</strong>所有被吃掉的棋子會自動記錄並顯示</li>
+                <li><strong>智能重疊：</strong>相同類型的棋子會重疊顯示，節省空間</li>
+                <li><strong>視覺分離：</strong>不同類型的棋子保持分開，便於識別</li>
+                <li><strong>支持圖標：</strong>如果使用自定義棋子圖標，吃子記錄也會顯示相應的圖標</li>
+                <li><strong>實時更新：</strong>每次吃子後立即更新顯示</li>
+            </ul>
+            <hr style="margin: 15px 0; border: none; border-top: 1px solid #ddd;">
+            <ul>
+                <li><strong>Automatic Recording:</strong> All captured pieces are automatically recorded and displayed</li>
+                <li><strong>Smart Overlap:</strong> Same piece types overlap to save space</li>
+                <li><strong>Visual Separation:</strong> Different piece types remain separated for easy identification</li>
+                <li><strong>Icon Support:</strong> If using custom piece icons, the capture display will show corresponding icons</li>
+                <li><strong>Real-time Update:</strong> Display updates immediately after each capture</li>
+            </ul>
+        </div>
+    </div>
+    
+</body>
+</html>
