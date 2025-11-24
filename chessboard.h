@@ -4,6 +4,32 @@
 #include "chesspiece.h"
 #include <QPoint>
 #include <vector>
+#include <QString>
+#include <QStringList>
+
+enum class GameResult {
+    InProgress,      // 遊戲進行中
+    WhiteWins,       // 白方獲勝
+    BlackWins,       // 黑方獲勝
+    Draw,            // 和局
+    WhiteResigns,    // 白方認輸
+    BlackResigns     // 黑方認輸
+};
+
+struct MoveRecord {
+    QPoint from;
+    QPoint to;
+    PieceType pieceType;
+    PieceColor pieceColor;
+    bool isCapture;
+    bool isCastling;
+    bool isEnPassant;
+    bool isPromotion;
+    PieceType promotionType;
+    bool isCheck;
+    bool isCheckmate;
+    QString algebraicNotation;
+};
 
 class ChessBoard {
 public:
@@ -12,11 +38,13 @@ public:
     void initializeBoard();
     const ChessPiece& getPiece(int row, int col) const;
     ChessPiece& getPiece(int row, int col);
+    void setPiece(int row, int col, const ChessPiece& piece);  // 安全地設置棋子
     
     bool movePiece(const QPoint& from, const QPoint& to);
     bool isValidMove(const QPoint& from, const QPoint& to) const;
     
     PieceColor getCurrentPlayer() const { return m_currentPlayer; }
+    void setCurrentPlayer(PieceColor player) { m_currentPlayer = player; }
     bool isInCheck(PieceColor color) const;
     bool isCheckmate(PieceColor color) const;
     bool isStalemate(PieceColor color) const;
@@ -29,16 +57,39 @@ public:
     bool needsPromotion(const QPoint& to) const;
     void promotePawn(const QPoint& pos, PieceType newType);
     
+    // 棋譜記錄
+    const std::vector<MoveRecord>& getMoveHistory() const { return m_moveHistory; }
+    void clearMoveHistory();
+    void setMoveHistory(const std::vector<MoveRecord>& history);
+    QString getMoveNotation(int moveIndex) const;
+    QStringList getAllMoveNotations() const;
+    
+    // 遊戲結果管理
+    GameResult getGameResult() const { return m_gameResult; }
+    void setGameResult(GameResult result) { m_gameResult = result; }
+    QString getGameResultString() const;
+    
 private:
     std::vector<std::vector<ChessPiece>> m_board;
     PieceColor m_currentPlayer;
     QPoint m_enPassantTarget; // 可以進行吃過路兵的位置（如果沒有則為 -1, -1）
+    std::vector<MoveRecord> m_moveHistory; // 棋步歷史記錄
+    GameResult m_gameResult; // 遊戲結果
     
     void switchPlayer();
     bool wouldBeInCheck(const QPoint& from, const QPoint& to, PieceColor color) const;
     bool hasAnyValidMoves(PieceColor color) const;
     bool canPieceMove(const QPoint& pos) const;
     bool canCastle(const QPoint& from, const QPoint& to) const;
+    
+    // 棋譜記錄輔助函數
+    void recordMove(const QPoint& from, const QPoint& to, bool isCapture, 
+                   bool isCastling, bool isEnPassant, bool isPromotion = false,
+                   PieceType promotionType = PieceType::None);
+    QString generateAlgebraicNotation(const MoveRecord& move) const;
+    QString pieceTypeToNotation(PieceType type) const;
+    QString squareToNotation(const QPoint& square) const;
+    bool isAmbiguousMove(const QPoint& from, const QPoint& to) const;
 };
 
 #endif // CHESSBOARD_H

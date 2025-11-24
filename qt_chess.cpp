@@ -20,6 +20,11 @@
 #include <QSlider>
 #include <QTimer>
 #include <QGroupBox>
+#include <QFileDialog>
+#include <QDate>
+#include <QTextStream>
+#include <QClipboard>
+#include <QApplication>
 
 namespace {
     const QString CHECK_HIGHLIGHT_STYLE = "QPushButton { background-color: #FF6B6B; border: 2px solid #FF0000; }";
@@ -30,13 +35,10 @@ namespace {
     const QString GAME_ENDED_TEXT = "遊戲結束"; // 遊戲結束時顯示的文字
     
     // 視窗大小的佈局常數
-    const int LEFT_PANEL_MAX_WIDTH = 200;  // 新遊戲按鈕面板的最大寬度
-    const int RIGHT_PANEL_MAX_WIDTH = 600; // 時間控制面板的最大寬度
-    // 以下間距常數設為0以移除所有空白，實現緊湊佈局，特別是在全螢幕模式下
-    const int PANEL_SPACING = 0;           // 面板之間的間距（設為0以移除空白）
-    const int BASE_MARGINS = 0;            // 基本佈局邊距（設為0以移除空白）
-    const int TIME_LABEL_SPACING = 0;      // 時間標籤周圍的間距（設為0以移除空白）
-    const int BOARD_CONTAINER_MARGIN = 0;  // 棋盤容器每側的邊距（設為0以移除空白）
+    const int PANEL_SPACING = 10;          // 面板之間的間距
+    const int BASE_MARGINS = 10;           // 基本佈局邊距（不包括棋盤容器的 2*BOARD_CONTAINER_MARGIN）
+    const int TIME_LABEL_SPACING = 0;     // 時間標籤周圍的間距（已禁用）
+    const int BOARD_CONTAINER_MARGIN = 0;  // 棋盤容器每側的邊距（已禁用）
     
     // UI 元素的縮放常數
     const int MIN_SQUARE_SIZE = 40;        // 棋盤格子的最小大小
@@ -60,6 +62,25 @@ namespace {
     const int MAX_SLIDER_HEIGHT = 80;            // 滑桿的最大高度
     const int SLIDER_HANDLE_EXTRA = 10;          // 滑桿手柄的額外空間
     const int LOW_TIME_THRESHOLD_MS = 10000;     // 低時間警告的閾值（10 秒）
+    const int MIN_PANEL_WIDTH = 100;              // 左右面板的最小寬度（像素）
+    const int MAX_PANEL_WIDTH = 600;              // 左右面板的最大寬度（像素）
+    
+    // PGN 格式常數
+    const int PGN_MOVES_PER_LINE = 6;            // PGN 檔案中每行的移動回合數
+    
+    // 獲取面板的實際寬度，如果尚未渲染則使用後備值的輔助函數
+    static int getPanelWidth(QWidget* panel) {
+        if (!panel) return 0;
+        
+        int width = panel->width();
+        if (width <= 0) {
+            width = panel->sizeHint().width();
+            if (width <= 0) {
+                width = MIN_PANEL_WIDTH;
+            }
+        }
+        return width;
+    }
 }
 
 Qt_Chess::Qt_Chess(QWidget *parent)
@@ -73,6 +94,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_wasSelectedBeforeDrag(false)
     , m_boardWidget(nullptr)
     , m_menuBar(nullptr)
+    , m_gameStarted(false)
     , m_isBoardFlipped(false)
     , m_whiteTimeLimitSlider(nullptr)
     , m_whiteTimeLimitLabel(nullptr)
@@ -94,16 +116,29 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_timerStarted(false)
     , m_boardContainer(nullptr)
     , m_timeControlPanel(nullptr)
-    , m_gameStarted(false)
+    , m_contentLayout(nullptr)
+    , m_rightStretchIndex(-1)
+    , m_moveListWidget(nullptr)
+    , m_exportPGNButton(nullptr)
+    , m_copyPGNButton(nullptr)
+    , m_moveListPanel(nullptr)
+    , m_replayTitle(nullptr)
+    , m_replayFirstButton(nullptr)
+    , m_replayPrevButton(nullptr)
+    , m_replayNextButton(nullptr)
+    , m_replayLastButton(nullptr)
+    , m_isReplayMode(false)
+    , m_replayMoveIndex(-1)
+    , m_savedCurrentPlayer(PieceColor::White)
 {
     ui->setupUi(this);
     setWindowTitle("國際象棋 - 雙人對弈");
     resize(900, 660);  // 增加寬度以容納時間控制面板
     
     // 設置最小視窗大小以確保所有內容都能完整顯示而不被裁切
-    // 寬度計算：最小棋盤 (244) + 時間標籤 (200) + RIGHT_PANEL_MAX_WIDTH (600) = 1044
-    // 高度計算：棋盤 (244) + 選單欄 (30) + 緩衝空間 (126) = 400
-    setMinimumSize(1044, 400);
+    // 最小寬度：允許棋盤至少 8*MIN_SQUARE_SIZE 加上面板和邊距
+    // 最小高度：允許棋盤和控制項合理顯示
+    setMinimumSize(814, 420);
     
     setMouseTracking(true);
     
@@ -119,6 +154,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     updateBoard();
     updateStatus();
     updateTimeDisplays();
+    updateReplayButtons();  // 設置回放按鈕初始狀態
 }
 
 Qt_Chess::~Qt_Chess()
@@ -133,11 +169,95 @@ void Qt_Chess::setupUI() {
     mainLayout->setSpacing(0);
     
     // 為棋盤和時間控制創建水平佈局
-    QHBoxLayout* contentLayout = new QHBoxLayout();
-    contentLayout->setContentsMargins(0, 0, 0, 0);
-    contentLayout->setSpacing(0);
+    m_contentLayout = new QHBoxLayout();
     
-    // 移除左側面板 - 沒有新遊戲按鈕後不再需要
+    // 左側棋譜面板
+    m_moveListPanel = new QWidget(this);
+    m_moveListPanel->setMinimumWidth(MIN_PANEL_WIDTH);  // 限制最小寬度
+    m_moveListPanel->setMaximumWidth(MAX_PANEL_WIDTH);  // 限制最大寬度
+    QVBoxLayout* moveListLayout = new QVBoxLayout(m_moveListPanel);
+    moveListLayout->setContentsMargins(0, 0, 0, 0);
+    
+    QLabel* moveListTitle = new QLabel("棋譜", m_moveListPanel);
+    moveListTitle->setAlignment(Qt::AlignCenter);
+    QFont titleFont;
+    titleFont.setPointSize(12);
+    titleFont.setBold(true);
+    moveListTitle->setFont(titleFont);
+    moveListLayout->addWidget(moveListTitle);
+    
+    m_moveListWidget = new QListWidget(m_moveListPanel);
+    m_moveListWidget->setAlternatingRowColors(true);
+    connect(m_moveListWidget, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem* item) {
+        int row = m_moveListWidget->row(item);
+        const std::vector<MoveRecord>& moveHistory = m_chessBoard.getMoveHistory();
+        // 每行包含兩步（白方和黑方），點擊某行會跳到該行的最後一步
+        int moveIndex = row * 2 + 1;  
+        // 確保索引不超出範圍
+        if (moveIndex >= static_cast<int>(moveHistory.size())) {
+            moveIndex = moveHistory.size() - 1;
+        }
+        enterReplayMode();
+        replayToMove(moveIndex);
+    });
+    moveListLayout->addWidget(m_moveListWidget);
+    
+    // 匯出PGN按鈕（初始隱藏）
+    m_exportPGNButton = new QPushButton("匯出 PGN", m_moveListPanel);
+    m_exportPGNButton->hide();
+    connect(m_exportPGNButton, &QPushButton::clicked, this, &Qt_Chess::onExportPGNClicked);
+    moveListLayout->addWidget(m_exportPGNButton);
+    
+    // 複製棋譜按鈕（初始隱藏）
+    m_copyPGNButton = new QPushButton("複製棋譜", m_moveListPanel);
+    m_copyPGNButton->hide();
+    connect(m_copyPGNButton, &QPushButton::clicked, this, &Qt_Chess::onCopyPGNClicked);
+    moveListLayout->addWidget(m_copyPGNButton);
+    
+    // 回放控制按鈕（始終可見）
+    m_replayTitle = new QLabel("回放控制", m_moveListPanel);
+    m_replayTitle->setAlignment(Qt::AlignCenter);
+    QFont replayFont;
+    replayFont.setPointSize(10);
+    replayFont.setBold(true);
+    m_replayTitle->setFont(replayFont);
+    moveListLayout->addWidget(m_replayTitle);
+    
+    QWidget* replayButtonContainer = new QWidget(m_moveListPanel);
+    QGridLayout* replayButtonLayout = new QGridLayout(replayButtonContainer);
+    replayButtonLayout->setContentsMargins(0, 0, 0, 0);
+    replayButtonLayout->setSpacing(5);
+    
+    m_replayFirstButton = new QPushButton("⏮", replayButtonContainer);
+    m_replayFirstButton->setToolTip("第一步");
+    m_replayFirstButton->setEnabled(false);  // 初始停用
+    connect(m_replayFirstButton, &QPushButton::clicked, this, &Qt_Chess::onReplayFirstClicked);
+    replayButtonLayout->addWidget(m_replayFirstButton, 0, 0);
+    
+    m_replayPrevButton = new QPushButton("◀", replayButtonContainer);
+    m_replayPrevButton->setToolTip("上一步");
+    m_replayPrevButton->setEnabled(false);  // 初始停用
+    connect(m_replayPrevButton, &QPushButton::clicked, this, &Qt_Chess::onReplayPrevClicked);
+    replayButtonLayout->addWidget(m_replayPrevButton, 0, 1);
+    
+    m_replayNextButton = new QPushButton("▶", replayButtonContainer);
+    m_replayNextButton->setToolTip("下一步");
+    m_replayNextButton->setEnabled(false);  // 初始停用
+    connect(m_replayNextButton, &QPushButton::clicked, this, &Qt_Chess::onReplayNextClicked);
+    replayButtonLayout->addWidget(m_replayNextButton, 0, 2);
+    
+    m_replayLastButton = new QPushButton("⏭", replayButtonContainer);
+    m_replayLastButton->setToolTip("最後一步");
+    m_replayLastButton->setEnabled(false);  // 初始停用
+    connect(m_replayLastButton, &QPushButton::clicked, this, &Qt_Chess::onReplayLastClicked);
+    replayButtonLayout->addWidget(m_replayLastButton, 0, 3);
+    
+    moveListLayout->addWidget(replayButtonContainer);
+    
+    m_contentLayout->addWidget(m_moveListPanel, 1);  // 添加伸展因子以允許縮放
+    
+    // 添加左側伸展以保持棋盤居中
+    m_contentLayout->addStretch(0);
     
     // 棋盤容器，左右兩側顯示時間
     m_boardContainer = new QWidget(this);
@@ -212,18 +332,23 @@ void Qt_Chess::setupUI() {
     m_whiteTimeLabel->hide();  // 初始隱藏
     boardContainerLayout->addWidget(m_whiteTimeLabel, 0, Qt::AlignBottom);
     
-    contentLayout->addWidget(m_boardContainer, 2);  // 給棋盤更多空間（2:1 比例）
-    contentLayout->setAlignment(m_boardContainer, Qt::AlignCenter);  // 將棋盤容器置中
+    // 將棋盤容器添加到內容佈局，設置為 0 伸展因子並居中對齊以保持棋盤居中
+    m_contentLayout->addWidget(m_boardContainer, 0, Qt::AlignCenter);
+    
+    // 添加右側伸展以保持棋盤居中（初始伸展因子為 0）
+    m_rightStretchIndex = m_contentLayout->count();  // 記錄伸展項的索引
+    m_contentLayout->addStretch(0);  // 初始設為 0
     
     // 時間控制的右側面板
     m_timeControlPanel = new QWidget(this);
-    m_timeControlPanel->setMaximumWidth(RIGHT_PANEL_MAX_WIDTH);  // 限制面板寬度
+    m_timeControlPanel->setMinimumWidth(MIN_PANEL_WIDTH);  // 限制最小寬度
+    m_timeControlPanel->setMaximumWidth(MAX_PANEL_WIDTH);  // 限制最大寬度
     QVBoxLayout* rightPanelLayout = new QVBoxLayout(m_timeControlPanel);
     rightPanelLayout->setContentsMargins(0, 0, 0, 0);
     setupTimeControlUI(rightPanelLayout);
-    contentLayout->addWidget(m_timeControlPanel, 1);  // 控制面板佔較少空間
+    m_contentLayout->addWidget(m_timeControlPanel, 1);  // 添加伸展因子以允許縮放
     
-    mainLayout->addLayout(contentLayout);
+    mainLayout->addLayout(m_contentLayout);
     
     setCentralWidget(centralWidget);
 }
@@ -307,13 +432,21 @@ void Qt_Chess::updateStatus() {
     QString playerName = (currentPlayer == PieceColor::White) ? "白方" : "黑方";
     
     if (m_chessBoard.isCheckmate(currentPlayer)) {
+        // 記錄將死結果
+        if (currentPlayer == PieceColor::White) {
+            m_chessBoard.setGameResult(GameResult::BlackWins);
+        } else {
+            m_chessBoard.setGameResult(GameResult::WhiteWins);
+        }
         handleGameEnd();
         QString winner = (currentPlayer == PieceColor::White) ? "黑方" : "白方";
         QMessageBox::information(this, "遊戲結束", QString("將死！%1獲勝！").arg(winner));
     } else if (m_chessBoard.isStalemate(currentPlayer)) {
+        m_chessBoard.setGameResult(GameResult::Draw);
         handleGameEnd();
         QMessageBox::information(this, "遊戲結束", "逼和！對局和棋。");
     } else if (m_chessBoard.isInsufficientMaterial()) {
+        m_chessBoard.setGameResult(GameResult::Draw);
         handleGameEnd();
         QMessageBox::information(this, "遊戲結束", "子力不足以將死！對局和棋。");
     }
@@ -389,6 +522,11 @@ void Qt_Chess::highlightValidMoves() {
 }
 
 void Qt_Chess::onSquareClicked(int displayRow, int displayCol) {
+    // 如果在回放模式中，不允許移動
+    if (m_isReplayMode) {
+        return;
+    }
+    
     // 如果遊戲尚未開始，不允許移動
     if (!m_gameStarted) {
         return;
@@ -430,6 +568,9 @@ void Qt_Chess::onSquareClicked(int displayRow, int displayCol) {
                 updateBoard();
             }
             
+            // 更新棋譜列表
+            updateMoveList();
+            
             // 播放適當的音效
             playSoundForMove(isCapture, isCastling);
             
@@ -454,6 +595,11 @@ void Qt_Chess::onSquareClicked(int displayRow, int displayCol) {
 }
 
 void Qt_Chess::onNewGameClicked() {
+    // 如果在回放模式中，先退出
+    if (m_isReplayMode) {
+        exitReplayMode();
+    }
+    
     m_chessBoard.initializeBoard();
     m_pieceSelected = false;
     m_gameStarted = false;  // 重置遊戲開始狀態
@@ -473,6 +619,13 @@ void Qt_Chess::onNewGameClicked() {
     
     // 隱藏放棄按鈕
     if (m_giveUpButton) m_giveUpButton->hide();
+    
+    // 隱藏匯出 PGN 按鈕和複製棋譜按鈕
+    if (m_exportPGNButton) m_exportPGNButton->hide();
+    if (m_copyPGNButton) m_copyPGNButton->hide();
+    
+    // 清空棋譜列表
+    if (m_moveListWidget) m_moveListWidget->clear();
     
     // 根據滑桿值重置時間
     if (m_whiteTimeLimitSlider) {
@@ -496,6 +649,12 @@ void Qt_Chess::onNewGameClicked() {
     updateStatus();
     updateTimeDisplays();
     
+    // 更新回放按鈕狀態（新遊戲沒有移動歷史）
+    updateReplayButtons();
+    
+    // 當遊戲還沒開始時，將右側伸展設為 0
+    setRightPanelStretch(0);
+    
     // 清除任何殘留的高亮顯示（例如選中的棋子、有效移動、將軍警告）
     clearHighlights();
 }
@@ -510,34 +669,23 @@ void Qt_Chess::onGiveUpClicked() {
     );
     
     if (reply == QMessageBox::Yes) {
-        // 停止遊戲
-        m_gameStarted = false;
-        stopTimer();
-        m_timerStarted = false;
-        
-        // 顯示時間控制面板
-        if (m_timeControlPanel) {
-            m_timeControlPanel->show();
+        // 記錄認輸結果
+        PieceColor currentPlayer = m_chessBoard.getCurrentPlayer();
+        if (currentPlayer == PieceColor::White) {
+            m_chessBoard.setGameResult(GameResult::WhiteResigns);
+        } else {
+            m_chessBoard.setGameResult(GameResult::BlackResigns);
         }
         
-        // 隱藏時間顯示
-        if (m_whiteTimeLabel) m_whiteTimeLabel->hide();
-        if (m_blackTimeLabel) m_blackTimeLabel->hide();
-        
-        // 隱藏放棄按鈕
-        if (m_giveUpButton) m_giveUpButton->hide();
-        
-        // 重新啟用開始按鈕
-        if (m_startButton) {
-            m_startButton->setText("開始");
-            m_startButton->setEnabled(true);
-        }
+        // 處理遊戲結束的通用邏輯
+        handleGameEnd();
         
         // 顯示放棄者的訊息
-        PieceColor currentPlayer = m_chessBoard.getCurrentPlayer();
         QString playerName = (currentPlayer == PieceColor::White) ? "白方" : "黑方";
         QString winner = (currentPlayer == PieceColor::White) ? "黑方" : "白方";
         QMessageBox::information(this, "遊戲結束", QString("%1放棄！%2獲勝！").arg(playerName).arg(winner));
+        
+        // 不再自動進入回放模式，用戶可以根據需要點擊回放按鈕
     }
 }
 
@@ -545,6 +693,11 @@ void Qt_Chess::onStartButtonClicked() {
     if (m_timeControlEnabled && !m_timerStarted) {
         // 重置棋盤到初始狀態
         resetBoardState();
+        
+        // 清空棋譜列表
+        if (m_moveListWidget) {
+            m_moveListWidget->clear();
+        }
         
         // 根據滑桿值重置時間
         if (m_whiteTimeLimitSlider) {
@@ -581,9 +734,20 @@ void Qt_Chess::onStartButtonClicked() {
             m_startButton->setEnabled(false);
             m_startButton->setText("進行中");
         }
+        
+        // 更新回放按鈕狀態（遊戲開始時停用）
+        updateReplayButtons();
+        
+        // 當遊戲開始時，將右側伸展設為 1
+        setRightPanelStretch(1);
     } else if (!m_timeControlEnabled && !m_gameStarted) {
         // 重置棋盤到初始狀態（即使沒有時間控制）
         resetBoardState();
+        
+        // 清空棋譜列表
+        if (m_moveListWidget) {
+            m_moveListWidget->clear();
+        }
         
         // 重置時間值為 0（無限制）
         m_whiteTimeMs = 0;
@@ -606,6 +770,12 @@ void Qt_Chess::onStartButtonClicked() {
             m_startButton->setEnabled(false);
             m_startButton->setText("進行中");
         }
+        
+        // 更新回放按鈕狀態（遊戲開始時停用）
+        updateReplayButtons();
+        
+        // 當遊戲開始時，將右側伸展設為 1
+        setRightPanelStretch(1);
     }
 }
 
@@ -769,6 +939,21 @@ bool Qt_Chess::eventFilter(QObject *obj, QEvent *event) {
 }
 
 void Qt_Chess::mousePressEvent(QMouseEvent *event) {
+    // 如果在回放模式中，左鍵點擊棋盤會退出回放模式
+    if (m_isReplayMode) {
+        if (event->button() == Qt::LeftButton) {
+            QPoint displaySquare = getSquareAtPosition(event->pos());
+            // 檢查點擊是否在棋盤範圍內
+            if (displaySquare.x() >= 0 && displaySquare.y() >= 0 && 
+                displaySquare.x() < 8 && displaySquare.y() < 8) {
+                exitReplayMode();
+                return;
+            }
+        }
+        QMainWindow::mousePressEvent(event);
+        return;
+    }
+    
     QPoint displaySquare = getSquareAtPosition(event->pos());
     
     // 右鍵點擊 - 取消任何當前動作
@@ -859,6 +1044,12 @@ void Qt_Chess::mousePressEvent(QMouseEvent *event) {
 }
 
 void Qt_Chess::mouseMoveEvent(QMouseEvent *event) {
+    // 如果在回放模式中，不處理拖動
+    if (m_isReplayMode) {
+        QMainWindow::mouseMoveEvent(event);
+        return;
+    }
+    
     if (m_isDragging && m_dragLabel) {
         m_dragLabel->move(event->pos() - QPoint(m_dragLabel->width() / 2, m_dragLabel->height() / 2));
     }
@@ -867,6 +1058,12 @@ void Qt_Chess::mouseMoveEvent(QMouseEvent *event) {
 }
 
 void Qt_Chess::mouseReleaseEvent(QMouseEvent *event) {
+    // 如果在回放模式中，不處理滑鼠事件
+    if (m_isReplayMode) {
+        QMainWindow::mouseReleaseEvent(event);
+        return;
+    }
+    
     // 右鍵點擊 - 已在 mousePressEvent 中處理
     if (event->button() == Qt::RightButton) {
         QMainWindow::mouseReleaseEvent(event);
@@ -912,6 +1109,9 @@ void Qt_Chess::mouseReleaseEvent(QMouseEvent *event) {
                     m_chessBoard.promotePawn(logicalDropSquare, promotionType);
                     updateBoard();
                 }
+                
+                // 更新棋譜列表
+                updateMoveList();
                 
                 // 播放適當的音效
                 playSoundForMove(isCapture, isCastling);
@@ -979,6 +1179,35 @@ void Qt_Chess::resizeEvent(QResizeEvent *event) {
     }
 }
 
+void Qt_Chess::keyPressEvent(QKeyEvent *event) {
+    // 檢查是否在回放模式或有棋譜可回放
+    const std::vector<MoveRecord>& moveHistory = m_chessBoard.getMoveHistory();
+    if (moveHistory.empty()) {
+        QMainWindow::keyPressEvent(event);
+        return;
+    }
+    
+    // 處理左右箭頭鍵
+    if (event->key() == Qt::Key_Left) {
+        // 左箭頭：上一步（只有在按鈕啟用時才處理）
+        if (m_replayPrevButton && m_replayPrevButton->isEnabled()) {
+            onReplayPrevClicked();
+            event->accept();
+            return;
+        }
+    } else if (event->key() == Qt::Key_Right) {
+        // 右箭頭：下一步（只有在按鈕啟用時才處理）
+        if (m_replayNextButton && m_replayNextButton->isEnabled()) {
+            onReplayNextClicked();
+            event->accept();
+            return;
+        }
+    }
+    
+    // 其他按鍵傳遞給基類處理
+    QMainWindow::keyPressEvent(event);
+}
+
 void Qt_Chess::updateSquareSizes() {
     if (!m_boardWidget || m_squares.empty()) return;
     
@@ -987,29 +1216,31 @@ void Qt_Chess::updateSquareSizes() {
     if (!central) return;
     
     // 計算 available space for the board
-    // 考慮帶有右側面板和面板間距的水平佈局
+    // 考慮帶有左右面板和面板間距的水平佈局
     int reservedWidth = 0;
     int reservedHeight = 0;
     
-    // 如果可見則考慮右側面板寬度（時間控制面板）
+    // 考慮左側面板的實際寬度（棋譜面板）- 總是可見
+    reservedWidth += getPanelWidth(m_moveListPanel);
+    
+    // 如果可見則考慮右側面板的實際寬度（時間控制面板）
     if (m_timeControlPanel && m_timeControlPanel->isVisible()) {
-        reservedWidth += RIGHT_PANEL_MAX_WIDTH;  // 為時間控制面板保留完整寬度
-        reservedWidth += PANEL_SPACING;          // 右側面板前的間距
+        reservedWidth += getPanelWidth(m_timeControlPanel);
     }
     
-    // 添加佈局間距的基本邊距（棋盤容器邊距是棋盤元件大小的一部分）
-    reservedWidth += BASE_MARGINS;
+    // 添加佈局間距和邊距
+    reservedWidth += BASE_MARGINS * 4;  // 適度的邊距
     
-    // 如果可見則考慮時間標籤寬度，加上間距（現在水平定位）
+    // 如果可見則考慮時間標籤寬度（現在水平定位）
     if (m_whiteTimeLabel && m_whiteTimeLabel->isVisible()) {
-        reservedWidth += m_whiteTimeLabel->minimumWidth() + TIME_LABEL_SPACING;
+        reservedWidth += m_whiteTimeLabel->width() + TIME_LABEL_SPACING;
     }
     if (m_blackTimeLabel && m_blackTimeLabel->isVisible()) {
-        reservedWidth += m_blackTimeLabel->minimumWidth() + TIME_LABEL_SPACING;
+        reservedWidth += m_blackTimeLabel->width() + TIME_LABEL_SPACING;
     }
     
     // 為佈局邊距和間距添加一些填充
-    reservedHeight += BASE_MARGINS;
+    reservedHeight += BASE_MARGINS * 2;  // 上下各一邊的邊距
     
     // 考慮選單欄高度（如果存在）以防止全螢幕時棋盤被裁切
     if (m_menuBar && m_menuBar->isVisible()) {
@@ -1669,8 +1900,8 @@ void Qt_Chess::updateTimeDisplays() {
     // 轉換 milliseconds to minutes:seconds or show unlimited
     // 當時間 < 10 秒時，顯示格式為 0:秒.小數（例如 "0:9.8"）
     auto formatTime = [](int ms) -> QString {
-        if (ms < 0) {
-            return "不限時";
+        if (ms <= 0) {
+            return "無限制";
         }
         
         // 如果少於 LOW_TIME_THRESHOLD_MS（10 秒），顯示格式為 0:秒.小數
@@ -1691,7 +1922,9 @@ void Qt_Chess::updateTimeDisplays() {
     
     // 根據當前回合和剩餘時間確定背景顏色
     // 規則：不是自己的回合時顯示灰色，是自己的回合時根據剩餘時間決定（< 10 秒紅色，否則綠色）
-    PieceColor currentPlayer = m_chessBoard.getCurrentPlayer();
+    // 在回放模式中，使用進入回放時儲存的玩家，而不是棋盤上的當前玩家
+    // 這樣可以確保計時器高亮顯示與實際倒數的玩家保持一致，不會隨著回放的棋步切換
+    PieceColor currentPlayer = m_isReplayMode ? m_savedCurrentPlayer : m_chessBoard.getCurrentPlayer();
     
     QString whiteStyle, blackStyle;
     
@@ -1737,7 +1970,9 @@ void Qt_Chess::onGameTimerTick() {
     if (!m_timeControlEnabled) return;
     
     // 減少當前玩家的時間
-    PieceColor currentPlayer = m_chessBoard.getCurrentPlayer();
+    // 在回放模式中，使用進入回放時儲存的玩家，而不是棋盤上的當前玩家
+    // 這樣可以確保在回放過程中時間只從同一個玩家倒數，不會隨著棋步切換
+    PieceColor currentPlayer = m_isReplayMode ? m_savedCurrentPlayer : m_chessBoard.getCurrentPlayer();
     if (currentPlayer == PieceColor::White) {
         // 僅當白方有時間限制（非無限制）時才減少時間
         if (m_whiteTimeMs > 0) {
@@ -1823,6 +2058,20 @@ void Qt_Chess::handleGameEnd() {
     // 隱藏時間顯示
     if (m_whiteTimeLabel) m_whiteTimeLabel->hide();
     if (m_blackTimeLabel) m_blackTimeLabel->hide();
+    
+    // 顯示匯出 PGN 按鈕和複製棋譜按鈕
+    if (m_exportPGNButton) {
+        m_exportPGNButton->show();
+    }
+    if (m_copyPGNButton) {
+        m_copyPGNButton->show();
+    }
+    
+    // 更新回放按鈕狀態（遊戲結束後可以回放）
+    updateReplayButtons();
+    
+    // 當遊戲結束時，將右側伸展設為 0
+    setRightPanelStretch(0);
 }
 
 void Qt_Chess::loadTimeControlSettings() {
@@ -1931,6 +2180,9 @@ void Qt_Chess::showTimeControlAfterTimeout() {
     // 隱藏時間顯示 since game is over
     if (m_whiteTimeLabel) m_whiteTimeLabel->hide();
     if (m_blackTimeLabel) m_blackTimeLabel->hide();
+    
+    // 當遊戲超時結束時，將右側伸展設為 0
+    setRightPanelStretch(0);
 }
 
 void Qt_Chess::resetBoardState() {
@@ -1978,4 +2230,337 @@ QString Qt_Chess::getTimeTextFromSliderValue(int value) const {
         int minutes = value - 1;
         return QString("%1分鐘").arg(minutes);
     }
+}
+
+void Qt_Chess::setRightPanelStretch(int stretch) {
+    // 設置右側面板伸展因子的輔助函數
+    // 當遊戲還沒開始時設為 0（緊湊佈局），當遊戲開始時設為 1（擴展間距）
+    if (m_contentLayout && m_rightStretchIndex >= 0 && m_rightStretchIndex < m_contentLayout->count()) {
+        m_contentLayout->setStretch(m_rightStretchIndex, stretch);
+    }
+}
+
+// 棋譜功能實現
+void Qt_Chess::updateMoveList() {
+    if (!m_moveListWidget) return;
+    
+    m_moveListWidget->clear();
+    const std::vector<MoveRecord>& moveHistory = m_chessBoard.getMoveHistory();
+    
+    // 每兩步組合成一行（白方和黑方）
+    for (size_t i = 0; i < moveHistory.size(); i += 2) {
+        int moveNumber = (i / 2) + 1;
+        QString moveText = QString("%1. %2").arg(moveNumber).arg(moveHistory[i].algebraicNotation);
+        
+        // 如果有黑方的移動，添加到同一行
+        if (i + 1 < moveHistory.size()) {
+            moveText += QString(" %1").arg(moveHistory[i + 1].algebraicNotation);
+        }
+        
+        m_moveListWidget->addItem(moveText);
+    }
+    
+    // 自動捲動到最新的移動
+    m_moveListWidget->scrollToBottom();
+    
+    // 更新回放按鈕狀態
+    updateReplayButtons();
+}
+
+void Qt_Chess::onExportPGNClicked() {
+    exportPGN();
+}
+
+void Qt_Chess::exportPGN() {
+    QString pgn = generatePGN();
+    
+    // 使用文件對話框讓用戶選擇保存位置
+    QString fileName = QFileDialog::getSaveFileName(this,
+        "匯出 PGN",
+        "game.pgn",
+        "PGN 檔案 (*.pgn);;所有檔案 (*)");
+    
+    if (fileName.isEmpty()) {
+        return;  // 用戶取消
+    }
+    
+    QFile file(fileName);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::warning(this, "錯誤", "無法保存檔案");
+        return;
+    }
+    
+    QTextStream out(&file);
+    out << pgn;
+    file.close();
+    
+    QMessageBox::information(this, "成功", "PGN 已成功匯出");
+}
+
+QString Qt_Chess::generatePGN() const {
+    QString pgn;
+    
+    // PGN 標頭
+    QDate currentDate = QDate::currentDate();
+    pgn += QString("[Event \"雙人對弈\"]\n");
+    pgn += QString("[Site \"Qt_Chess\"]\n");
+    pgn += QString("[Date \"%1\"]\n").arg(currentDate.toString("yyyy.MM.dd"));
+    pgn += QString("[Round \"-\"]\n");
+    pgn += QString("[White \"白方\"]\n");
+    pgn += QString("[Black \"黑方\"]\n");
+    
+    // 結果
+    QString result = m_chessBoard.getGameResultString();
+    
+    // 如果遊戲結果還未確定，根據當前棋盤狀態檢查
+    if (result == "*") {
+        PieceColor currentPlayer = m_chessBoard.getCurrentPlayer();
+        if (m_chessBoard.isCheckmate(currentPlayer)) {
+            result = (currentPlayer == PieceColor::White) ? "0-1" : "1-0";
+        } else if (m_chessBoard.isStalemate(currentPlayer) || m_chessBoard.isInsufficientMaterial()) {
+            result = "1/2-1/2";
+        }
+    }
+    pgn += QString("[Result \"%1\"]\n\n").arg(result);
+    
+    // 移動列表
+    const std::vector<MoveRecord>& moveHistory = m_chessBoard.getMoveHistory();
+    int moveNumber = 1;
+    for (size_t i = 0; i < moveHistory.size(); ++i) {
+        if (i % 2 == 0) {
+            // 白方移動
+            if (i > 0) pgn += " ";
+            pgn += QString("%1. %2").arg(moveNumber).arg(moveHistory[i].algebraicNotation);
+        } else {
+            // 黑方移動
+            pgn += QString(" %1").arg(moveHistory[i].algebraicNotation);
+            moveNumber++;
+            
+            // 每 PGN_MOVES_PER_LINE 個回合換行以提高可讀性
+            if (moveNumber > 1 && (moveNumber - 1) % PGN_MOVES_PER_LINE == 0 && i + 1 < moveHistory.size()) {
+                pgn += "\n";
+            }
+        }
+    }
+    
+    // 添加結果
+    if (!moveHistory.empty()) {
+        pgn += " ";
+    }
+    pgn += result + "\n";
+    
+    return pgn;
+}
+
+void Qt_Chess::onCopyPGNClicked() {
+    copyPGN();
+}
+
+void Qt_Chess::copyPGN() {
+    QString pgn = generatePGN();
+    
+    // 複製到剪貼簿
+    QClipboard* clipboard = QApplication::clipboard();
+    clipboard->setText(pgn);
+    
+    QMessageBox::information(this, "成功", "棋譜已複製到剪貼簿");
+}
+
+void Qt_Chess::enterReplayMode() {
+    if (m_isReplayMode) return;
+    
+    m_isReplayMode = true;
+    
+    // 儲存當前棋盤狀態
+    saveBoardState();
+    
+    // 在回放模式中，不再禁用時間控制滑桿
+}
+
+void Qt_Chess::exitReplayMode() {
+    if (!m_isReplayMode) return;
+    
+    m_isReplayMode = false;
+    m_replayMoveIndex = -1;
+    
+    // 恢復棋盤狀態
+    restoreBoardState();
+    
+    // 取消棋譜列表的選擇
+    m_moveListWidget->clearSelection();
+    
+    // 更新回放按鈕狀態
+    updateReplayButtons();
+}
+
+void Qt_Chess::replayToMove(int moveIndex) {
+    // 保存移動歷史的副本，因為 initializeBoard() 會清除它
+    std::vector<MoveRecord> moveHistory = m_chessBoard.getMoveHistory();
+    
+    // 限制索引範圍
+    if (moveIndex < -1) moveIndex = -1;
+    if (moveIndex >= static_cast<int>(moveHistory.size())) {
+        moveIndex = moveHistory.size() - 1;
+    }
+    
+    m_replayMoveIndex = moveIndex;
+    
+    // 重新初始化棋盤
+    m_chessBoard.initializeBoard();
+    
+    // 重播棋步直到指定的移動
+    for (int i = 0; i <= moveIndex; ++i) {
+        const MoveRecord& move = moveHistory[i];
+        m_chessBoard.movePiece(move.from, move.to);
+        
+        // 處理升變
+        if (move.isPromotion) {
+            m_chessBoard.promotePawn(move.to, move.promotionType);
+        }
+    }
+    
+    // 恢復移動歷史，因為 movePiece 會記錄新的移動
+    // 我們需要保持原始的移動歷史用於回放
+    m_chessBoard.setMoveHistory(moveHistory);
+    
+    // 更新顯示
+    updateBoard();
+    clearHighlights();
+    updateReplayButtons();
+    
+    // 高亮當前移動在棋譜列表中
+    if (moveIndex >= 0) {
+        int row = moveIndex / 2;
+        m_moveListWidget->setCurrentRow(row);
+    } else {
+        m_moveListWidget->clearSelection();
+    }
+    
+    // 不再自動退出回放模式，即使已經在最新一步
+    // 允許用戶留在回放模式中查看最終狀態
+}
+
+void Qt_Chess::onReplayFirstClicked() {
+    // 如果尚未進入回放模式，先進入
+    if (!m_isReplayMode) {
+        enterReplayMode();
+    }
+    
+    replayToMove(-1);  // 初始狀態
+}
+
+void Qt_Chess::onReplayPrevClicked() {
+    const std::vector<MoveRecord>& moveHistory = m_chessBoard.getMoveHistory();
+    
+    // 如果尚未進入回放模式，從最新的一步開始往上
+    if (!m_isReplayMode) {
+        enterReplayMode();
+        if (!moveHistory.empty()) {
+            // 從最新一步往上倒退一步
+            int targetIndex = static_cast<int>(moveHistory.size()) - 2;
+            replayToMove(targetIndex);  // 如果只有一步，會顯示初始狀態（-1）
+        }
+    } else {
+        replayToMove(m_replayMoveIndex - 1);
+    }
+}
+
+void Qt_Chess::onReplayNextClicked() {
+    // 如果尚未進入回放模式，先進入
+    if (!m_isReplayMode) {
+        enterReplayMode();
+    }
+    
+    const std::vector<MoveRecord>& moveHistory = m_chessBoard.getMoveHistory();
+    int targetIndex = m_replayMoveIndex + 1;
+    
+    // 如果下一步是最後一步，回放到該步後自動退出回放模式
+    if (!moveHistory.empty() && targetIndex >= static_cast<int>(moveHistory.size()) - 1) {
+        replayToMove(moveHistory.size() - 1);
+        exitReplayMode();
+    } else {
+        replayToMove(targetIndex);
+    }
+}
+
+void Qt_Chess::onReplayLastClicked() {
+    // 如果尚未進入回放模式，先進入
+    if (!m_isReplayMode) {
+        enterReplayMode();
+    }
+    
+    const std::vector<MoveRecord>& moveHistory = m_chessBoard.getMoveHistory();
+    if (!moveHistory.empty()) {
+        // 跳到最後一步後自動退出回放模式
+        replayToMove(moveHistory.size() - 1);
+        exitReplayMode();
+    }
+}
+
+void Qt_Chess::updateReplayButtons() {
+    const std::vector<MoveRecord>& moveHistory = m_chessBoard.getMoveHistory();
+    
+    // 如果沒有棋步歷史，停用所有按鈕
+    if (moveHistory.empty()) {
+        if (m_replayFirstButton) m_replayFirstButton->setEnabled(false);
+        if (m_replayPrevButton) m_replayPrevButton->setEnabled(false);
+        if (m_replayNextButton) m_replayNextButton->setEnabled(false);
+        if (m_replayLastButton) m_replayLastButton->setEnabled(false);
+        return;
+    }
+    
+    // 在回放模式中，根據當前位置啟用/停用按鈕
+    if (m_isReplayMode) {
+        if (m_replayFirstButton) {
+            m_replayFirstButton->setEnabled(m_replayMoveIndex >= 0);
+        }
+        if (m_replayPrevButton) {
+            m_replayPrevButton->setEnabled(m_replayMoveIndex >= 0);
+        }
+        if (m_replayNextButton) {
+            m_replayNextButton->setEnabled(m_replayMoveIndex < static_cast<int>(moveHistory.size()) - 1);
+        }
+        if (m_replayLastButton) {
+            m_replayLastButton->setEnabled(m_replayMoveIndex < static_cast<int>(moveHistory.size()) - 1);
+        }
+    } else {
+        // 不在回放模式，已經在當前棋盤狀態
+        // 啟用「第一步」和「上一步」按鈕以允許進入回放
+        if (m_replayFirstButton) m_replayFirstButton->setEnabled(true);
+        if (m_replayPrevButton) m_replayPrevButton->setEnabled(true);
+        // 停用「下一步」和「最後一步」按鈕，因為已經在最新狀態
+        if (m_replayNextButton) m_replayNextButton->setEnabled(false);
+        if (m_replayLastButton) m_replayLastButton->setEnabled(false);
+    }
+}
+
+void Qt_Chess::saveBoardState() {
+    // 儲存當前棋盤狀態
+    m_savedBoardState.clear();
+    m_savedBoardState.resize(8);
+    for (int row = 0; row < 8; ++row) {
+        m_savedBoardState[row].resize(8);
+        for (int col = 0; col < 8; ++col) {
+            m_savedBoardState[row][col] = m_chessBoard.getPiece(row, col);
+        }
+    }
+    m_savedCurrentPlayer = m_chessBoard.getCurrentPlayer();
+}
+
+void Qt_Chess::restoreBoardState() {
+    // 恢復棋盤狀態
+    if (m_savedBoardState.size() != 8) return;
+    
+    for (int row = 0; row < 8; ++row) {
+        for (int col = 0; col < 8; ++col) {
+            m_chessBoard.setPiece(row, col, m_savedBoardState[row][col]);
+        }
+    }
+    
+    // 恢復當前玩家
+    m_chessBoard.setCurrentPlayer(m_savedCurrentPlayer);
+    
+    // 更新顯示
+    updateBoard();
+    clearHighlights();
 }

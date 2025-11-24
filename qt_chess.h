@@ -6,7 +6,9 @@
 #include <QLabel>
 #include <QGridLayout>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QMouseEvent>
+#include <QKeyEvent>
 #include <QMap>
 #include <QSoundEffect>
 #include <QMenuBar>
@@ -16,6 +18,7 @@
 #include <QSlider>
 #include <QTimer>
 #include <QGroupBox>
+#include <QListWidget>
 #include <vector>
 #include "chessboard.h"
 #include "soundsettingsdialog.h"
@@ -42,6 +45,7 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) override;
     bool eventFilter(QObject *obj, QEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
+    void keyPressEvent(QKeyEvent *event) override;
 
 private slots:
     void onSquareClicked(int row, int col);
@@ -52,6 +56,8 @@ private slots:
     void onBoardColorSettingsClicked();
     void onFlipBoardClicked();
     void onStartButtonClicked();
+    void onExportPGNClicked();
+    void onCopyPGNClicked();
 
 private:
     Ui::Qt_Chess *ui;
@@ -112,6 +118,25 @@ private:
     bool m_timerStarted;  // 追蹤計時器是否已手動啟動
     QWidget* m_boardContainer;  // 帶有疊加時間顯示的棋盤容器
     QWidget* m_timeControlPanel;  // 時間控制設定面板
+    QHBoxLayout* m_contentLayout;  // 主內容佈局，用於調整伸展因子
+    int m_rightStretchIndex;  // 右側伸展項的索引
+    
+    // 棋譜面板
+    QListWidget* m_moveListWidget;
+    QPushButton* m_exportPGNButton;
+    QPushButton* m_copyPGNButton;
+    QWidget* m_moveListPanel;
+    
+    // 回放控制
+    QLabel* m_replayTitle;
+    QPushButton* m_replayFirstButton;
+    QPushButton* m_replayPrevButton;
+    QPushButton* m_replayNextButton;
+    QPushButton* m_replayLastButton;
+    bool m_isReplayMode;
+    int m_replayMoveIndex;  // 當前回放的棋步索引（-1 表示初始狀態）
+    std::vector<std::vector<ChessPiece>> m_savedBoardState;  // 儲存進入回放前的棋盤狀態
+    PieceColor m_savedCurrentPlayer;  // 儲存進入回放前的當前玩家
     
     void setupUI();
     void setupMenuBar();
@@ -166,5 +191,24 @@ private:
     void resetBoardState();  // 重置棋盤到初始狀態的輔助函數
     int calculateTimeFromSliderValue(int value) const;  // 根據滑桿值計算時間（毫秒）的輔助函數
     QString getTimeTextFromSliderValue(int value) const;  // 根據滑桿值取得顯示文字的輔助函數
+    void setRightPanelStretch(int stretch);  // 設置右側面板伸展因子的輔助函數
+    
+    // 棋譜功能
+    void updateMoveList();
+    void exportPGN();
+    void copyPGN();
+    QString generatePGN() const;
+    
+    // 回放功能
+    void enterReplayMode();
+    void exitReplayMode();
+    void replayToMove(int moveIndex);
+    void onReplayFirstClicked();
+    void onReplayPrevClicked();
+    void onReplayNextClicked();
+    void onReplayLastClicked();
+    void updateReplayButtons();
+    void saveBoardState();
+    void restoreBoardState();
 };
 #endif // QT_CHESS_H
