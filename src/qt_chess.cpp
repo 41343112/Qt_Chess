@@ -2043,11 +2043,15 @@ QString Qt_Chess::renderCapturedPieces(const std::vector<PieceType>& pieces, Pie
     }
     
     // 使用圖標或符號顯示吃掉的棋子
+    // QTextDocument (QLabel 的 RichText) 不支持負邊距
+    // 改用相對定位的 span 元素來實現重疊效果
     QString html = "<html><body style='margin:0; padding:0;'>";
+    html += "<div style='position:relative; white-space:nowrap; height:20px;'>";
     
     // 用於追蹤相同棋子以實現重疊效果
     PieceType lastPieceType = PieceType::None;
     int sameTypeCount = 0;
+    int currentLeft = 0;  // 追蹤當前的水平位置
     
     for (size_t i = 0; i < sortedPieces.size(); ++i) {
         PieceType type = sortedPieces[i];
@@ -2055,14 +2059,17 @@ QString Qt_Chess::renderCapturedPieces(const std::vector<PieceType>& pieces, Pie
         // 檢查是否是相同類型的棋子
         if (type == lastPieceType) {
             sameTypeCount++;
+            // 相同類型的棋子重疊：向前移動 10px（18px 寬度 - 8px 重疊 = 10px）
+            currentLeft += 10;
         } else {
             sameTypeCount = 0;
             lastPieceType = type;
+            // 不同類型的棋子，正常間隔
+            if (i > 0) {
+                currentLeft += 18;  // 18px 是棋子的寬度（完全不重疊）
+            }
+            // i == 0 時，currentLeft 保持為 0，即從左邊開始
         }
-        
-        // 對於相同類型的棋子，使用負的左邊距實現部分重疊
-        // 第一個棋子不偏移，後續相同類型的棋子向左偏移
-        int leftMargin = (sameTypeCount > 0) ? -8 : 0;
         
         // 使用自訂圖示或 Unicode 符號
         if (m_pieceIconSettings.useCustomIcons) {
@@ -2080,9 +2087,10 @@ QString Qt_Chess::renderCapturedPieces(const std::vector<PieceType>& pieces, Pie
                     scaledPixmap.save(&buffer, "PNG");
                     QString base64 = QString::fromLatin1(byteArray.toBase64().data());
                     
-                    html += QString("<img src='data:image/png;base64,%1' style='margin-left: %2px; width: 18px; height: 18px; vertical-align: middle;' />")
+                    // 使用絕對定位來精確控制位置
+                    html += QString("<img src='data:image/png;base64,%1' style='position:absolute; left:%2px; width:18px; height:18px;' />")
                                 .arg(base64)
-                                .arg(leftMargin);
+                                .arg(currentLeft);
                     continue;
                 }
             }
@@ -2100,12 +2108,13 @@ QString Qt_Chess::renderCapturedPieces(const std::vector<PieceType>& pieces, Pie
             default: symbol = ""; break;
         }
         
-        html += QString("<span style='margin-left: %1px; font-size: 18px;'>%2</span>")
-                    .arg(leftMargin)
+        // 使用絕對定位來精確控制位置
+        html += QString("<span style='position:absolute; left:%1px; font-size:18px;'>%2</span>")
+                    .arg(currentLeft)
                     .arg(symbol);
     }
     
-    html += "</body></html>";
+    html += "</div></body></html>";
     return html;
 }
 
