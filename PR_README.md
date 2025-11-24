@@ -33,10 +33,6 @@ Fixed `handleGameEnd()` to re-enable the start button instead of disabling it.
 
 | File | Purpose |
 |------|---------|
-| `SOLUTION.md` | Technical solution details |
-| `TEST_PLAN.md` | Test scenarios |
-| `IMPLEMENTATION_VERIFICATION.md` | Code verification |
-| `FINAL_SUMMARY.md` | Executive summary |
 | `VISUAL_GUIDE.md` | Visual diagrams |
 
 ## Testing

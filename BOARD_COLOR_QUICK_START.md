@@ -242,8 +242,6 @@ Brown tones                    Cool blue-gray tones
 
 See detailed documentation:
 - BOARD_COLOR_SETTINGS.md (Technical details)
-- BOARD_COLOR_UI_PREVIEW.md (UI design)
-- IMPLEMENTATION_BOARD_COLORS.md (Developer info)
 
 ---
 
