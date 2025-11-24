@@ -333,8 +333,7 @@ void Qt_Chess::setupUI() {
     // 將棋盤容器添加到內容佈局，設置為 0 伸展因子並居中對齊以保持棋盤居中
     m_contentLayout->addWidget(m_boardContainer, 0, Qt::AlignCenter);
     
-    // 添加右側伸展以保持棋盤居中
-    // 當遊戲還沒開始時設為 0，當遊戲開始時設為 1
+    // 添加右側伸展以保持棋盤居中（初始伸展因子為 0）
     m_rightStretchIndex = m_contentLayout->count();  // 記錄伸展項的索引
     m_contentLayout->addStretch(0);  // 初始設為 0
     
@@ -2233,8 +2232,8 @@ QString Qt_Chess::getTimeTextFromSliderValue(int value) const {
 
 void Qt_Chess::setRightPanelStretch(int stretch) {
     // 設置右側面板伸展因子的輔助函數
-    // 當遊戲還沒開始時設為 0，當遊戲開始時設為 1
-    if (m_contentLayout && m_rightStretchIndex >= 0) {
+    // 當遊戲還沒開始時設為 0（緊湊佈局），當遊戲開始時設為 1（擴展間距）
+    if (m_contentLayout && m_rightStretchIndex >= 0 && m_rightStretchIndex < m_contentLayout->count()) {
         m_contentLayout->setStretch(m_rightStretchIndex, stretch);
     }
 }
