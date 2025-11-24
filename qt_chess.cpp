@@ -1472,6 +1472,21 @@ void Qt_Chess::updateSquareSizes() {
         m_whiteTimeLabel->setMinimumWidth(timeLabelWidth);
         m_blackTimeLabel->setMinimumWidth(timeLabelWidth);
     }
+    
+    // 更新 captured pieces label font sizes to scale with board size
+    if (m_whiteCapturedPiecesLabel && m_blackCapturedPiecesLabel) {
+        // 被吃棋子字體略大於時間標籤（約1.2倍）
+        int capturedPiecesFontSize = qMax(MIN_UI_FONT_SIZE + 2, qMin(MAX_UI_FONT_SIZE + 4, (squareSize * 12) / (UI_FONT_SCALE_DIVISOR * 10)));
+        QFont capturedPiecesFont;
+        capturedPiecesFont.setPointSize(capturedPiecesFontSize);
+        m_whiteCapturedPiecesLabel->setFont(capturedPiecesFont);
+        m_blackCapturedPiecesLabel->setFont(capturedPiecesFont);
+        
+        // 設置最小寬度以匹配時間標籤
+        int capturedPiecesWidth = qMax(MIN_TIME_LABEL_WIDTH, squareSize);
+        m_whiteCapturedPiecesLabel->setMinimumWidth(capturedPiecesWidth);
+        m_blackCapturedPiecesLabel->setMinimumWidth(capturedPiecesWidth);
+    }
 }
 
 void Qt_Chess::updateTimeControlSizes() {
@@ -2246,9 +2261,8 @@ void Qt_Chess::handleGameEnd() {
         m_startButton->setEnabled(true);
     }
     
-    // 隱藏時間顯示
-    if (m_whiteTimeLabel) m_whiteTimeLabel->hide();
-    if (m_blackTimeLabel) m_blackTimeLabel->hide();
+    // 保持時間顯示和被吃棋子顯示可見以顯示最終狀態
+    // 不隱藏時間標籤和被吃棋子標籤，讓玩家可以看到遊戲結束時的時間和分數
     
     // 顯示匯出 PGN 按鈕和複製棋譜按鈕
     if (m_exportPGNButton) {
