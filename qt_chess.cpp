@@ -62,7 +62,7 @@ namespace {
     const int MAX_SLIDER_HEIGHT = 80;            // 滑桿的最大高度
     const int SLIDER_HANDLE_EXTRA = 10;          // 滑桿手柄的額外空間
     const int LOW_TIME_THRESHOLD_MS = 10000;     // 低時間警告的閾值（10 秒）
-    const int MIN_PANEL_FALLBACK_WIDTH = 200;    // 面板寬度的最小後備值（像素）
+    const int MIN_PANEL_WIDTH = 100;              // 左右面板的最小寬度（像素）
     const int MAX_PANEL_WIDTH = 600;              // 左右面板的最大寬度（像素）
     
     // PGN 格式常數
@@ -76,7 +76,7 @@ namespace {
         if (width <= 0) {
             width = panel->sizeHint().width();
             if (width <= 0) {
-                width = MIN_PANEL_FALLBACK_WIDTH;
+                width = MIN_PANEL_WIDTH;
             }
         }
         return width;
@@ -169,6 +169,7 @@ void Qt_Chess::setupUI() {
     
     // 左側棋譜面板
     m_moveListPanel = new QWidget(this);
+    m_moveListPanel->setMinimumWidth(MIN_PANEL_WIDTH);  // 限制最小寬度
     m_moveListPanel->setMaximumWidth(MAX_PANEL_WIDTH);  // 限制最大寬度
     QVBoxLayout* moveListLayout = new QVBoxLayout(m_moveListPanel);
     moveListLayout->setContentsMargins(0, 0, 0, 0);
@@ -335,6 +336,7 @@ void Qt_Chess::setupUI() {
     
     // 時間控制的右側面板
     m_timeControlPanel = new QWidget(this);
+    m_timeControlPanel->setMinimumWidth(MIN_PANEL_WIDTH);  // 限制最小寬度
     m_timeControlPanel->setMaximumWidth(MAX_PANEL_WIDTH);  // 限制最大寬度
     QVBoxLayout* rightPanelLayout = new QVBoxLayout(m_timeControlPanel);
     rightPanelLayout->setContentsMargins(0, 0, 0, 0);
