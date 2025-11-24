@@ -652,9 +652,7 @@ void Qt_Chess::onNewGameClicked() {
     updateReplayButtons();
     
     // 當遊戲還沒開始時，將右側伸展設為 0
-    if (m_contentLayout && m_rightStretchIndex >= 0) {
-        m_contentLayout->setStretch(m_rightStretchIndex, 0);
-    }
+    setRightPanelStretch(0);
     
     // 清除任何殘留的高亮顯示（例如選中的棋子、有效移動、將軍警告）
     clearHighlights();
@@ -740,9 +738,7 @@ void Qt_Chess::onStartButtonClicked() {
         updateReplayButtons();
         
         // 當遊戲開始時，將右側伸展設為 1
-        if (m_contentLayout && m_rightStretchIndex >= 0) {
-            m_contentLayout->setStretch(m_rightStretchIndex, 1);
-        }
+        setRightPanelStretch(1);
     } else if (!m_timeControlEnabled && !m_gameStarted) {
         // 重置棋盤到初始狀態（即使沒有時間控制）
         resetBoardState();
@@ -778,9 +774,7 @@ void Qt_Chess::onStartButtonClicked() {
         updateReplayButtons();
         
         // 當遊戲開始時，將右側伸展設為 1
-        if (m_contentLayout && m_rightStretchIndex >= 0) {
-            m_contentLayout->setStretch(m_rightStretchIndex, 1);
-        }
+        setRightPanelStretch(1);
     }
 }
 
@@ -2076,9 +2070,7 @@ void Qt_Chess::handleGameEnd() {
     updateReplayButtons();
     
     // 當遊戲結束時，將右側伸展設為 0
-    if (m_contentLayout && m_rightStretchIndex >= 0) {
-        m_contentLayout->setStretch(m_rightStretchIndex, 0);
-    }
+    setRightPanelStretch(0);
 }
 
 void Qt_Chess::loadTimeControlSettings() {
@@ -2189,9 +2181,7 @@ void Qt_Chess::showTimeControlAfterTimeout() {
     if (m_blackTimeLabel) m_blackTimeLabel->hide();
     
     // 當遊戲超時結束時，將右側伸展設為 0
-    if (m_contentLayout && m_rightStretchIndex >= 0) {
-        m_contentLayout->setStretch(m_rightStretchIndex, 0);
-    }
+    setRightPanelStretch(0);
 }
 
 void Qt_Chess::resetBoardState() {
@@ -2238,6 +2228,14 @@ QString Qt_Chess::getTimeTextFromSliderValue(int value) const {
         // 值 2-31 代表 1-30 分鐘
         int minutes = value - 1;
         return QString("%1分鐘").arg(minutes);
+    }
+}
+
+void Qt_Chess::setRightPanelStretch(int stretch) {
+    // 設置右側面板伸展因子的輔助函數
+    // 當遊戲還沒開始時設為 0，當遊戲開始時設為 1
+    if (m_contentLayout && m_rightStretchIndex >= 0) {
+        m_contentLayout->setStretch(m_rightStretchIndex, stretch);
     }
 }
 

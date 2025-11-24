@@ -191,6 +191,7 @@ private:
     void resetBoardState();  // 重置棋盤到初始狀態的輔助函數
     int calculateTimeFromSliderValue(int value) const;  // 根據滑桿值計算時間（毫秒）的輔助函數
     QString getTimeTextFromSliderValue(int value) const;  // 根據滑桿值取得顯示文字的輔助函數
+    void setRightPanelStretch(int stretch);  // 設置右側面板伸展因子的輔助函數
     
     // 棋譜功能
     void updateMoveList();
