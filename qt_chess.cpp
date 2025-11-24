@@ -69,6 +69,9 @@ namespace {
     // PGN 格式常數
     const int PGN_MOVES_PER_LINE = 6;            // PGN 檔案中每行的移動回合數
     
+    // 被吃棋子顯示常數
+    const int CAPTURED_PIECE_OVERLAP_PX = -8;     // 被吃棋子重疊的像素數（負值表示向左偏移）
+    
     // 獲取面板的實際寬度，如果尚未渲染則使用後備值的輔助函數
     static int getPanelWidth(QWidget* panel) {
         if (!panel) return 0;
@@ -554,7 +557,9 @@ void Qt_Chess::updateCapturedPiecesDisplay() {
             ChessPiece piece(whiteCaptured[i], PieceColor::Black);
             if (i > 0) {
                 // 使用負邊距創建重疊效果
-                whiteCapturedText += QString("<span style='margin-left: -8px;'>%1</span>").arg(piece.getSymbol());
+                whiteCapturedText += QString("<span style='margin-left: %1px;'>%2</span>")
+                    .arg(CAPTURED_PIECE_OVERLAP_PX)
+                    .arg(piece.getSymbol());
             } else {
                 whiteCapturedText += QString("<span>%1</span>").arg(piece.getSymbol());
             }
@@ -583,7 +588,9 @@ void Qt_Chess::updateCapturedPiecesDisplay() {
             ChessPiece piece(blackCaptured[i], PieceColor::White);
             if (i > 0) {
                 // 使用負邊距創建重疊效果
-                blackCapturedText += QString("<span style='margin-left: -8px;'>%1</span>").arg(piece.getSymbol());
+                blackCapturedText += QString("<span style='margin-left: %1px;'>%2</span>")
+                    .arg(CAPTURED_PIECE_OVERLAP_PX)
+                    .arg(piece.getSymbol());
             } else {
                 blackCapturedText += QString("<span>%1</span>").arg(piece.getSymbol());
             }
