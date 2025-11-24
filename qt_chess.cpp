@@ -2213,7 +2213,8 @@ void Qt_Chess::updateMoveList() {
     // 每兩步組合成一行（白方和黑方）
     for (size_t i = 0; i < moveHistory.size(); i += 2) {
         int moveNumber = (i / 2) + 1;
-        QString moveText = QString("%1. %2").arg(moveNumber).arg(moveHistory[i].algebraicNotation);
+        // 使用固定寬度（3位數）格式化移動編號，右對齊並填充左側空白
+        QString moveText = QString("%1. %2").arg(moveNumber, 3).arg(moveHistory[i].algebraicNotation);
         
         // 如果有黑方的移動，添加到同一行
         if (i + 1 < moveHistory.size()) {
