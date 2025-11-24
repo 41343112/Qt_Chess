@@ -2294,7 +2294,8 @@ QString Qt_Chess::generatePGN() const {
         if (i % 2 == 0) {
             // 白方移動
             if (i > 0) pgn += " ";
-            pgn += QString("%1. %2").arg(moveNumber).arg(moveHistory[i].algebraicNotation);
+            // 使用固定寬度（3位數）格式化移動編號，右對齊並填充左側空白
+            pgn += QString("%1. %2").arg(moveNumber, 3).arg(moveHistory[i].algebraicNotation);
         } else {
             // 黑方移動
             pgn += QString(" %1").arg(moveHistory[i].algebraicNotation);
