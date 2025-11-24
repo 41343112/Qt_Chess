@@ -118,6 +118,8 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_timeControlPanel(nullptr)
     , m_contentLayout(nullptr)
     , m_rightStretchIndex(-1)
+    , m_whiteCapturedLabel(nullptr)
+    , m_blackCapturedLabel(nullptr)
     , m_moveListWidget(nullptr)
     , m_exportPGNButton(nullptr)
     , m_copyPGNButton(nullptr)
@@ -260,7 +262,7 @@ void Qt_Chess::setupUI() {
     // 添加左側伸展以保持棋盤居中並吸收多餘空間
     m_contentLayout->addStretch(0);
 
-    // 棋盤容器，左右兩側顯示時間
+    // 棋盤容器，左右兩側顯示時間和吃子
     m_boardContainer = new QWidget(this);
     m_boardContainer->setMouseTracking(true);
     QHBoxLayout* boardContainerLayout = new QHBoxLayout(m_boardContainer);
@@ -272,15 +274,38 @@ void Qt_Chess::setupUI() {
     QFont timeFont;
     timeFont.setPointSize(14);
     timeFont.setBold(true);
+    
+    // 吃子顯示字體
+    QFont capturedFont;
+    capturedFont.setPointSize(11);
 
-    // 黑方時間標籤（左側 - 對手的時間）- 初始隱藏
-    m_blackTimeLabel = new QLabel("--:--", m_boardContainer);
+    // 左側容器（黑方時間和白方吃的子）
+    QWidget* leftContainer = new QWidget(m_boardContainer);
+    QVBoxLayout* leftLayout = new QVBoxLayout(leftContainer);
+    leftLayout->setContentsMargins(0, 0, 0, 0);
+    leftLayout->setSpacing(5);
+    
+    // 黑方時間標籤（左側上方 - 對手的時間）- 初始隱藏
+    m_blackTimeLabel = new QLabel("--:--", leftContainer);
     m_blackTimeLabel->setFont(timeFont);
     m_blackTimeLabel->setAlignment(Qt::AlignCenter);
     m_blackTimeLabel->setStyleSheet("QLabel { background-color: rgba(51, 51, 51, 200); color: #FFF; padding: 8px; border-radius: 5px; }");
     m_blackTimeLabel->setMinimumSize(100, 40);
     m_blackTimeLabel->hide();  // 初始隱藏
-    boardContainerLayout->addWidget(m_blackTimeLabel, 0, Qt::AlignTop);
+    leftLayout->addWidget(m_blackTimeLabel);
+    
+    // 白方吃掉的子（在黑方時間下方）
+    m_whiteCapturedLabel = new QLabel("", leftContainer);
+    m_whiteCapturedLabel->setFont(capturedFont);
+    m_whiteCapturedLabel->setAlignment(Qt::AlignCenter);
+    m_whiteCapturedLabel->setWordWrap(true);
+    m_whiteCapturedLabel->setStyleSheet("QLabel { background-color: rgba(255, 255, 255, 150); color: #000; padding: 5px; border-radius: 3px; }");
+    m_whiteCapturedLabel->setMinimumSize(100, 30);
+    m_whiteCapturedLabel->hide();  // 初始隱藏
+    leftLayout->addWidget(m_whiteCapturedLabel);
+    
+    leftLayout->addStretch();
+    boardContainerLayout->addWidget(leftContainer, 0, Qt::AlignTop);
 
     // 國際象棋棋盤
     m_boardWidget = new QWidget(m_boardContainer);
@@ -324,14 +349,34 @@ void Qt_Chess::setupUI() {
     // 而時間標籤（伸展因子 0）保持其最小大小
     boardContainerLayout->addWidget(m_boardWidget, 1, Qt::AlignCenter);
 
-    // 白方時間標籤（右側 - 玩家的時間）- 初始隱藏
-    m_whiteTimeLabel = new QLabel("--:--", m_boardContainer);
+    // 右側容器（白方時間和黑方吃的子）
+    QWidget* rightContainer = new QWidget(m_boardContainer);
+    QVBoxLayout* rightLayout = new QVBoxLayout(rightContainer);
+    rightLayout->setContentsMargins(0, 0, 0, 0);
+    rightLayout->setSpacing(5);
+    
+    rightLayout->addStretch();
+    
+    // 黑方吃掉的子（在白方時間上方）
+    m_blackCapturedLabel = new QLabel("", rightContainer);
+    m_blackCapturedLabel->setFont(capturedFont);
+    m_blackCapturedLabel->setAlignment(Qt::AlignCenter);
+    m_blackCapturedLabel->setWordWrap(true);
+    m_blackCapturedLabel->setStyleSheet("QLabel { background-color: rgba(0, 0, 0, 150); color: #FFF; padding: 5px; border-radius: 3px; }");
+    m_blackCapturedLabel->setMinimumSize(100, 30);
+    m_blackCapturedLabel->hide();  // 初始隱藏
+    rightLayout->addWidget(m_blackCapturedLabel);
+    
+    // 白方時間標籤（右側下方 - 玩家的時間）- 初始隱藏
+    m_whiteTimeLabel = new QLabel("--:--", rightContainer);
     m_whiteTimeLabel->setFont(timeFont);
     m_whiteTimeLabel->setAlignment(Qt::AlignCenter);
     m_whiteTimeLabel->setStyleSheet("QLabel { background-color: rgba(51, 51, 51, 200); color: #FFF; padding: 8px; border-radius: 5px; }");
     m_whiteTimeLabel->setMinimumSize(100, 40);
     m_whiteTimeLabel->hide();  // 初始隱藏
-    boardContainerLayout->addWidget(m_whiteTimeLabel, 0, Qt::AlignBottom);
+    rightLayout->addWidget(m_whiteTimeLabel);
+    
+    boardContainerLayout->addWidget(rightContainer, 0, Qt::AlignBottom);
 
     // 將棋盤容器添加到內容佈局
     // 使用較大的伸展因子(3)使棋盤在水平放大時優先擴展
@@ -428,6 +473,9 @@ void Qt_Chess::updateBoard() {
     if (m_pieceSelected) {
         highlightValidMoves();
     }
+    
+    // 更新吃子顯示
+    updateCapturedPiecesDisplay();
 }
 
 void Qt_Chess::updateStatus() {
@@ -1961,6 +2009,123 @@ void Qt_Chess::updateTimeDisplays() {
 
     m_whiteTimeLabel->setStyleSheet(whiteStyle);
     m_blackTimeLabel->setStyleSheet(blackStyle);
+}
+
+int Qt_Chess::getPieceValue(PieceType type) const {
+    // 棋子價值（用於排序和計算分差）
+    switch (type) {
+        case PieceType::Pawn:   return 1;
+        case PieceType::Knight: return 3;
+        case PieceType::Bishop: return 3;
+        case PieceType::Rook:   return 5;
+        case PieceType::Queen:  return 9;
+        case PieceType::King:   return 0;  // 國王不能被吃
+        default: return 0;
+    }
+}
+
+QString Qt_Chess::renderCapturedPieces(const std::vector<PieceType>& pieces, int& materialAdvantage) const {
+    // 按價值排序（從小到大）
+    std::vector<PieceType> sortedPieces = pieces;
+    std::sort(sortedPieces.begin(), sortedPieces.end(), 
+        [this](PieceType a, PieceType b) {
+            int valueA = getPieceValue(a);
+            int valueB = getPieceValue(b);
+            if (valueA != valueB) return valueA < valueB;
+            return static_cast<int>(a) < static_cast<int>(b);  // 相同價值按類型排序
+        });
+    
+    // 計算物質優勢
+    materialAdvantage = 0;
+    for (PieceType type : sortedPieces) {
+        materialAdvantage += getPieceValue(type);
+    }
+    
+    // 使用圖標顯示吃掉的棋子
+    QString html = "<html><body style='margin:0; padding:0;'>";
+    
+    // 用於追蹤相同棋子以實現重疊效果
+    PieceType lastPieceType = PieceType::None;
+    int sameTypeCount = 0;
+    
+    for (size_t i = 0; i < sortedPieces.size(); ++i) {
+        PieceType type = sortedPieces[i];
+        
+        // 檢查是否是相同類型的棋子
+        if (type == lastPieceType) {
+            sameTypeCount++;
+        } else {
+            sameTypeCount = 0;
+            lastPieceType = type;
+        }
+        
+        // 取得棋子符號（使用Unicode符號）
+        QString symbol;
+        switch (type) {
+            case PieceType::Pawn:   symbol = "♟"; break;
+            case PieceType::Knight: symbol = "♞"; break;
+            case PieceType::Bishop: symbol = "♝"; break;
+            case PieceType::Rook:   symbol = "♜"; break;
+            case PieceType::Queen:  symbol = "♛"; break;
+            case PieceType::King:   symbol = "♚"; break;
+            default: symbol = ""; break;
+        }
+        
+        // 對於相同類型的棋子，使用負的左邊距實現部分重疊
+        // 第一個棋子不偏移，後續相同類型的棋子向左偏移
+        int leftMargin = (sameTypeCount > 0) ? -8 : 0;
+        
+        html += QString("<span style='margin-left: %1px; font-size: 18px;'>%2</span>")
+                    .arg(leftMargin)
+                    .arg(symbol);
+    }
+    
+    html += "</body></html>";
+    return html;
+}
+
+void Qt_Chess::updateCapturedPiecesDisplay() {
+    if (!m_whiteCapturedLabel || !m_blackCapturedLabel) return;
+    
+    // 取得被吃掉的棋子
+    std::vector<PieceType> whiteCaptured = m_chessBoard.getCapturedPiecesByColor(PieceColor::White);
+    std::vector<PieceType> blackCaptured = m_chessBoard.getCapturedPiecesByColor(PieceColor::Black);
+    
+    // 計算物質優勢
+    int whiteAdvantage = 0;
+    int blackAdvantage = 0;
+    
+    QString whiteHtml = renderCapturedPieces(whiteCaptured, whiteAdvantage);
+    QString blackHtml = renderCapturedPieces(blackCaptured, blackAdvantage);
+    
+    // 計算總分差
+    int materialDiff = whiteAdvantage - blackAdvantage;
+    
+    // 在贏子的一方顯示分差
+    if (materialDiff > 0) {
+        // 白方領先
+        whiteHtml += QString("<span style='color: green; font-weight: bold; margin-left: 8px;'>+%1</span>").arg(materialDiff);
+    } else if (materialDiff < 0) {
+        // 黑方領先
+        blackHtml += QString("<span style='color: green; font-weight: bold; margin-left: 8px;'>+%1</span>").arg(-materialDiff);
+    }
+    
+    // 更新標籤
+    if (whiteCaptured.empty()) {
+        m_whiteCapturedLabel->hide();
+    } else {
+        m_whiteCapturedLabel->setTextFormat(Qt::RichText);
+        m_whiteCapturedLabel->setText(whiteHtml);
+        m_whiteCapturedLabel->show();
+    }
+    
+    if (blackCaptured.empty()) {
+        m_blackCapturedLabel->hide();
+    } else {
+        m_blackCapturedLabel->setTextFormat(Qt::RichText);
+        m_blackCapturedLabel->setText(blackHtml);
+        m_blackCapturedLabel->show();
+    }
 }
 
 void Qt_Chess::onIncrementChanged(int value) {

@@ -175,11 +175,19 @@ bool ChessBoard::movePiece(const QPoint& from, const QPoint& to) {
     
     // 檢查是否為吃子、王車易位或吃過路兵
     bool isCapture = m_board[to.y()][to.x()].getType() != PieceType::None;
+    PieceType capturedPieceType = PieceType::None;
+    
+    // 儲存被吃掉的棋子類型
+    if (isCapture) {
+        capturedPieceType = m_board[to.y()][to.x()].getType();
+    }
+    
     bool isCastling = (pieceType == PieceType::King && abs(to.x() - from.x()) == 2);
     bool isEnPassant = (pieceType == PieceType::Pawn && to == m_enPassantTarget && m_enPassantTarget.x() >= 0);
     
     if (isEnPassant) {
         isCapture = true;  // 吃過路兵也是吃子
+        capturedPieceType = PieceType::Pawn;  // 吃過路兵吃掉的是兵
     }
     
     // 處理王車易位
@@ -226,7 +234,7 @@ bool ChessBoard::movePiece(const QPoint& from, const QPoint& to) {
     m_board[from.y()][from.x()] = ChessPiece(PieceType::None, PieceColor::None);
     
     // 記錄移動（在切換玩家之前，因為 recordMove 需要檢查對手是否被將軍）
-    recordMove(from, to, isCapture, isCastling, isEnPassant);
+    recordMove(from, to, isCapture, isCastling, isEnPassant, false, PieceType::None, capturedPieceType);
     
     switchPlayer();
     return true;
@@ -495,7 +503,7 @@ bool ChessBoard::isAmbiguousMove(const QPoint& from, const QPoint& to) const {
 
 void ChessBoard::recordMove(const QPoint& from, const QPoint& to, bool isCapture, 
                            bool isCastling, bool isEnPassant, bool isPromotion,
-                           PieceType promotionType) {
+                           PieceType promotionType, PieceType capturedPieceType) {
     const ChessPiece& piece = m_board[to.y()][to.x()];
     PieceColor opponentColor = (piece.getColor() == PieceColor::White) ? 
                                 PieceColor::Black : PieceColor::White;
@@ -510,6 +518,7 @@ void ChessBoard::recordMove(const QPoint& from, const QPoint& to, bool isCapture
     record.isEnPassant = isEnPassant;
     record.isPromotion = isPromotion;
     record.promotionType = promotionType;
+    record.capturedPieceType = capturedPieceType;
     record.isCheck = isInCheck(opponentColor);
     record.isCheckmate = isCheckmate(opponentColor);
     record.algebraicNotation = generateAlgebraicNotation(record);
@@ -611,4 +620,17 @@ QString ChessBoard::getGameResultString() const {
         default:
             return "*";
     }
+}
+
+std::vector<PieceType> ChessBoard::getCapturedPiecesByColor(PieceColor capturer) const {
+    std::vector<PieceType> capturedPieces;
+    
+    for (const auto& move : m_moveHistory) {
+        // 如果這步是吃子，且吃子的人是指定的顏色
+        if (move.isCapture && move.pieceColor == capturer && move.capturedPieceType != PieceType::None) {
+            capturedPieces.push_back(move.capturedPieceType);
+        }
+    }
+    
+    return capturedPieces;
 }

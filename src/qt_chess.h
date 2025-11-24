@@ -121,6 +121,10 @@ private:
     QHBoxLayout* m_contentLayout;  // 主內容佈局，用於調整伸展因子
     int m_rightStretchIndex;  // 右側伸展項的索引
     
+    // 吃子顯示
+    QLabel* m_whiteCapturedLabel;  // 白方吃掉的子（在黑方時間下方）
+    QLabel* m_blackCapturedLabel;  // 黑方吃掉的子（在白方時間上方）
+    
     // 棋譜面板
     QListWidget* m_moveListWidget;
     QPushButton* m_exportPGNButton;
@@ -192,6 +196,11 @@ private:
     int calculateTimeFromSliderValue(int value) const;  // 根據滑桿值計算時間（毫秒）的輔助函數
     QString getTimeTextFromSliderValue(int value) const;  // 根據滑桿值取得顯示文字的輔助函數
     void setRightPanelStretch(int stretch);  // 設置右側面板伸展因子的輔助函數
+    
+    // 吃子顯示功能
+    void updateCapturedPiecesDisplay();  // 更新吃子顯示
+    int getPieceValue(PieceType type) const;  // 取得棋子價值
+    QString renderCapturedPieces(const std::vector<PieceType>& pieces, int& materialAdvantage) const;  // 渲染吃子顯示
     
     // 棋譜功能
     void updateMoveList();

@@ -26,6 +26,7 @@ struct MoveRecord {
     bool isEnPassant;
     bool isPromotion;
     PieceType promotionType;
+    PieceType capturedPieceType;  // 被吃掉的棋子類型
     bool isCheck;
     bool isCheckmate;
     QString algebraicNotation;
@@ -69,6 +70,9 @@ public:
     void setGameResult(GameResult result) { m_gameResult = result; }
     QString getGameResultString() const;
     
+    // 取得被吃掉的棋子
+    std::vector<PieceType> getCapturedPiecesByColor(PieceColor capturer) const;
+    
 private:
     std::vector<std::vector<ChessPiece>> m_board;
     PieceColor m_currentPlayer;
@@ -85,7 +89,8 @@ private:
     // 棋譜記錄輔助函數
     void recordMove(const QPoint& from, const QPoint& to, bool isCapture, 
                    bool isCastling, bool isEnPassant, bool isPromotion = false,
-                   PieceType promotionType = PieceType::None);
+                   PieceType promotionType = PieceType::None,
+                   PieceType capturedPieceType = PieceType::None);
     QString generateAlgebraicNotation(const MoveRecord& move) const;
     QString pieceTypeToNotation(PieceType type) const;
     QString squareToNotation(const QPoint& square) const;
