@@ -62,7 +62,6 @@ namespace {
     const int MAX_SLIDER_HEIGHT = 80;            // 滑桿的最大高度
     const int SLIDER_HANDLE_EXTRA = 10;          // 滑桿手柄的額外空間
     const int LOW_TIME_THRESHOLD_MS = 10000;     // 低時間警告的閾值（10 秒）
-    const int MIN_PANEL_FALLBACK_WIDTH = 200;    // 面板寬度的最小後備值（像素）
     const int MIN_PANEL_WIDTH = 200;              // 左右面板的最小寬度（像素）
     const int MAX_PANEL_WIDTH = 600;              // 左右面板的最大寬度（像素）
     
@@ -77,7 +76,7 @@ namespace {
         if (width <= 0) {
             width = panel->sizeHint().width();
             if (width <= 0) {
-                width = MIN_PANEL_FALLBACK_WIDTH;
+                width = MIN_PANEL_WIDTH;
             }
         }
         return width;
