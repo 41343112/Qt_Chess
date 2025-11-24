@@ -659,4 +659,6 @@ int ChessBoard::getPieceValue(PieceType type) const {
 void ChessBoard::resetScores() {
     m_whiteScore = 0;
     m_blackScore = 0;
+    m_whiteCapturedPieces.clear();
+    m_blackCapturedPieces.clear();
 }
