@@ -527,25 +527,6 @@ void Qt_Chess::updateScoreDisplay() {
     }
 }
 
-int Qt_Chess::getPieceValue(PieceType type) const {
-    switch (type) {
-        case PieceType::Pawn:
-            return 1;
-        case PieceType::Knight:
-            return 3;
-        case PieceType::Bishop:
-            return 3;
-        case PieceType::Rook:
-            return 5;
-        case PieceType::Queen:
-            return 9;
-        case PieceType::King:
-            return 0;
-        default:
-            return 0;
-    }
-}
-
 void Qt_Chess::updateCapturedPiecesDisplay() {
     if (!m_whiteCapturedPiecesLabel || !m_blackCapturedPiecesLabel) {
         return;
@@ -556,8 +537,8 @@ void Qt_Chess::updateCapturedPiecesDisplay() {
     // 按照棋子價值排序（從小到大）
     std::sort(whiteCaptured.begin(), whiteCaptured.end(), 
         [this](PieceType a, PieceType b) {
-            int valueA = getPieceValue(a);
-            int valueB = getPieceValue(b);
+            int valueA = m_chessBoard.getPieceValue(a);
+            int valueB = m_chessBoard.getPieceValue(b);
             if (valueA != valueB) {
                 return valueA < valueB;
             }
@@ -586,8 +567,8 @@ void Qt_Chess::updateCapturedPiecesDisplay() {
     // 按照棋子價值排序（從小到大）
     std::sort(blackCaptured.begin(), blackCaptured.end(), 
         [this](PieceType a, PieceType b) {
-            int valueA = getPieceValue(a);
-            int valueB = getPieceValue(b);
+            int valueA = m_chessBoard.getPieceValue(a);
+            int valueB = m_chessBoard.getPieceValue(b);
             if (valueA != valueB) {
                 return valueA < valueB;
             }

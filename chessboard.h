@@ -78,6 +78,9 @@ public:
     const std::vector<PieceType>& getWhiteCapturedPieces() const { return m_whiteCapturedPieces; }
     const std::vector<PieceType>& getBlackCapturedPieces() const { return m_blackCapturedPieces; }
     
+    // 取得棋子價值
+    int getPieceValue(PieceType type) const;
+    
 private:
     std::vector<std::vector<ChessPiece>> m_board;
     PieceColor m_currentPlayer;
@@ -90,7 +93,6 @@ private:
     std::vector<PieceType> m_blackCapturedPieces; // 黑方吃掉的棋子列表
     
     void switchPlayer();
-    int getPieceValue(PieceType type) const;
     bool wouldBeInCheck(const QPoint& from, const QPoint& to, PieceColor color) const;
     bool hasAnyValidMoves(PieceColor color) const;
     bool canPieceMove(const QPoint& pos) const;
