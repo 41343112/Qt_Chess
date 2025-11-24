@@ -71,6 +71,10 @@ namespace {
     
     // 被吃棋子顯示常數
     const int CAPTURED_PIECE_OVERLAP_PX = -8;     // 被吃棋子重疊的像素數（負值表示向左偏移）
+    const int CAPTURED_PIECES_FONT_MULTIPLIER = 12;  // 被吃棋子字體縮放的乘數
+    const int CAPTURED_PIECES_FONT_SCALE_FACTOR = 10;  // 被吃棋子字體縮放的除數因子
+    const int CAPTURED_PIECES_MIN_FONT_OFFSET = 2;  // 被吃棋子最小字體相對於 UI 字體的偏移
+    const int CAPTURED_PIECES_MAX_FONT_OFFSET = 4;  // 被吃棋子最大字體相對於 UI 字體的偏移
     
     // 獲取面板的實際寬度，如果尚未渲染則使用後備值的輔助函數
     static int getPanelWidth(QWidget* panel) {
@@ -1476,7 +1480,9 @@ void Qt_Chess::updateSquareSizes() {
     // 更新 captured pieces label font sizes to scale with board size
     if (m_whiteCapturedPiecesLabel && m_blackCapturedPiecesLabel) {
         // 被吃棋子字體略大於時間標籤（約1.2倍）
-        int capturedPiecesFontSize = qMax(MIN_UI_FONT_SIZE + 2, qMin(MAX_UI_FONT_SIZE + 4, (squareSize * 12) / (UI_FONT_SCALE_DIVISOR * 10)));
+        int capturedPiecesFontSize = qMax(MIN_UI_FONT_SIZE + CAPTURED_PIECES_MIN_FONT_OFFSET, 
+                                          qMin(MAX_UI_FONT_SIZE + CAPTURED_PIECES_MAX_FONT_OFFSET, 
+                                               (squareSize * CAPTURED_PIECES_FONT_MULTIPLIER) / (UI_FONT_SCALE_DIVISOR * CAPTURED_PIECES_FONT_SCALE_FACTOR)));
         QFont capturedPiecesFont;
         capturedPiecesFont.setPointSize(capturedPiecesFontSize);
         m_whiteCapturedPiecesLabel->setFont(capturedPiecesFont);
