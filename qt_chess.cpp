@@ -155,7 +155,6 @@ void Qt_Chess::setupUI() {
     
     // 左側棋譜面板
     m_moveListPanel = new QWidget(this);
-    m_moveListPanel->setMaximumWidth(LEFT_PANEL_MAX_WIDTH);
     QVBoxLayout* moveListLayout = new QVBoxLayout(m_moveListPanel);
     moveListLayout->setContentsMargins(0, 0, 0, 0);
     
@@ -235,7 +234,7 @@ void Qt_Chess::setupUI() {
     
     moveListLayout->addWidget(replayButtonContainer);
     
-    contentLayout->addWidget(m_moveListPanel);
+    contentLayout->addWidget(m_moveListPanel, 1);  // 添加伸展因子以允許縮放
     
     // 添加伸展以將棋盤置中
     contentLayout->addStretch(0);
@@ -1192,17 +1191,13 @@ void Qt_Chess::updateSquareSizes() {
     
     // 考慮左側面板的實際寬度（棋譜面板）- 總是可見
     if (m_moveListPanel) {
-        // 使用實際寬度，但至少保留一些空間讓它能正常顯示
-        int leftPanelWidth = m_moveListPanel->sizeHint().width();
-        if (leftPanelWidth <= 0) leftPanelWidth = LEFT_PANEL_MAX_WIDTH;
-        reservedWidth += qMin(leftPanelWidth, LEFT_PANEL_MAX_WIDTH);
+        // 使用面板的實際寬度
+        reservedWidth += m_moveListPanel->width();
     }
     
     // 如果可見則考慮右側面板的實際寬度（時間控制面板）
     if (m_timeControlPanel && m_timeControlPanel->isVisible()) {
-        int rightPanelWidth = m_timeControlPanel->sizeHint().width();
-        if (rightPanelWidth <= 0) rightPanelWidth = RIGHT_PANEL_MAX_WIDTH;
-        reservedWidth += qMin(rightPanelWidth, RIGHT_PANEL_MAX_WIDTH);
+        reservedWidth += m_timeControlPanel->width();
     }
     
     // 添加佈局間距和邊距
