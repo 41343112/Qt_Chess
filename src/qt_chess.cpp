@@ -280,22 +280,15 @@ void Qt_Chess::setupUI() {
     QFont capturedFont;
     capturedFont.setPointSize(11);
 
-    // 左側容器（黑方時間和白方吃的子）
+    // 左側容器（白方時間和黑方吃的子 - 我方時間在下方靠左）
     QWidget* leftContainer = new QWidget(m_boardContainer);
     QVBoxLayout* leftLayout = new QVBoxLayout(leftContainer);
     leftLayout->setContentsMargins(0, 0, 0, 0);
     leftLayout->setSpacing(5);
     
-    // 黑方時間標籤（左側上方 - 對手的時間）- 初始隱藏
-    m_blackTimeLabel = new QLabel("--:--", leftContainer);
-    m_blackTimeLabel->setFont(timeFont);
-    m_blackTimeLabel->setAlignment(Qt::AlignCenter);
-    m_blackTimeLabel->setStyleSheet("QLabel { background-color: rgba(51, 51, 51, 200); color: #FFF; padding: 8px; border-radius: 5px; }");
-    m_blackTimeLabel->setMinimumSize(100, 40);
-    m_blackTimeLabel->hide();  // 初始隱藏
-    leftLayout->addWidget(m_blackTimeLabel);
+    leftLayout->addStretch();
     
-    // 黑方吃掉的子（在黑方時間下方）
+    // 黑方吃掉的子（在白方時間上方）
     m_whiteCapturedLabel = new QLabel("", leftContainer);
     m_whiteCapturedLabel->setFont(capturedFont);
     m_whiteCapturedLabel->setAlignment(Qt::AlignCenter);
@@ -305,8 +298,16 @@ void Qt_Chess::setupUI() {
     m_whiteCapturedLabel->hide();  // 初始隱藏
     leftLayout->addWidget(m_whiteCapturedLabel);
     
-    leftLayout->addStretch();
-    boardContainerLayout->addWidget(leftContainer, 0, Qt::AlignTop);
+    // 白方時間標籤（左側下方 - 我方時間）- 初始隱藏
+    m_whiteTimeLabel = new QLabel("--:--", leftContainer);
+    m_whiteTimeLabel->setFont(timeFont);
+    m_whiteTimeLabel->setAlignment(Qt::AlignCenter);
+    m_whiteTimeLabel->setStyleSheet("QLabel { background-color: rgba(51, 51, 51, 200); color: #FFF; padding: 8px; border-radius: 5px; }");
+    m_whiteTimeLabel->setMinimumSize(100, 40);
+    m_whiteTimeLabel->hide();  // 初始隱藏
+    leftLayout->addWidget(m_whiteTimeLabel);
+    
+    boardContainerLayout->addWidget(leftContainer, 0, Qt::AlignBottom);
 
     // 國際象棋棋盤
     m_boardWidget = new QWidget(m_boardContainer);
@@ -350,15 +351,22 @@ void Qt_Chess::setupUI() {
     // 而時間標籤（伸展因子 0）保持其最小大小
     boardContainerLayout->addWidget(m_boardWidget, 1, Qt::AlignCenter);
 
-    // 右側容器（白方時間和黑方吃的子）
+    // 右側容器（黑方時間和白方吃的子 - 敵方時間在上方靠右）
     QWidget* rightContainer = new QWidget(m_boardContainer);
     QVBoxLayout* rightLayout = new QVBoxLayout(rightContainer);
     rightLayout->setContentsMargins(0, 0, 0, 0);
     rightLayout->setSpacing(5);
     
-    rightLayout->addStretch();
+    // 黑方時間標籤（右側上方 - 敵方時間）- 初始隱藏
+    m_blackTimeLabel = new QLabel("--:--", rightContainer);
+    m_blackTimeLabel->setFont(timeFont);
+    m_blackTimeLabel->setAlignment(Qt::AlignCenter);
+    m_blackTimeLabel->setStyleSheet("QLabel { background-color: rgba(51, 51, 51, 200); color: #FFF; padding: 8px; border-radius: 5px; }");
+    m_blackTimeLabel->setMinimumSize(100, 40);
+    m_blackTimeLabel->hide();  // 初始隱藏
+    rightLayout->addWidget(m_blackTimeLabel);
     
-    // 白方吃掉的子（在白方時間上方）
+    // 白方吃掉的子（在黑方時間下方）
     m_blackCapturedLabel = new QLabel("", rightContainer);
     m_blackCapturedLabel->setFont(capturedFont);
     m_blackCapturedLabel->setAlignment(Qt::AlignCenter);
@@ -368,16 +376,9 @@ void Qt_Chess::setupUI() {
     m_blackCapturedLabel->hide();  // 初始隱藏
     rightLayout->addWidget(m_blackCapturedLabel);
     
-    // 白方時間標籤（右側下方 - 玩家的時間）- 初始隱藏
-    m_whiteTimeLabel = new QLabel("--:--", rightContainer);
-    m_whiteTimeLabel->setFont(timeFont);
-    m_whiteTimeLabel->setAlignment(Qt::AlignCenter);
-    m_whiteTimeLabel->setStyleSheet("QLabel { background-color: rgba(51, 51, 51, 200); color: #FFF; padding: 8px; border-radius: 5px; }");
-    m_whiteTimeLabel->setMinimumSize(100, 40);
-    m_whiteTimeLabel->hide();  // 初始隱藏
-    rightLayout->addWidget(m_whiteTimeLabel);
+    rightLayout->addStretch();
     
-    boardContainerLayout->addWidget(rightContainer, 0, Qt::AlignBottom);
+    boardContainerLayout->addWidget(rightContainer, 0, Qt::AlignTop);
 
     // 將棋盤容器添加到內容佈局
     // 使用較大的伸展因子(3)使棋盤在水平放大時優先擴展
