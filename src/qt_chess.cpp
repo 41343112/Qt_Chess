@@ -2429,12 +2429,8 @@ void Qt_Chess::updateCapturedPiecesDisplay() {
             label->setFixedSize(pieceSize, pieceSize);
             label->setAlignment(Qt::AlignCenter);
 
-            // 第一個棋子放在起始位置，後續棋子疊加在前一個棋子上
-            if (i == 0) {
-                label->move(xPos, 3);
-            } else {
-                label->move(xPos, 3);
-            }
+            // 放置棋子標籤
+            label->move(xPos, 3);
             xPos += overlapOffset;  // 下一個棋子的位置（半重疊）
 
             label->show();
@@ -2457,12 +2453,8 @@ void Qt_Chess::updateCapturedPiecesDisplay() {
             label->setFixedSize(pieceSize, pieceSize);
             label->setAlignment(Qt::AlignCenter);
 
-            // 第一個棋子放在起始位置，後續棋子疊加在前一個棋子上
-            if (i == 0) {
-                label->move(xPos, 3);
-            } else {
-                label->move(xPos, 3);
-            }
+            // 放置棋子標籤
+            label->move(xPos, 3);
             xPos += overlapOffset;  // 下一個棋子的位置（半重疊）
 
             label->show();
