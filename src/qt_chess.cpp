@@ -1995,39 +1995,28 @@ void Qt_Chess::updateTimeDisplays() {
     m_whiteTimeLabel->setText(formatTime(m_whiteTimeMs));
     m_blackTimeLabel->setText(formatTime(m_blackTimeMs));
 
+    // 進度條樣式生成輔助函數
+    auto getProgressBarStyle = [](bool isLowTime) -> QString {
+        QString chunkColor = isLowTime ? "#DC3545" : "#4CAF50";
+        return QString("QProgressBar { border: 1px solid #333; border-radius: 3px; background-color: #444; }"
+                       "QProgressBar::chunk { background-color: %1; border-radius: 2px; }").arg(chunkColor);
+    };
+
     // 更新進度條
     if (m_whiteTimeProgressBar && m_whiteInitialTimeMs > 0) {
         int whiteProgress = static_cast<int>((static_cast<double>(m_whiteTimeMs) / m_whiteInitialTimeMs) * 100);
         whiteProgress = qBound(0, whiteProgress, 100);
         m_whiteTimeProgressBar->setValue(whiteProgress);
-        
-        // 根據剩餘時間更新進度條顏色
-        QString whiteProgressStyle;
-        if (m_whiteTimeMs > 0 && m_whiteTimeMs < LOW_TIME_THRESHOLD_MS) {
-            whiteProgressStyle = "QProgressBar { border: 1px solid #333; border-radius: 3px; background-color: #444; }"
-                                 "QProgressBar::chunk { background-color: #DC3545; border-radius: 2px; }";
-        } else {
-            whiteProgressStyle = "QProgressBar { border: 1px solid #333; border-radius: 3px; background-color: #444; }"
-                                 "QProgressBar::chunk { background-color: #4CAF50; border-radius: 2px; }";
-        }
-        m_whiteTimeProgressBar->setStyleSheet(whiteProgressStyle);
+        bool isLowTime = m_whiteTimeMs > 0 && m_whiteTimeMs < LOW_TIME_THRESHOLD_MS;
+        m_whiteTimeProgressBar->setStyleSheet(getProgressBarStyle(isLowTime));
     }
 
     if (m_blackTimeProgressBar && m_blackInitialTimeMs > 0) {
         int blackProgress = static_cast<int>((static_cast<double>(m_blackTimeMs) / m_blackInitialTimeMs) * 100);
         blackProgress = qBound(0, blackProgress, 100);
         m_blackTimeProgressBar->setValue(blackProgress);
-        
-        // 根據剩餘時間更新進度條顏色
-        QString blackProgressStyle;
-        if (m_blackTimeMs > 0 && m_blackTimeMs < LOW_TIME_THRESHOLD_MS) {
-            blackProgressStyle = "QProgressBar { border: 1px solid #333; border-radius: 3px; background-color: #444; }"
-                                 "QProgressBar::chunk { background-color: #DC3545; border-radius: 2px; }";
-        } else {
-            blackProgressStyle = "QProgressBar { border: 1px solid #333; border-radius: 3px; background-color: #444; }"
-                                 "QProgressBar::chunk { background-color: #4CAF50; border-radius: 2px; }";
-        }
-        m_blackTimeProgressBar->setStyleSheet(blackProgressStyle);
+        bool isLowTime = m_blackTimeMs > 0 && m_blackTimeMs < LOW_TIME_THRESHOLD_MS;
+        m_blackTimeProgressBar->setStyleSheet(getProgressBarStyle(isLowTime));
     }
 
     // 根據當前回合和剩餘時間確定背景顏色
