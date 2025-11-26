@@ -269,15 +269,25 @@ void Qt_Chess::setupUI() {
     // 添加左側伸展以保持棋盤居中並吸收多餘空間
     m_contentLayout->addStretch(0);
 
-    // 棋盤容器（不再包含時間標籤）
+    // 棋盤容器 - 使用垂直佈局以在棋盤上方和下方放置被吃棋子
     m_boardContainer = new QWidget(this);
     m_boardContainer->setMouseTracking(true);
-    QHBoxLayout* boardContainerLayout = new QHBoxLayout(m_boardContainer);
-    boardContainerLayout->setContentsMargins(BOARD_CONTAINER_MARGIN, BOARD_CONTAINER_MARGIN,
+    QVBoxLayout* boardContainerVLayout = new QVBoxLayout(m_boardContainer);
+    boardContainerVLayout->setContentsMargins(BOARD_CONTAINER_MARGIN, BOARD_CONTAINER_MARGIN,
                                              BOARD_CONTAINER_MARGIN, BOARD_CONTAINER_MARGIN);
-    boardContainerLayout->setSpacing(0);
+    boardContainerVLayout->setSpacing(5);
 
-    // 國際象棋棋盤
+    // 對方的吃子紀錄放在棋盤上方靠左對齊（白子被黑方吃掉）
+    m_capturedWhitePanel = new QWidget(m_boardContainer);
+    m_capturedWhitePanel->setMinimumHeight(30);
+    m_capturedWhitePanel->setMaximumHeight(40);
+    boardContainerVLayout->addWidget(m_capturedWhitePanel, 0, Qt::AlignLeft);
+
+    // 國際象棋棋盤（水平佈局以保持居中）
+    QHBoxLayout* boardHLayout = new QHBoxLayout();
+    boardHLayout->setContentsMargins(0, 0, 0, 0);
+    boardHLayout->setSpacing(0);
+
     m_boardWidget = new QWidget(m_boardContainer);
     m_boardWidget->setMouseTracking(true);
     QGridLayout* gridLayout = new QGridLayout(m_boardWidget);
@@ -314,15 +324,22 @@ void Qt_Chess::setupUI() {
         }
     }
 
-    // 將棋盤添加到容器佈局
-    boardContainerLayout->addWidget(m_boardWidget, 1, Qt::AlignCenter);
+    // 將棋盤添加到水平佈局
+    boardHLayout->addWidget(m_boardWidget, 1, Qt::AlignCenter);
+    boardContainerVLayout->addLayout(boardHLayout, 1);
+
+    // 我方的吃子紀錄放在棋盤下方靠左對齊（黑子被白方吃掉）
+    m_capturedBlackPanel = new QWidget(m_boardContainer);
+    m_capturedBlackPanel->setMinimumHeight(30);
+    m_capturedBlackPanel->setMaximumHeight(40);
+    boardContainerVLayout->addWidget(m_capturedBlackPanel, 0, Qt::AlignLeft);
 
     // 將棋盤容器添加到內容佈局
     // 使用較大的伸展因子(3)使棋盤在水平放大時優先擴展
     m_contentLayout->addWidget(m_boardContainer, 2, Qt::AlignCenter);
 
-    // 右側時間和被吃棋子面板（在棋盤和時間控制之間）
-    // 佈局順序：被吃白子（上方）-> 時間顯示（中間）-> 被吃黑子（下方）
+    // 右側時間顯示面板（在棋盤和時間控制之間）
+    // 佈局順序：黑方進度條（上方）-> 黑方時間標籤 -> 白方時間標籤 -> 白方進度條（下方）
     m_rightTimePanel = new QWidget(this);
     m_rightTimePanel->setMinimumWidth(100);
     m_rightTimePanel->setMaximumWidth(150);
@@ -335,31 +352,16 @@ void Qt_Chess::setupUI() {
     timeFont.setPointSize(14);
     timeFont.setBold(true);
 
-    // 被吃掉的白色棋子面板（上方）- 不再顯示標題
-    m_capturedWhitePanel = new QWidget(m_rightTimePanel);
-    m_capturedWhitePanel->setMinimumHeight(30);
-    m_capturedWhitePanel->setMaximumHeight(60);
-    rightTimePanelLayout->addWidget(m_capturedWhitePanel);
-
-    // 添加伸展以將上方被吃棋子和時間顯示分開
+    // 添加頂部伸展
     rightTimePanelLayout->addStretch(1);
 
-    // 黑方時間標籤（中間偏上）- 初始隱藏
-    m_blackTimeLabel = new QLabel("--:--", m_rightTimePanel);
-    m_blackTimeLabel->setFont(timeFont);
-    m_blackTimeLabel->setAlignment(Qt::AlignCenter);
-    m_blackTimeLabel->setStyleSheet("QLabel { background-color: rgba(51, 51, 51, 200); color: #FFF; padding: 8px; border-radius: 5px; }");
-    m_blackTimeLabel->setMinimumSize(100, 40);
-    m_blackTimeLabel->hide();  // 初始隱藏
-    rightTimePanelLayout->addWidget(m_blackTimeLabel, 0, Qt::AlignCenter);
-
-    // 黑方時間進度條 - 初始隱藏
+    // 黑方時間進度條 - 放在時間標籤上方，初始隱藏
     m_blackTimeProgressBar = new QProgressBar(m_rightTimePanel);
     m_blackTimeProgressBar->setMinimum(0);
     m_blackTimeProgressBar->setMaximum(100);
     m_blackTimeProgressBar->setValue(100);
     m_blackTimeProgressBar->setTextVisible(false);
-    m_blackTimeProgressBar->setMinimumWidth(100);
+    m_blackTimeProgressBar->setFixedWidth(100);  // 與時間標籤同寬
     m_blackTimeProgressBar->setMaximumHeight(8);
     m_blackTimeProgressBar->setStyleSheet(
         "QProgressBar { border: 1px solid #333; border-radius: 3px; background-color: #444; }"
@@ -368,22 +370,31 @@ void Qt_Chess::setupUI() {
     m_blackTimeProgressBar->hide();  // 初始隱藏
     rightTimePanelLayout->addWidget(m_blackTimeProgressBar, 0, Qt::AlignCenter);
 
-    // 白方時間標籤（中間偏下）- 初始隱藏
+    // 黑方時間標籤 - 初始隱藏
+    m_blackTimeLabel = new QLabel("--:--", m_rightTimePanel);
+    m_blackTimeLabel->setFont(timeFont);
+    m_blackTimeLabel->setAlignment(Qt::AlignCenter);
+    m_blackTimeLabel->setStyleSheet("QLabel { background-color: rgba(51, 51, 51, 200); color: #FFF; padding: 8px; border-radius: 5px; }");
+    m_blackTimeLabel->setFixedSize(100, 40);  // 固定大小
+    m_blackTimeLabel->hide();  // 初始隱藏
+    rightTimePanelLayout->addWidget(m_blackTimeLabel, 0, Qt::AlignCenter);
+
+    // 白方時間標籤 - 初始隱藏
     m_whiteTimeLabel = new QLabel("--:--", m_rightTimePanel);
     m_whiteTimeLabel->setFont(timeFont);
     m_whiteTimeLabel->setAlignment(Qt::AlignCenter);
     m_whiteTimeLabel->setStyleSheet("QLabel { background-color: rgba(51, 51, 51, 200); color: #FFF; padding: 8px; border-radius: 5px; }");
-    m_whiteTimeLabel->setMinimumSize(100, 40);
+    m_whiteTimeLabel->setFixedSize(100, 40);  // 固定大小
     m_whiteTimeLabel->hide();  // 初始隱藏
     rightTimePanelLayout->addWidget(m_whiteTimeLabel, 0, Qt::AlignCenter);
 
-    // 白方時間進度條 - 初始隱藏
+    // 白方時間進度條 - 放在時間標籤下方，初始隱藏
     m_whiteTimeProgressBar = new QProgressBar(m_rightTimePanel);
     m_whiteTimeProgressBar->setMinimum(0);
     m_whiteTimeProgressBar->setMaximum(100);
     m_whiteTimeProgressBar->setValue(100);
     m_whiteTimeProgressBar->setTextVisible(false);
-    m_whiteTimeProgressBar->setMinimumWidth(100);
+    m_whiteTimeProgressBar->setFixedWidth(100);  // 與時間標籤同寬
     m_whiteTimeProgressBar->setMaximumHeight(8);
     m_whiteTimeProgressBar->setStyleSheet(
         "QProgressBar { border: 1px solid #333; border-radius: 3px; background-color: #444; }"
@@ -392,14 +403,8 @@ void Qt_Chess::setupUI() {
     m_whiteTimeProgressBar->hide();  // 初始隱藏
     rightTimePanelLayout->addWidget(m_whiteTimeProgressBar, 0, Qt::AlignCenter);
 
-    // 添加伸展以將時間顯示和下方被吃棋子分開
+    // 添加底部伸展
     rightTimePanelLayout->addStretch(1);
-
-    // 被吃掉的黑色棋子面板（下方）- 不再顯示標題
-    m_capturedBlackPanel = new QWidget(m_rightTimePanel);
-    m_capturedBlackPanel->setMinimumHeight(30);
-    m_capturedBlackPanel->setMaximumHeight(60);
-    rightTimePanelLayout->addWidget(m_capturedBlackPanel);
 
     // 將右側時間面板添加到內容佈局
     m_contentLayout->addWidget(m_rightTimePanel, 0);
