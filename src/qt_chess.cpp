@@ -108,10 +108,14 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_incrementTitleLabel(nullptr)
     , m_whiteTimeLabel(nullptr)
     , m_blackTimeLabel(nullptr)
+    , m_whiteTimeProgressBar(nullptr)
+    , m_blackTimeProgressBar(nullptr)
     , m_startButton(nullptr)
     , m_gameTimer(nullptr)
     , m_whiteTimeMs(0)
     , m_blackTimeMs(0)
+    , m_whiteInitialTimeMs(0)
+    , m_blackInitialTimeMs(0)
     , m_incrementMs(0)
     , m_timeControlEnabled(false)
     , m_timerStarted(false)
@@ -318,7 +322,7 @@ void Qt_Chess::setupUI() {
     m_contentLayout->addWidget(m_boardContainer, 2, Qt::AlignCenter);
 
     // 右側時間和被吃棋子面板（在棋盤和時間控制之間）
-    // 佈局順序：上方被吃棋子 -> 時間顯示（中間）-> 下方被吃棋子
+    // 佈局順序：被吃白子（上方）-> 時間顯示（中間）-> 被吃黑子（下方）
     m_rightTimePanel = new QWidget(this);
     m_rightTimePanel->setMinimumWidth(100);
     m_rightTimePanel->setMaximumWidth(150);
@@ -331,19 +335,11 @@ void Qt_Chess::setupUI() {
     timeFont.setPointSize(14);
     timeFont.setBold(true);
 
-    // 被吃掉的黑色棋子標題和面板（上方）
-    QLabel* capturedBlackTitle = new QLabel("被吃黑子", m_rightTimePanel);
-    capturedBlackTitle->setAlignment(Qt::AlignCenter);
-    QFont capturedFont;
-    capturedFont.setPointSize(10);
-    capturedFont.setBold(true);
-    capturedBlackTitle->setFont(capturedFont);
-    rightTimePanelLayout->addWidget(capturedBlackTitle);
-
-    m_capturedBlackPanel = new QWidget(m_rightTimePanel);
-    m_capturedBlackPanel->setMinimumHeight(30);
-    m_capturedBlackPanel->setMaximumHeight(60);
-    rightTimePanelLayout->addWidget(m_capturedBlackPanel);
+    // 被吃掉的白色棋子面板（上方）- 不再顯示標題
+    m_capturedWhitePanel = new QWidget(m_rightTimePanel);
+    m_capturedWhitePanel->setMinimumHeight(30);
+    m_capturedWhitePanel->setMaximumHeight(60);
+    rightTimePanelLayout->addWidget(m_capturedWhitePanel);
 
     // 添加伸展以將上方被吃棋子和時間顯示分開
     rightTimePanelLayout->addStretch(1);
@@ -357,6 +353,21 @@ void Qt_Chess::setupUI() {
     m_blackTimeLabel->hide();  // 初始隱藏
     rightTimePanelLayout->addWidget(m_blackTimeLabel, 0, Qt::AlignCenter);
 
+    // 黑方時間進度條 - 初始隱藏
+    m_blackTimeProgressBar = new QProgressBar(m_rightTimePanel);
+    m_blackTimeProgressBar->setMinimum(0);
+    m_blackTimeProgressBar->setMaximum(100);
+    m_blackTimeProgressBar->setValue(100);
+    m_blackTimeProgressBar->setTextVisible(false);
+    m_blackTimeProgressBar->setMinimumWidth(100);
+    m_blackTimeProgressBar->setMaximumHeight(8);
+    m_blackTimeProgressBar->setStyleSheet(
+        "QProgressBar { border: 1px solid #333; border-radius: 3px; background-color: #444; }"
+        "QProgressBar::chunk { background-color: #4CAF50; border-radius: 2px; }"
+    );
+    m_blackTimeProgressBar->hide();  // 初始隱藏
+    rightTimePanelLayout->addWidget(m_blackTimeProgressBar, 0, Qt::AlignCenter);
+
     // 白方時間標籤（中間偏下）- 初始隱藏
     m_whiteTimeLabel = new QLabel("--:--", m_rightTimePanel);
     m_whiteTimeLabel->setFont(timeFont);
@@ -366,19 +377,29 @@ void Qt_Chess::setupUI() {
     m_whiteTimeLabel->hide();  // 初始隱藏
     rightTimePanelLayout->addWidget(m_whiteTimeLabel, 0, Qt::AlignCenter);
 
+    // 白方時間進度條 - 初始隱藏
+    m_whiteTimeProgressBar = new QProgressBar(m_rightTimePanel);
+    m_whiteTimeProgressBar->setMinimum(0);
+    m_whiteTimeProgressBar->setMaximum(100);
+    m_whiteTimeProgressBar->setValue(100);
+    m_whiteTimeProgressBar->setTextVisible(false);
+    m_whiteTimeProgressBar->setMinimumWidth(100);
+    m_whiteTimeProgressBar->setMaximumHeight(8);
+    m_whiteTimeProgressBar->setStyleSheet(
+        "QProgressBar { border: 1px solid #333; border-radius: 3px; background-color: #444; }"
+        "QProgressBar::chunk { background-color: #4CAF50; border-radius: 2px; }"
+    );
+    m_whiteTimeProgressBar->hide();  // 初始隱藏
+    rightTimePanelLayout->addWidget(m_whiteTimeProgressBar, 0, Qt::AlignCenter);
+
     // 添加伸展以將時間顯示和下方被吃棋子分開
     rightTimePanelLayout->addStretch(1);
 
-    // 被吃掉的白色棋子標題和面板（下方）
-    QLabel* capturedWhiteTitle = new QLabel("被吃白子", m_rightTimePanel);
-    capturedWhiteTitle->setAlignment(Qt::AlignCenter);
-    capturedWhiteTitle->setFont(capturedFont);
-    rightTimePanelLayout->addWidget(capturedWhiteTitle);
-
-    m_capturedWhitePanel = new QWidget(m_rightTimePanel);
-    m_capturedWhitePanel->setMinimumHeight(30);
-    m_capturedWhitePanel->setMaximumHeight(60);
-    rightTimePanelLayout->addWidget(m_capturedWhitePanel);
+    // 被吃掉的黑色棋子面板（下方）- 不再顯示標題
+    m_capturedBlackPanel = new QWidget(m_rightTimePanel);
+    m_capturedBlackPanel->setMinimumHeight(30);
+    m_capturedBlackPanel->setMaximumHeight(60);
+    rightTimePanelLayout->addWidget(m_capturedBlackPanel);
 
     // 將右側時間面板添加到內容佈局
     m_contentLayout->addWidget(m_rightTimePanel, 0);
@@ -664,9 +685,11 @@ void Qt_Chess::onNewGameClicked() {
         m_timeControlPanel->show();
     }
 
-    // 隱藏時間顯示
+    // 隱藏時間顯示和進度條
     if (m_whiteTimeLabel) m_whiteTimeLabel->hide();
     if (m_blackTimeLabel) m_blackTimeLabel->hide();
+    if (m_whiteTimeProgressBar) m_whiteTimeProgressBar->hide();
+    if (m_blackTimeProgressBar) m_blackTimeProgressBar->hide();
 
     // 隱藏放棄按鈕
     if (m_giveUpButton) m_giveUpButton->hide();
@@ -753,10 +776,12 @@ void Qt_Chess::onStartButtonClicked() {
         // 根據滑桿值重置時間
         if (m_whiteTimeLimitSlider) {
             m_whiteTimeMs = calculateTimeFromSliderValue(m_whiteTimeLimitSlider->value());
+            m_whiteInitialTimeMs = m_whiteTimeMs;  // 記錄初始時間用於進度條
         }
 
         if (m_blackTimeLimitSlider) {
             m_blackTimeMs = calculateTimeFromSliderValue(m_blackTimeLimitSlider->value());
+            m_blackInitialTimeMs = m_blackTimeMs;  // 記錄初始時間用於進度條
         }
 
         m_timerStarted = true;
@@ -768,10 +793,14 @@ void Qt_Chess::onStartButtonClicked() {
             m_timeControlPanel->hide();
         }
 
-        // 在棋盤左右兩側顯示時間
+        // 在棋盤左右兩側顯示時間和進度條
         if (m_whiteTimeLabel && m_blackTimeLabel) {
             m_whiteTimeLabel->show();
             m_blackTimeLabel->show();
+        }
+        if (m_whiteTimeProgressBar && m_blackTimeProgressBar) {
+            m_whiteTimeProgressBar->show();
+            m_blackTimeProgressBar->show();
         }
 
         // 顯示放棄按鈕
@@ -1937,6 +1966,9 @@ void Qt_Chess::updateTimeDisplays() {
     if (!m_timeControlEnabled) {
         m_whiteTimeLabel->setText("--:--");
         m_blackTimeLabel->setText("--:--");
+        // 隱藏進度條當無時間控制時
+        if (m_whiteTimeProgressBar) m_whiteTimeProgressBar->hide();
+        if (m_blackTimeProgressBar) m_blackTimeProgressBar->hide();
         return;
     }
 
@@ -1962,6 +1994,41 @@ void Qt_Chess::updateTimeDisplays() {
 
     m_whiteTimeLabel->setText(formatTime(m_whiteTimeMs));
     m_blackTimeLabel->setText(formatTime(m_blackTimeMs));
+
+    // 更新進度條
+    if (m_whiteTimeProgressBar && m_whiteInitialTimeMs > 0) {
+        int whiteProgress = static_cast<int>((static_cast<double>(m_whiteTimeMs) / m_whiteInitialTimeMs) * 100);
+        whiteProgress = qBound(0, whiteProgress, 100);
+        m_whiteTimeProgressBar->setValue(whiteProgress);
+        
+        // 根據剩餘時間更新進度條顏色
+        QString whiteProgressStyle;
+        if (m_whiteTimeMs > 0 && m_whiteTimeMs < LOW_TIME_THRESHOLD_MS) {
+            whiteProgressStyle = "QProgressBar { border: 1px solid #333; border-radius: 3px; background-color: #444; }"
+                                 "QProgressBar::chunk { background-color: #DC3545; border-radius: 2px; }";
+        } else {
+            whiteProgressStyle = "QProgressBar { border: 1px solid #333; border-radius: 3px; background-color: #444; }"
+                                 "QProgressBar::chunk { background-color: #4CAF50; border-radius: 2px; }";
+        }
+        m_whiteTimeProgressBar->setStyleSheet(whiteProgressStyle);
+    }
+
+    if (m_blackTimeProgressBar && m_blackInitialTimeMs > 0) {
+        int blackProgress = static_cast<int>((static_cast<double>(m_blackTimeMs) / m_blackInitialTimeMs) * 100);
+        blackProgress = qBound(0, blackProgress, 100);
+        m_blackTimeProgressBar->setValue(blackProgress);
+        
+        // 根據剩餘時間更新進度條顏色
+        QString blackProgressStyle;
+        if (m_blackTimeMs > 0 && m_blackTimeMs < LOW_TIME_THRESHOLD_MS) {
+            blackProgressStyle = "QProgressBar { border: 1px solid #333; border-radius: 3px; background-color: #444; }"
+                                 "QProgressBar::chunk { background-color: #DC3545; border-radius: 2px; }";
+        } else {
+            blackProgressStyle = "QProgressBar { border: 1px solid #333; border-radius: 3px; background-color: #444; }"
+                                 "QProgressBar::chunk { background-color: #4CAF50; border-radius: 2px; }";
+        }
+        m_blackTimeProgressBar->setStyleSheet(blackProgressStyle);
+    }
 
     // 根據當前回合和剩餘時間確定背景顏色
     // 規則：不是自己的回合時顯示灰色，是自己的回合時根據剩餘時間決定（< 10 秒紅色，否則綠色）

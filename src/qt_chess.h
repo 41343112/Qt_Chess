@@ -19,6 +19,7 @@
 #include <QTimer>
 #include <QGroupBox>
 #include <QListWidget>
+#include <QProgressBar>
 #include <vector>
 #include "chessboard.h"
 #include "soundsettingsdialog.h"
@@ -109,10 +110,14 @@ private:
     QLabel* m_incrementTitleLabel;  // 增量的標題標籤
     QLabel* m_whiteTimeLabel;
     QLabel* m_blackTimeLabel;
+    QProgressBar* m_whiteTimeProgressBar;  // 白方時間進度條
+    QProgressBar* m_blackTimeProgressBar;  // 黑方時間進度條
     QPushButton* m_startButton;
     QTimer* m_gameTimer;
     int m_whiteTimeMs;  // 白方剩餘時間（毫秒）
     int m_blackTimeMs;  // 黑方剩餘時間（毫秒）
+    int m_whiteInitialTimeMs;  // 白方初始時間（毫秒），用於進度條計算
+    int m_blackInitialTimeMs;  // 黑方初始時間（毫秒），用於進度條計算
     int m_incrementMs;  // 每步的增量（毫秒）
     bool m_timeControlEnabled;
     bool m_timerStarted;  // 追蹤計時器是否已手動啟動
