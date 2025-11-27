@@ -277,7 +277,7 @@ void Qt_Chess::setupUI() {
                                              BOARD_CONTAINER_MARGIN, BOARD_CONTAINER_MARGIN);
     boardContainerVLayout->setSpacing(5);
 
-    // 對方的吃子紀錄放在棋盤上方靠左對齊（白子被黑方吃掉）
+    // 對方吃的子放在棋盤上方（會根據棋盤翻轉狀態動態更新內容）
     m_capturedWhitePanel = new QWidget(m_boardContainer);
     m_capturedWhitePanel->setMinimumHeight(30);
     m_capturedWhitePanel->setMaximumHeight(40);
@@ -328,7 +328,7 @@ void Qt_Chess::setupUI() {
     boardHLayout->addWidget(m_boardWidget, 1, Qt::AlignCenter);
     boardContainerVLayout->addLayout(boardHLayout, 1);
 
-    // 我方的吃子紀錄放在棋盤下方靠左對齊（黑子被白方吃掉）
+    // 我方吃的子放在棋盤下方（會根據棋盤翻轉狀態動態更新內容）
     m_capturedBlackPanel = new QWidget(m_boardContainer);
     m_capturedBlackPanel->setMinimumHeight(30);
     m_capturedBlackPanel->setMaximumHeight(40);
@@ -2529,16 +2529,32 @@ void Qt_Chess::updateCapturedPiecesDisplay() {
         }
     };
 
-    // 顯示被吃掉的白色棋子
-    if (m_capturedWhitePanel) {
-        const std::vector<ChessPiece>& capturedWhite = m_chessBoard.getCapturedPieces(PieceColor::White);
-        displayCapturedPieces(m_capturedWhitePanel, capturedWhite, m_capturedWhiteLabels);
-    }
+    // 根據棋盤翻轉狀態決定吃子顯示位置
+    // 棋盤未翻轉時（白方視角）：
+    //   - 上方面板顯示被吃掉的白子（對方吃的子）
+    //   - 下方面板顯示被吃掉的黑子（我方吃的子）
+    // 棋盤翻轉時（黑方視角）：
+    //   - 上方面板顯示被吃掉的黑子（對方吃的子）
+    //   - 下方面板顯示被吃掉的白子（我方吃的子）
+    const std::vector<ChessPiece>& capturedWhite = m_chessBoard.getCapturedPieces(PieceColor::White);
+    const std::vector<ChessPiece>& capturedBlack = m_chessBoard.getCapturedPieces(PieceColor::Black);
 
-    // 顯示被吃掉的黑色棋子
-    if (m_capturedBlackPanel) {
-        const std::vector<ChessPiece>& capturedBlack = m_chessBoard.getCapturedPieces(PieceColor::Black);
-        displayCapturedPieces(m_capturedBlackPanel, capturedBlack, m_capturedBlackLabels);
+    if (m_isBoardFlipped) {
+        // 黑方視角：上方顯示黑子（對方吃的），下方顯示白子（我方吃的）
+        if (m_capturedWhitePanel) {
+            displayCapturedPieces(m_capturedWhitePanel, capturedBlack, m_capturedWhiteLabels);
+        }
+        if (m_capturedBlackPanel) {
+            displayCapturedPieces(m_capturedBlackPanel, capturedWhite, m_capturedBlackLabels);
+        }
+    } else {
+        // 白方視角：上方顯示白子（對方吃的），下方顯示黑子（我方吃的）
+        if (m_capturedWhitePanel) {
+            displayCapturedPieces(m_capturedWhitePanel, capturedWhite, m_capturedWhiteLabels);
+        }
+        if (m_capturedBlackPanel) {
+            displayCapturedPieces(m_capturedBlackPanel, capturedBlack, m_capturedBlackLabels);
+        }
     }
 }
 
