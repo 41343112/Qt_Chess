@@ -281,7 +281,8 @@ void Qt_Chess::setupUI() {
     m_capturedWhitePanel = new QWidget(m_boardContainer);
     m_capturedWhitePanel->setMinimumHeight(30);
     m_capturedWhitePanel->setMaximumHeight(40);
-    boardContainerVLayout->addWidget(m_capturedWhitePanel, 0, Qt::AlignLeft);
+    m_capturedWhitePanel->setMinimumWidth(8 * MIN_SQUARE_SIZE);  // 設置最小寬度以匹配棋盤寬度
+    boardContainerVLayout->addWidget(m_capturedWhitePanel, 0);
 
     // 國際象棋棋盤（水平佈局以保持居中）
     QHBoxLayout* boardHLayout = new QHBoxLayout();
@@ -332,7 +333,8 @@ void Qt_Chess::setupUI() {
     m_capturedBlackPanel = new QWidget(m_boardContainer);
     m_capturedBlackPanel->setMinimumHeight(30);
     m_capturedBlackPanel->setMaximumHeight(40);
-    boardContainerVLayout->addWidget(m_capturedBlackPanel, 0, Qt::AlignLeft);
+    m_capturedBlackPanel->setMinimumWidth(8 * MIN_SQUARE_SIZE);  // 設置最小寬度以匹配棋盤寬度
+    boardContainerVLayout->addWidget(m_capturedBlackPanel, 0);
 
     // 將棋盤容器添加到內容佈局
     // 使用較大的伸展因子(3)使棋盤在水平放大時優先擴展
