@@ -2522,7 +2522,14 @@ void Qt_Chess::updateCapturedPiecesDisplay() {
             if (lastType != PieceType::None) {
                 if (piece.getType() == lastType) {
                     // 相同類型的棋子水平重疊
-                    xPos += horizontalOffset;
+                    int newXPos = xPos + horizontalOffset;
+                    // 檢查是否超出面板寬度，如果超出則換行
+                    if (newXPos + pieceSize > panelWidth) {
+                        yPos += verticalOffset;
+                        xPos = baseXPos;
+                    } else {
+                        xPos = newXPos;
+                    }
                 } else {
                     // 不同類型的棋子垂直排列（換行）
                     yPos += verticalOffset;
