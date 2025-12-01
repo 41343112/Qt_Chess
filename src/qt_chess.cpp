@@ -172,7 +172,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     setupUI();
     loadTimeControlSettings();  // 在 setupUI() 之後載入以確保元件存在
     loadEngineSettings();  // 載入引擎設定
-    initializeEngine();  // 初始化棋譜引擎
+    initializeEngine();  // 初始化棋局引擎
     updateBoard();
     updateStatus();
     updateTimeDisplays();
@@ -182,6 +182,12 @@ Qt_Chess::Qt_Chess(QWidget *parent)
 
 Qt_Chess::~Qt_Chess()
 {
+    // 停止並清理棋局引擎
+    if (m_chessEngine) {
+        m_chessEngine->stopEngine();
+        delete m_chessEngine;
+        m_chessEngine = nullptr;
+    }
     delete ui;
 }
 

@@ -250,12 +250,14 @@ void ChessEngine::configureEngine()
     if (!m_process || m_process->state() != QProcess::Running) return;
     
     // 設定 Stockfish 的技能等級（1-20）
+    // 注意：此選項名稱為 Stockfish 專用，其他引擎可能使用不同名稱
     sendCommand(QString("setoption name Skill Level value %1").arg(m_skillLevel));
     
-    // 設定較小的 hash 表以節省記憶體
+    // 設定較小的 hash 表（16MB）以節省記憶體
+    // 對於休閒遊戲來說足夠，同時不會佔用太多系統資源
     sendCommand("setoption name Hash value 16");
     
-    // 禁用 Ponder（預測對手走法）以簡化
+    // 禁用 Ponder（預測對手走法）以簡化遊戲體驗
     sendCommand("setoption name Ponder value false");
 }
 
