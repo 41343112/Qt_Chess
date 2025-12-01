@@ -176,9 +176,16 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_computerModeButton(nullptr)
     , m_gameModeStatusLabel(nullptr)
     , m_currentGameMode(GameMode::HumanVsHuman)
+    , m_colorSelectionWidget(nullptr)
+    , m_whiteButton(nullptr)
+    , m_randomButton(nullptr)
+    , m_blackButton(nullptr)
     , m_difficultySlider(nullptr)
     , m_difficultyLabel(nullptr)
     , m_difficultyValueLabel(nullptr)
+    , m_depthSlider(nullptr)
+    , m_depthLabel(nullptr)
+    , m_depthValueLabel(nullptr)
     , m_thinkingLabel(nullptr)
 {
     ui->setupUi(this);
@@ -2044,13 +2051,63 @@ void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
     connect(m_computerModeButton, &QPushButton::clicked, this, &Qt_Chess::onComputerModeClicked);
     gameModeButtonsLayout->addWidget(m_computerModeButton);
     
+    timeControlLayout->addLayout(gameModeButtonsLayout);
+    
+    // 選邊按鈕容器（電腦模式時顯示）
+    m_colorSelectionWidget = new QWidget(this);
+    QHBoxLayout* colorButtonsLayout = new QHBoxLayout(m_colorSelectionWidget);
+    colorButtonsLayout->setContentsMargins(0, 5, 0, 5);
+    
+    // 執白按鈕
+    m_whiteButton = new QPushButton("執白", this);
+    m_whiteButton->setFont(labelFont);
+    m_whiteButton->setCheckable(true);
+    m_whiteButton->setMinimumSize(50, 35);
+    m_whiteButton->setStyleSheet(
+        "QPushButton { border: 2px solid #555; border-radius: 5px; padding: 3px; background-color: #9E9E9E; color: #333; }"
+        "QPushButton:checked { background-color: #FFFFFF; color: #333; border-color: #333; }"
+        "QPushButton:hover { background-color: #BDBDBD; }"
+        "QPushButton:checked:hover { background-color: #E0E0E0; }"
+    );
+    connect(m_whiteButton, &QPushButton::clicked, this, &Qt_Chess::onWhiteColorClicked);
+    colorButtonsLayout->addWidget(m_whiteButton);
+    
+    // 隨機按鈕
+    m_randomButton = new QPushButton("隨機", this);
+    m_randomButton->setFont(labelFont);
+    m_randomButton->setCheckable(true);
+    m_randomButton->setMinimumSize(50, 35);
+    m_randomButton->setStyleSheet(
+        "QPushButton { border: 2px solid #555; border-radius: 5px; padding: 3px; background-color: #9E9E9E; color: #333; }"
+        "QPushButton:checked { background-color: #9C27B0; color: white; border-color: #7B1FA2; }"
+        "QPushButton:hover { background-color: #BDBDBD; }"
+        "QPushButton:checked:hover { background-color: #AB47BC; }"
+    );
+    connect(m_randomButton, &QPushButton::clicked, this, &Qt_Chess::onRandomColorClicked);
+    colorButtonsLayout->addWidget(m_randomButton);
+    
+    // 執黑按鈕
+    m_blackButton = new QPushButton("執黑", this);
+    m_blackButton->setFont(labelFont);
+    m_blackButton->setCheckable(true);
+    m_blackButton->setMinimumSize(50, 35);
+    m_blackButton->setStyleSheet(
+        "QPushButton { border: 2px solid #555; border-radius: 5px; padding: 3px; background-color: #9E9E9E; color: #333; }"
+        "QPushButton:checked { background-color: #333333; color: white; border-color: #000; }"
+        "QPushButton:hover { background-color: #BDBDBD; }"
+        "QPushButton:checked:hover { background-color: #555555; }"
+    );
+    connect(m_blackButton, &QPushButton::clicked, this, &Qt_Chess::onBlackColorClicked);
+    colorButtonsLayout->addWidget(m_blackButton);
+    
+    m_colorSelectionWidget->hide();  // 初始隱藏
+    timeControlLayout->addWidget(m_colorSelectionWidget);
+    
     // 顯示當前選擇的標籤（電腦模式時顯示執白/執黑）
     m_gameModeStatusLabel = new QLabel("", this);
     m_gameModeStatusLabel->setFont(labelFont);
     m_gameModeStatusLabel->setAlignment(Qt::AlignCenter);
     m_gameModeStatusLabel->hide();  // 初始隱藏
-    
-    timeControlLayout->addLayout(gameModeButtonsLayout);
     timeControlLayout->addWidget(m_gameModeStatusLabel);
     
     // 難度設定
@@ -2075,6 +2132,25 @@ void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
     connect(m_difficultySlider, &QSlider::valueChanged, this, &Qt_Chess::onDifficultyChanged);
     timeControlLayout->addWidget(m_difficultySlider);
     
+    // 搜尋深度設定
+    m_depthLabel = new QLabel("搜尋深度:", this);
+    m_depthLabel->setFont(labelFont);
+    timeControlLayout->addWidget(m_depthLabel);
+    
+    m_depthValueLabel = new QLabel("1", this);
+    m_depthValueLabel->setFont(labelFont);
+    m_depthValueLabel->setAlignment(Qt::AlignCenter);
+    timeControlLayout->addWidget(m_depthValueLabel);
+    
+    m_depthSlider = new QSlider(Qt::Horizontal, this);
+    m_depthSlider->setMinimum(1);
+    m_depthSlider->setMaximum(30);
+    m_depthSlider->setValue(1);
+    m_depthSlider->setTickPosition(QSlider::TicksBelow);
+    m_depthSlider->setTickInterval(5);
+    connect(m_depthSlider, &QSlider::valueChanged, this, &Qt_Chess::onDepthChanged);
+    timeControlLayout->addWidget(m_depthSlider);
+    
     // 電腦思考中的提示標籤（初始隱藏）
     m_thinkingLabel = new QLabel("電腦思考中...", this);
     m_thinkingLabel->setFont(labelFont);
@@ -2085,9 +2161,13 @@ void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
     
     // 根據初始模式設定難度控制的可見性（預設為雙人模式，隱藏難度控制）
     bool isVsComputer = (m_currentGameMode != GameMode::HumanVsHuman);
+    m_colorSelectionWidget->setVisible(isVsComputer);
     m_difficultyLabel->setVisible(isVsComputer);
     m_difficultyValueLabel->setVisible(isVsComputer);
     m_difficultySlider->setVisible(isVsComputer);
+    m_depthLabel->setVisible(isVsComputer);
+    m_depthValueLabel->setVisible(isVsComputer);
+    m_depthSlider->setVisible(isVsComputer);
 
     // 添加伸展以填充群組框中的剩餘空間
     timeControlLayout->addStretch();
@@ -3147,80 +3227,10 @@ void Qt_Chess::onHumanModeClicked() {
 }
 
 void Qt_Chess::onComputerModeClicked() {
-    // 建立自訂對話框讓用戶選擇執白、執黑或隨機
-    QDialog dialog(this);
-    dialog.setWindowTitle("選擇棋子顏色");
-    dialog.setModal(true);
-    
-    QVBoxLayout* layout = new QVBoxLayout(&dialog);
-    
-    QLabel* label = new QLabel("請選擇您要執的棋子顏色：", &dialog);
-    label->setAlignment(Qt::AlignCenter);
-    layout->addWidget(label);
-    
-    QHBoxLayout* buttonLayout = new QHBoxLayout();
-    
-    // 執白按鈕（方塊樣式）
-    QPushButton* whiteButton = new QPushButton("執白\n（先手）", &dialog);
-    whiteButton->setMinimumSize(80, 60);
-    whiteButton->setStyleSheet(
-        "QPushButton { border: 2px solid #555; border-radius: 5px; padding: 10px; background-color: #FFFFFF; color: #333; font-weight: bold; }"
-        "QPushButton:hover { background-color: #E0E0E0; border-color: #333; }"
-    );
-    buttonLayout->addWidget(whiteButton);
-    
-    // 隨機按鈕（方塊樣式）
-    QPushButton* randomButton = new QPushButton("隨機", &dialog);
-    randomButton->setMinimumSize(80, 60);
-    randomButton->setStyleSheet(
-        "QPushButton { border: 2px solid #555; border-radius: 5px; padding: 10px; background-color: #9C27B0; color: white; font-weight: bold; }"
-        "QPushButton:hover { background-color: #7B1FA2; border-color: #4A148C; }"
-    );
-    buttonLayout->addWidget(randomButton);
-    
-    // 執黑按鈕（方塊樣式）
-    QPushButton* blackButton = new QPushButton("執黑\n（後手）", &dialog);
-    blackButton->setMinimumSize(80, 60);
-    blackButton->setStyleSheet(
-        "QPushButton { border: 2px solid #555; border-radius: 5px; padding: 10px; background-color: #333333; color: white; font-weight: bold; }"
-        "QPushButton:hover { background-color: #555555; border-color: #000; }"
-    );
-    buttonLayout->addWidget(blackButton);
-    
-    layout->addLayout(buttonLayout);
-    
-    // 取消按鈕
-    QPushButton* cancelButton = new QPushButton("取消", &dialog);
-    cancelButton->setStyleSheet(
-        "QPushButton { border: 2px solid #555; border-radius: 5px; padding: 5px; background-color: #9E9E9E; color: #333; }"
-        "QPushButton:hover { background-color: #BDBDBD; }"
-    );
-    layout->addWidget(cancelButton);
-    
-    int result = -1;  // -1: 取消, 0: 執白, 1: 執黑, 2: 隨機
-    
-    connect(whiteButton, &QPushButton::clicked, [&]() { result = 0; dialog.accept(); });
-    connect(blackButton, &QPushButton::clicked, [&]() { result = 1; dialog.accept(); });
-    connect(randomButton, &QPushButton::clicked, [&]() { result = 2; dialog.accept(); });
-    connect(cancelButton, &QPushButton::clicked, [&]() { dialog.reject(); });
-    
-    dialog.exec();
-    
-    if (result == 0) {
+    // 切換到電腦模式，顯示選邊按鈕
+    // 預設選擇執白（如果尚未選擇）
+    if (m_currentGameMode == GameMode::HumanVsHuman) {
         m_currentGameMode = GameMode::HumanVsComputer;
-    } else if (result == 1) {
-        m_currentGameMode = GameMode::ComputerVsHuman;
-    } else if (result == 2) {
-        // 隨機選擇執白或執黑
-        if (QRandomGenerator::global()->bounded(2) == 0) {
-            m_currentGameMode = GameMode::HumanVsComputer;
-        } else {
-            m_currentGameMode = GameMode::ComputerVsHuman;
-        }
-    } else {
-        // 用戶取消，保持原來的選擇狀態
-        updateGameModeUI();
-        return;
     }
     
     updateGameModeUI();
@@ -3231,6 +3241,41 @@ void Qt_Chess::onComputerModeClicked() {
     }
     
     // 儲存設定
+    saveEngineSettings();
+}
+
+void Qt_Chess::onWhiteColorClicked() {
+    m_currentGameMode = GameMode::HumanVsComputer;
+    updateGameModeUI();
+    
+    if (m_chessEngine) {
+        m_chessEngine->setGameMode(m_currentGameMode);
+    }
+    saveEngineSettings();
+}
+
+void Qt_Chess::onRandomColorClicked() {
+    // 隨機選擇執白或執黑
+    if (QRandomGenerator::global()->bounded(2) == 0) {
+        m_currentGameMode = GameMode::HumanVsComputer;
+    } else {
+        m_currentGameMode = GameMode::ComputerVsHuman;
+    }
+    updateGameModeUI();
+    
+    if (m_chessEngine) {
+        m_chessEngine->setGameMode(m_currentGameMode);
+    }
+    saveEngineSettings();
+}
+
+void Qt_Chess::onBlackColorClicked() {
+    m_currentGameMode = GameMode::ComputerVsHuman;
+    updateGameModeUI();
+    
+    if (m_chessEngine) {
+        m_chessEngine->setGameMode(m_currentGameMode);
+    }
     saveEngineSettings();
 }
 
@@ -3245,6 +3290,20 @@ void Qt_Chess::updateGameModeUI() {
         m_computerModeButton->setChecked(!isHumanMode);
     }
     
+    // 更新選邊按鈕
+    if (m_colorSelectionWidget) {
+        m_colorSelectionWidget->setVisible(!isHumanMode);
+    }
+    if (m_whiteButton) {
+        m_whiteButton->setChecked(m_currentGameMode == GameMode::HumanVsComputer);
+    }
+    if (m_randomButton) {
+        m_randomButton->setChecked(false);  // 隨機按鈕不保持選中狀態
+    }
+    if (m_blackButton) {
+        m_blackButton->setChecked(m_currentGameMode == GameMode::ComputerVsHuman);
+    }
+    
     // 更新狀態標籤
     if (m_gameModeStatusLabel) {
         if (isHumanMode) {
@@ -3256,10 +3315,13 @@ void Qt_Chess::updateGameModeUI() {
         }
     }
     
-    // 更新難度控制的可見性
+    // 更新難度控制和深度控制的可見性
     if (m_difficultyLabel) m_difficultyLabel->setVisible(!isHumanMode);
     if (m_difficultyValueLabel) m_difficultyValueLabel->setVisible(!isHumanMode);
     if (m_difficultySlider) m_difficultySlider->setVisible(!isHumanMode);
+    if (m_depthLabel) m_depthLabel->setVisible(!isHumanMode);
+    if (m_depthValueLabel) m_depthValueLabel->setVisible(!isHumanMode);
+    if (m_depthSlider) m_depthSlider->setVisible(!isHumanMode);
 }
 
 void Qt_Chess::onDifficultyChanged(int value) {
@@ -3280,6 +3342,19 @@ void Qt_Chess::onDifficultyChanged(int value) {
     // 較低難度：較短思考時間（最小50ms）；較高難度：較長思考時間
     int thinkingTime = 50 + (value * 125);  // 50ms 到 2550ms
     m_chessEngine->setThinkingTime(thinkingTime);
+    
+    // 儲存設定
+    saveEngineSettings();
+}
+
+void Qt_Chess::onDepthChanged(int value) {
+    if (!m_depthValueLabel || !m_chessEngine) return;
+    
+    // 更新顯示的深度值
+    m_depthValueLabel->setText(QString::number(value));
+    
+    // 更新引擎搜尋深度
+    m_chessEngine->setSearchDepth(value);
     
     // 儲存設定
     saveEngineSettings();
@@ -3418,7 +3493,8 @@ void Qt_Chess::loadEngineSettings() {
     QSettings settings("Qt_Chess", "ChessEngine");
     
     int gameMode = settings.value("gameMode", static_cast<int>(GameMode::HumanVsHuman)).toInt();
-    int difficulty = settings.value("difficulty", 10).toInt();
+    int difficulty = settings.value("difficulty", 0).toInt();  // 預設初學者
+    int depth = settings.value("depth", 1).toInt();  // 預設深度 1
     
     // 設定遊戲模式
     m_currentGameMode = static_cast<GameMode>(gameMode);
@@ -3427,6 +3503,11 @@ void Qt_Chess::loadEngineSettings() {
     if (m_difficultySlider) {
         m_difficultySlider->setValue(difficulty);
         onDifficultyChanged(difficulty);  // 更新顯示
+    }
+    
+    if (m_depthSlider) {
+        m_depthSlider->setValue(depth);
+        onDepthChanged(depth);  // 更新顯示
     }
 }
 
@@ -3437,6 +3518,10 @@ void Qt_Chess::saveEngineSettings() {
     
     if (m_difficultySlider) {
         settings.setValue("difficulty", m_difficultySlider->value());
+    }
+    
+    if (m_depthSlider) {
+        settings.setValue("depth", m_depthSlider->value());
     }
     
     settings.sync();

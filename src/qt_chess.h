@@ -161,9 +161,18 @@ private:
     QPushButton* m_computerModeButton;   // 電腦對弈按鈕
     QLabel* m_gameModeStatusLabel;       // 顯示電腦模式時的執白/執黑狀態
     GameMode m_currentGameMode;          // 當前遊戲模式
+    // 選邊按鈕（電腦模式時顯示）
+    QWidget* m_colorSelectionWidget;     // 選邊按鈕容器
+    QPushButton* m_whiteButton;          // 執白按鈕
+    QPushButton* m_randomButton;         // 隨機按鈕
+    QPushButton* m_blackButton;          // 執黑按鈕
     QSlider* m_difficultySlider;
     QLabel* m_difficultyLabel;
     QLabel* m_difficultyValueLabel;
+    // 搜尋深度設定
+    QSlider* m_depthSlider;
+    QLabel* m_depthLabel;
+    QLabel* m_depthValueLabel;
     QLabel* m_thinkingLabel;  // 顯示「電腦思考中...」
     QStringList m_uciMoveHistory;  // UCI 格式的移動歷史
     
@@ -249,7 +258,11 @@ private:
     void initializeEngine();
     void onHumanModeClicked();           // 雙人模式按鈕點擊
     void onComputerModeClicked();        // 電腦模式按鈕點擊
+    void onWhiteColorClicked();          // 執白按鈕點擊
+    void onRandomColorClicked();         // 隨機按鈕點擊
+    void onBlackColorClicked();          // 執黑按鈕點擊
     void onDifficultyChanged(int value);
+    void onDepthChanged(int value);      // 搜尋深度變更
     void onEngineBestMove(const QString& move);
     void onEngineReady();
     void onEngineError(const QString& error);
