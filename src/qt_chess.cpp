@@ -2467,14 +2467,15 @@ void Qt_Chess::copyPGN() {
 int Qt_Chess::getPieceValue(PieceType type) const {
     // 標準國際象棋棋子分值
     switch (type) {
+        case PieceType::None:   return 0;  // 空格不計分
         case PieceType::Pawn:   return 1;
         case PieceType::Knight: return 3;
         case PieceType::Bishop: return 3;
         case PieceType::Rook:   return 5;
         case PieceType::Queen:  return 9;
         case PieceType::King:   return 0;  // 國王不計分
-        default:                return 0;
     }
+    return 0;  // 防禦性返回
 }
 
 void Qt_Chess::updateCapturedPiecesDisplay() {
@@ -2506,7 +2507,7 @@ void Qt_Chess::updateCapturedPiecesDisplay() {
     // 計算分差：正值表示該方領先
     // 白方分差 = 白方得分（吃掉的黑子）- 黑方得分（吃掉的白子）
     int whiteDiff = blackCapturedValue - whiteCapturedValue;
-    int blackDiff = whiteCapturedValue - blackCapturedValue;
+    int blackDiff = -whiteDiff;  // 黑方分差與白方分差相反
 
     // 被吃掉棋子的大小和間距設定
     // 相同類型棋子水平重疊顯示，不同類型棋子垂直排列
