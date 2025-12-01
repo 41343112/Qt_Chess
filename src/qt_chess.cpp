@@ -2610,11 +2610,12 @@ void Qt_Chess::updateCapturedPiecesDisplay() {
     const int pieceSize = 24;  // 每個棋子標籤的大小
     const int horizontalOffset = pieceSize / 4;  // 相同類型棋子的水平重疊偏移量
     const int verticalOffset = pieceSize;  // 不同類型棋子之間的垂直間距
+    const int topMargin = 5;  // 頂部邊距，避免超出棋盤上方邊緣
 
     // 按棋子類型分組並顯示的輔助函數
     // 相同類型棋子水平重疊，不同類型棋子垂直排列
     // 返回最終的 y 位置以便放置分差標籤
-    auto displayCapturedPieces = [this, pieceSize, horizontalOffset, verticalOffset](
+    auto displayCapturedPieces = [this, pieceSize, horizontalOffset, verticalOffset, topMargin](
         QWidget* panel, const std::vector<ChessPiece>& capturedPieces, QList<QLabel*>& labels) -> int {
         if (!panel) return 0;
         if (capturedPieces.empty()) return 0;
@@ -2631,7 +2632,7 @@ void Qt_Chess::updateCapturedPiecesDisplay() {
             return static_cast<int>(a.getType()) < static_cast<int>(b.getType());
         });
 
-        int yPos = 0;  // 起始 y 位置，與棋盤頂部貼齊
+        int yPos = topMargin;  // 起始 y 位置，加入頂部邊距
         int panelWidth = panel->width();
         // 如果面板寬度尚未計算（初始設置期間），使用最小寬度
         if (panelWidth <= 0) {
