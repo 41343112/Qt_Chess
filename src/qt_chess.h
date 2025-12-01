@@ -135,14 +135,13 @@ private:
     QPushButton* m_copyPGNButton;
     QWidget* m_moveListPanel;
     
-    // 被吃掉的棋子面板和右側時間/吃子顯示面板
+    // 被吃掉的棋子面板
     QWidget* m_capturedWhitePanel;
     QWidget* m_capturedBlackPanel;
     QList<QLabel*> m_capturedWhiteLabels;
     QList<QLabel*> m_capturedBlackLabels;
     QLabel* m_whiteScoreDiffLabel;  // 白方分差標籤
     QLabel* m_blackScoreDiffLabel;  // 黑方分差標籤
-    QWidget* m_rightTimePanel;  // 右側時間和被吃棋子的容器
     
     // 回放控制
     QLabel* m_replayTitle;

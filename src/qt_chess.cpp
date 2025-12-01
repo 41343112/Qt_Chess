@@ -75,6 +75,10 @@ const int MAX_PANEL_WIDTH = 600;              // 左右面板的最大寬度（�
 // PGN 格式常數
 const int PGN_MOVES_PER_LINE = 6;            // PGN 檔案中每行的移動回合數
 
+// ELO 評分常數
+const int BASE_ELO = 800;                    // 最低難度的基礎 ELO 評分
+const double ELO_INCREMENT_PER_LEVEL = 126.3; // 每個難度等級增加的 ELO 分數
+
 // 獲取面板的實際寬度，如果尚未渲染則使用後備值的輔助函數
 static int getPanelWidth(QWidget* panel) {
     if (!panel) return 0;
@@ -137,7 +141,6 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_capturedBlackPanel(nullptr)
     , m_whiteScoreDiffLabel(nullptr)
     , m_blackScoreDiffLabel(nullptr)
-    , m_rightTimePanel(nullptr)
     , m_replayTitle(nullptr)
     , m_replayFirstButton(nullptr)
     , m_replayPrevButton(nullptr)
@@ -431,9 +434,6 @@ void Qt_Chess::setupUI() {
     // 時間控制和遊戲模式設定
     setupTimeControlUI(rightPanelLayout);
     m_contentLayout->addWidget(m_timeControlPanel, 1);  // 固定寬度不伸展
-
-    // m_rightTimePanel 不再單獨使用，設為 nullptr
-    m_rightTimePanel = nullptr;
 
     mainLayout->addLayout(m_contentLayout);
 
@@ -3103,8 +3103,7 @@ void Qt_Chess::onDifficultyChanged(int value) {
     
     // 將難度等級(1-20)轉換為 ELO 評分
     // ELO 範圍：約 800 (最低) 到 3200 (最高)
-    // 使用線性映射：ELO = 800 + (value - 1) * 126.3
-    int elo = 800 + static_cast<int>((value - 1) * 126.3);
+    int elo = BASE_ELO + static_cast<int>((value - 1) * ELO_INCREMENT_PER_LEVEL);
     
     // 更新顯示的難度值（使用 ELO 評分）
     QString diffText = QString("ELO %1").arg(elo);
