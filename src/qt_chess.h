@@ -22,6 +22,7 @@
 #include <QProgressBar>
 #include <vector>
 #include "chessboard.h"
+#include "chessengine.h"
 #include "soundsettingsdialog.h"
 #include "pieceiconsettingsdialog.h"
 #include "boardcolorsettingsdialog.h"
@@ -152,6 +153,15 @@ private:
     std::vector<std::vector<ChessPiece>> m_savedBoardState;  // 儲存進入回放前的棋盤狀態
     PieceColor m_savedCurrentPlayer;  // 儲存進入回放前的當前玩家
     
+    // 電腦對弈引擎
+    ChessEngine* m_chessEngine;
+    QComboBox* m_gameModeComboBox;
+    QSlider* m_difficultySlider;
+    QLabel* m_difficultyLabel;
+    QLabel* m_difficultyValueLabel;
+    QLabel* m_thinkingLabel;  // 顯示「電腦思考中...」
+    QStringList m_uciMoveHistory;  // UCI 格式的移動歷史
+    
     void setupUI();
     void setupMenuBar();
     void updateBoard();
@@ -228,5 +238,19 @@ private:
     void updateReplayButtons();
     void saveBoardState();
     void restoreBoardState();
+    
+    // 電腦對弈功能
+    void setupEngineUI(QVBoxLayout* layout);
+    void initializeEngine();
+    void onGameModeChanged(int index);
+    void onDifficultyChanged(int value);
+    void onEngineBestMove(const QString& move);
+    void onEngineReady();
+    void onEngineError(const QString& error);
+    void requestEngineMove();
+    bool isComputerTurn() const;
+    void loadEngineSettings();
+    void saveEngineSettings();
+    QString getEnginePath() const;
 };
 #endif // QT_CHESS_H
