@@ -2610,7 +2610,7 @@ void Qt_Chess::updateCapturedPiecesDisplay() {
     const int pieceSize = 24;  // 每個棋子標籤的大小
     const int horizontalOffset = pieceSize / 4;  // 相同類型棋子的水平重疊偏移量
     const int verticalOffset = pieceSize;  // 不同類型棋子之間的垂直間距
-    const int topMargin = 5;  // 頂部邊距，避免超出棋盤上方邊緣
+    const int topMargin = 38;  // 頂部邊距，避免超出棋盤上方邊緣
 
     // 按棋子類型分組並顯示的輔助函數
     // 相同類型棋子水平重疊，不同類型棋子垂直排列
