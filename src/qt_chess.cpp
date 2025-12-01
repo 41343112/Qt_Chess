@@ -2650,13 +2650,10 @@ void Qt_Chess::updateCapturedPiecesDisplay() {
 
         for (size_t i = 0; i < sortedPieces.size(); ++i) {
             const ChessPiece& piece = sortedPieces[i];
-            QLabel* label = new QLabel(panel);
-            label->setText(piece.getSymbol());
-            QFont pieceFont;
-            pieceFont.setPointSize(16);
-            label->setFont(pieceFont);
-            label->setFixedSize(pieceSize, pieceSize);
-            label->setAlignment(Qt::AlignCenter);
+
+            // 先計算下一個棋子的位置
+            int nextYPos = yPos;
+            int nextXPos = xPos;
 
             // 如果不是第一個棋子，根據類型決定位置
             if (lastType != PieceType::None) {
@@ -2665,19 +2662,35 @@ void Qt_Chess::updateCapturedPiecesDisplay() {
                     int newXPos = xPos + horizontalOffset;
                     // 檢查是否超出面板寬度，如果超出則換行
                     if (newXPos + pieceSize > panelWidth) {
-                        yPos += verticalOffset;
-                        xPos = baseXPos;
+                        nextYPos += verticalOffset;
+                        nextXPos = baseXPos;
                     } else {
-                        xPos = newXPos;
+                        nextXPos = newXPos;
                     }
                 } else {
                     // 不同類型的棋子垂直排列（換行）
-                    yPos += verticalOffset;
-                    xPos = baseXPos;  // 重置 x 位置
+                    nextYPos += verticalOffset;
+                    nextXPos = baseXPos;  // 重置 x 位置
                 }
             }
 
-            // 放置棋子標籤
+            // 檢查是否超出面板高度，如果超出則停止顯示
+            if (nextYPos + pieceSize > panelHeight) {
+                break;  // 停止處理更多棋子
+            }
+
+            // 更新位置
+            yPos = nextYPos;
+            xPos = nextXPos;
+
+            // 創建並放置棋子標籤
+            QLabel* label = new QLabel(panel);
+            label->setText(piece.getSymbol());
+            QFont pieceFont;
+            pieceFont.setPointSize(16);
+            label->setFont(pieceFont);
+            label->setFixedSize(pieceSize, pieceSize);
+            label->setAlignment(Qt::AlignCenter);
             label->move(xPos, yPos);
             lastType = piece.getType();
 
