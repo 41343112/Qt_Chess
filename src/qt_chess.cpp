@@ -2610,22 +2610,29 @@ void Qt_Chess::updateCapturedPiecesDisplay() {
     const int pieceSize = 24;  // 每個棋子標籤的大小
     const int horizontalOffset = pieceSize / 4;  // 相同類型棋子的水平重疊偏移量
     const int verticalOffset = pieceSize;  // 不同類型棋子之間的垂直間距
+    const int topMargin = 38;  // 頂部邊距，避免超出棋盤上方邊緣
 
     // 按棋子類型分組並顯示的輔助函數
     // 相同類型棋子水平重疊，不同類型棋子垂直排列
     // 返回最終的 y 位置以便放置分差標籤
-    auto displayCapturedPieces = [pieceSize, horizontalOffset, verticalOffset](
+    auto displayCapturedPieces = [this, pieceSize, horizontalOffset, verticalOffset, topMargin](
         QWidget* panel, const std::vector<ChessPiece>& capturedPieces, QList<QLabel*>& labels) -> int {
         if (!panel) return 0;
         if (capturedPieces.empty()) return 0;
 
-        // 複製並按棋子類型排序，確保相同類型的棋子放在一起
+        // 複製並按棋子分值由小到大排序，確保相同分值的棋子放在一起
         std::vector<ChessPiece> sortedPieces = capturedPieces;
-        std::sort(sortedPieces.begin(), sortedPieces.end(), [](const ChessPiece& a, const ChessPiece& b) {
+        std::sort(sortedPieces.begin(), sortedPieces.end(), [this](const ChessPiece& a, const ChessPiece& b) {
+            int valueA = getPieceValue(a.getType());
+            int valueB = getPieceValue(b.getType());
+            if (valueA != valueB) {
+                return valueA < valueB;  // 按分值由小到大排序
+            }
+            // 分值相同時，按類型排序以保持穩定性
             return static_cast<int>(a.getType()) < static_cast<int>(b.getType());
         });
 
-        int yPos = 0;  // 起始 y 位置，與棋盤頂部貼齊
+        int yPos = topMargin;  // 起始 y 位置，加入頂部邊距
         int panelWidth = panel->width();
         // 如果面板寬度尚未計算（初始設置期間），使用最小寬度
         if (panelWidth <= 0) {
@@ -2644,13 +2651,10 @@ void Qt_Chess::updateCapturedPiecesDisplay() {
 
         for (size_t i = 0; i < sortedPieces.size(); ++i) {
             const ChessPiece& piece = sortedPieces[i];
-            QLabel* label = new QLabel(panel);
-            label->setText(piece.getSymbol());
-            QFont pieceFont;
-            pieceFont.setPointSize(16);
-            label->setFont(pieceFont);
-            label->setFixedSize(pieceSize, pieceSize);
-            label->setAlignment(Qt::AlignCenter);
+
+            // 先計算下一個棋子的位置
+            int nextYPos = yPos;
+            int nextXPos = xPos;
 
             // 如果不是第一個棋子，根據類型決定位置
             if (lastType != PieceType::None) {
@@ -2659,19 +2663,35 @@ void Qt_Chess::updateCapturedPiecesDisplay() {
                     int newXPos = xPos + horizontalOffset;
                     // 檢查是否超出面板寬度，如果超出則換行
                     if (newXPos + pieceSize > panelWidth) {
-                        yPos += verticalOffset;
-                        xPos = baseXPos;
+                        nextYPos += verticalOffset;
+                        nextXPos = baseXPos;
                     } else {
-                        xPos = newXPos;
+                        nextXPos = newXPos;
                     }
                 } else {
                     // 不同類型的棋子垂直排列（換行）
-                    yPos += verticalOffset;
-                    xPos = baseXPos;  // 重置 x 位置
+                    nextYPos += verticalOffset;
+                    nextXPos = baseXPos;  // 重置 x 位置
                 }
             }
 
-            // 放置棋子標籤
+            // 檢查是否超出面板高度，如果超出則停止顯示
+            if (nextYPos + pieceSize > panelHeight) {
+                break;  // 停止處理更多棋子
+            }
+
+            // 更新位置
+            yPos = nextYPos;
+            xPos = nextXPos;
+
+            // 創建並放置棋子標籤
+            QLabel* label = new QLabel(panel);
+            label->setText(piece.getSymbol());
+            QFont pieceFont;
+            pieceFont.setPointSize(16);
+            label->setFont(pieceFont);
+            label->setFixedSize(pieceSize, pieceSize);
+            label->setAlignment(Qt::AlignCenter);
             label->move(xPos, yPos);
             lastType = piece.getType();
 
