@@ -77,11 +77,11 @@ const int PGN_MOVES_PER_LINE = 6;            // PGN 檔案中每行的移動回�
 
 // ELO 評分常數（用於難度顯示）
 const int ELO_BASE = 800;                    // 最低 ELO 評分（對應 Skill Level 1）
-const double ELO_PER_LEVEL = 126.3;          // 每級增加的 ELO 分數
+const int ELO_PER_LEVEL = 150;               // 每級增加的 ELO 分數（確保結果能被50整除）
 
 // 計算 ELO 評分的輔助函數
 static int calculateElo(int skillLevel) {
-    return ELO_BASE + static_cast<int>((skillLevel - 1) * ELO_PER_LEVEL);
+    return ELO_BASE + (skillLevel - 1) * ELO_PER_LEVEL;
 }
 
 // 獲取面板的實際寬度，如果尚未渲染則使用後備值的輔助函數
@@ -1991,13 +1991,73 @@ void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
     connect(m_incrementSlider, &QSlider::valueChanged, this, &Qt_Chess::onIncrementChanged);
     timeControlLayout->addWidget(m_incrementSlider);
 
+    // 對弈模式 - 直接接在時間控制下方（同一個群組框內）
+    QLabel* gameModeLabel = new QLabel("對弈模式:", this);
+    gameModeLabel->setFont(labelFont);
+    timeControlLayout->addWidget(gameModeLabel);
+    
+    // 使用按鈕選擇雙人或電腦對弈
+    QHBoxLayout* gameModeButtonsLayout = new QHBoxLayout();
+    m_gameModeButtonGroup = new QButtonGroup(this);
+    
+    m_humanVsHumanRadio = new QRadioButton("雙人", this);
+    m_humanVsHumanRadio->setFont(labelFont);
+    m_humanVsHumanRadio->setChecked(true);
+    m_gameModeButtonGroup->addButton(m_humanVsHumanRadio, static_cast<int>(GameMode::HumanVsHuman));
+    gameModeButtonsLayout->addWidget(m_humanVsHumanRadio);
+    
+    m_humanVsComputerRadio = new QRadioButton("電腦（執白）", this);
+    m_humanVsComputerRadio->setFont(labelFont);
+    m_gameModeButtonGroup->addButton(m_humanVsComputerRadio, static_cast<int>(GameMode::HumanVsComputer));
+    gameModeButtonsLayout->addWidget(m_humanVsComputerRadio);
+    
+    m_computerVsHumanRadio = new QRadioButton("電腦（執黑）", this);
+    m_computerVsHumanRadio->setFont(labelFont);
+    m_gameModeButtonGroup->addButton(m_computerVsHumanRadio, static_cast<int>(GameMode::ComputerVsHuman));
+    gameModeButtonsLayout->addWidget(m_computerVsHumanRadio);
+    
+    connect(m_gameModeButtonGroup, &QButtonGroup::idClicked,
+            this, &Qt_Chess::onGameModeChanged);
+    timeControlLayout->addLayout(gameModeButtonsLayout);
+    
+    // 難度設定
+    m_difficultyLabel = new QLabel("電腦難度:", this);
+    m_difficultyLabel->setFont(labelFont);
+    timeControlLayout->addWidget(m_difficultyLabel);
+    
+    // 初始值為 10，對應 ELO 評分使用 calculateElo 計算
+    m_difficultyValueLabel = new QLabel(QString("ELO %1").arg(calculateElo(10)), this);
+    m_difficultyValueLabel->setFont(labelFont);
+    m_difficultyValueLabel->setAlignment(Qt::AlignCenter);
+    timeControlLayout->addWidget(m_difficultyValueLabel);
+    
+    m_difficultySlider = new QSlider(Qt::Horizontal, this);
+    m_difficultySlider->setMinimum(1);
+    m_difficultySlider->setMaximum(20);
+    m_difficultySlider->setValue(10);
+    m_difficultySlider->setTickPosition(QSlider::TicksBelow);
+    m_difficultySlider->setTickInterval(1);
+    connect(m_difficultySlider, &QSlider::valueChanged, this, &Qt_Chess::onDifficultyChanged);
+    timeControlLayout->addWidget(m_difficultySlider);
+    
+    // 電腦思考中的提示標籤（初始隱藏）
+    m_thinkingLabel = new QLabel("電腦思考中...", this);
+    m_thinkingLabel->setFont(labelFont);
+    m_thinkingLabel->setAlignment(Qt::AlignCenter);
+    m_thinkingLabel->setStyleSheet("QLabel { color: #FF6B6B; font-weight: bold; }");
+    m_thinkingLabel->hide();
+    timeControlLayout->addWidget(m_thinkingLabel);
+    
+    // 根據初始模式設定難度控制的可見性
+    bool isVsComputer = (m_gameModeButtonGroup->checkedId() != static_cast<int>(GameMode::HumanVsHuman));
+    m_difficultyLabel->setVisible(isVsComputer);
+    m_difficultyValueLabel->setVisible(isVsComputer);
+    m_difficultySlider->setVisible(isVsComputer);
+
     // 添加伸展以填充群組框中的剩餘空間
     timeControlLayout->addStretch();
 
     timeControlPanelLayout->addWidget(timeControlGroup, 1);
-    
-    // 遊戲模式群組框（電腦對弈設定）- 放在時間控制下方
-    setupEngineUI(timeControlPanelLayout);
 
     // 開始 button - placed at the bottom of the time control panel, outside the group box
     m_startButton = new QPushButton("開始", this);
@@ -2955,70 +3015,10 @@ void Qt_Chess::restoreBoardState() {
 }
 
 // 電腦對弈功能實現
+// 注意：setupEngineUI 的功能已整合到 setupTimeControlUI 中
 void Qt_Chess::setupEngineUI(QVBoxLayout* layout) {
-    QGroupBox* engineGroup = new QGroupBox("對弈模式", this);
-    QVBoxLayout* engineLayout = new QVBoxLayout(engineGroup);
-    
-    QFont labelFont;
-    labelFont.setPointSize(10);
-    
-    // 遊戲模式選擇 - 使用單選按鈕替代下拉選單
-    m_gameModeButtonGroup = new QButtonGroup(this);
-    
-    m_humanVsHumanRadio = new QRadioButton("雙人對弈", this);
-    m_humanVsHumanRadio->setFont(labelFont);
-    m_humanVsHumanRadio->setChecked(true);
-    m_gameModeButtonGroup->addButton(m_humanVsHumanRadio, static_cast<int>(GameMode::HumanVsHuman));
-    engineLayout->addWidget(m_humanVsHumanRadio);
-    
-    m_humanVsComputerRadio = new QRadioButton("人機對弈（執白）", this);
-    m_humanVsComputerRadio->setFont(labelFont);
-    m_gameModeButtonGroup->addButton(m_humanVsComputerRadio, static_cast<int>(GameMode::HumanVsComputer));
-    engineLayout->addWidget(m_humanVsComputerRadio);
-    
-    m_computerVsHumanRadio = new QRadioButton("人機對弈（執黑）", this);
-    m_computerVsHumanRadio->setFont(labelFont);
-    m_gameModeButtonGroup->addButton(m_computerVsHumanRadio, static_cast<int>(GameMode::ComputerVsHuman));
-    engineLayout->addWidget(m_computerVsHumanRadio);
-    
-    connect(m_gameModeButtonGroup, &QButtonGroup::idClicked,
-            this, &Qt_Chess::onGameModeChanged);
-    
-    // 難度設定
-    m_difficultyLabel = new QLabel("電腦難度:", this);
-    m_difficultyLabel->setFont(labelFont);
-    engineLayout->addWidget(m_difficultyLabel);
-    
-    // 初始值為 10，對應 ELO 評分使用 calculateElo 計算
-    m_difficultyValueLabel = new QLabel(QString("ELO %1").arg(calculateElo(10)), this);
-    m_difficultyValueLabel->setFont(labelFont);
-    m_difficultyValueLabel->setAlignment(Qt::AlignCenter);
-    engineLayout->addWidget(m_difficultyValueLabel);
-    
-    m_difficultySlider = new QSlider(Qt::Horizontal, this);
-    m_difficultySlider->setMinimum(1);
-    m_difficultySlider->setMaximum(20);
-    m_difficultySlider->setValue(10);
-    m_difficultySlider->setTickPosition(QSlider::TicksBelow);
-    m_difficultySlider->setTickInterval(1);
-    connect(m_difficultySlider, &QSlider::valueChanged, this, &Qt_Chess::onDifficultyChanged);
-    engineLayout->addWidget(m_difficultySlider);
-    
-    // 電腦思考中的提示標籤（初始隱藏）
-    m_thinkingLabel = new QLabel("電腦思考中...", this);
-    m_thinkingLabel->setFont(labelFont);
-    m_thinkingLabel->setAlignment(Qt::AlignCenter);
-    m_thinkingLabel->setStyleSheet("QLabel { color: #FF6B6B; font-weight: bold; }");
-    m_thinkingLabel->hide();
-    engineLayout->addWidget(m_thinkingLabel);
-    
-    // 根據初始模式設定難度控制的可見性
-    bool isVsComputer = (m_gameModeButtonGroup->checkedId() != static_cast<int>(GameMode::HumanVsHuman));
-    m_difficultyLabel->setVisible(isVsComputer);
-    m_difficultyValueLabel->setVisible(isVsComputer);
-    m_difficultySlider->setVisible(isVsComputer);
-    
-    layout->addWidget(engineGroup, 0);
+    Q_UNUSED(layout);
+    // 此函數已被棄用，所有遊戲模式 UI 現在都在 setupTimeControlUI 中設置
 }
 
 void Qt_Chess::initializeEngine() {
