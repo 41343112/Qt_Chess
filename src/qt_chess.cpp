@@ -210,6 +210,11 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_difficultyLabel(nullptr)
     , m_difficultyValueLabel(nullptr)
     , m_thinkingLabel(nullptr)
+    , m_animationOverlay(nullptr)
+    , m_animationLabel(nullptr)
+    , m_animationTimer(nullptr)
+    , m_animationStep(0)
+    , m_pendingGameStart(false)
 {
     ui->setupUi(this);
     setWindowTitle("♔ 國際象棋 - 科技對弈 ♚");
@@ -1093,10 +1098,9 @@ void Qt_Chess::onStartButtonClicked() {
         // 當遊戲開始時，將右側伸展設為 1
         setRightPanelStretch(1);
         
-        // 如果是電腦先走（玩家執黑），請求引擎走棋
-        if (isComputerTurn()) {
-            QTimer::singleShot(500, this, &Qt_Chess::requestEngineMove);
-        }
+        // 播放遊戲開始動畫
+        m_pendingGameStart = isComputerTurn();  // 標記是否需要在動畫後請求引擎走棋
+        playGameStartAnimation();
     } else if (!m_timeControlEnabled && !m_gameStarted) {
         // 重置棋盤到初始狀態（即使沒有時間控制）
         resetBoardState();
@@ -1134,10 +1138,9 @@ void Qt_Chess::onStartButtonClicked() {
         // 當遊戲開始時，將右側伸展設為 1
         setRightPanelStretch(1);
         
-        // 如果是電腦先走（玩家執黑），請求引擎走棋
-        if (isComputerTurn()) {
-            QTimer::singleShot(500, this, &Qt_Chess::requestEngineMove);
-        }
+        // 播放遊戲開始動畫
+        m_pendingGameStart = isComputerTurn();  // 標記是否需要在動畫後請求引擎走棋
+        playGameStartAnimation();
     }
 }
 
@@ -4190,4 +4193,135 @@ void Qt_Chess::applyModernStylesheet() {
           THEME_ACCENT_PRIMARY, THEME_BORDER, THEME_ACCENT_SECONDARY, THEME_ACCENT_SUCCESS);
     
     setStyleSheet(styleSheet);
+}
+
+void Qt_Chess::playGameStartAnimation() {
+    // 創建動畫疊加層
+    if (!m_animationOverlay) {
+        m_animationOverlay = new QWidget(this);
+        m_animationOverlay->setObjectName("animationOverlay");
+    }
+    
+    // 設置疊加層覆蓋整個視窗
+    m_animationOverlay->setGeometry(rect());
+    m_animationOverlay->setStyleSheet(
+        "QWidget#animationOverlay { "
+        "  background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, "
+        "    stop:0 rgba(26, 26, 46, 0.95), "
+        "    stop:0.5 rgba(15, 52, 96, 0.95), "
+        "    stop:1 rgba(26, 26, 46, 0.95)); "
+        "}"
+    );
+    
+    // 創建動畫標籤
+    if (!m_animationLabel) {
+        m_animationLabel = new QLabel(m_animationOverlay);
+        m_animationLabel->setAlignment(Qt::AlignCenter);
+    }
+    
+    // 設置標籤位置和大小
+    m_animationLabel->setGeometry(0, 0, m_animationOverlay->width(), m_animationOverlay->height());
+    
+    // 初始化動畫計時器
+    if (!m_animationTimer) {
+        m_animationTimer = new QTimer(this);
+        connect(m_animationTimer, &QTimer::timeout, this, &Qt_Chess::onAnimationStep);
+    }
+    
+    // 開始動畫
+    m_animationStep = 0;
+    m_animationOverlay->raise();
+    m_animationOverlay->show();
+    
+    // 顯示第一幀
+    onAnimationStep();
+    
+    // 啟動動畫計時器（每 800ms 更新一次）
+    m_animationTimer->start(800);
+}
+
+void Qt_Chess::onAnimationStep() {
+    if (!m_animationLabel || !m_animationOverlay) return;
+    
+    QString text;
+    QString style;
+    
+    // 根據動畫步驟設置不同的文字和樣式
+    switch (m_animationStep) {
+        case 0:
+            text = "3";
+            style = QString(
+                "QLabel { "
+                "  color: %1; "
+                "  font-size: 120px; "
+                "  font-weight: bold; "
+                "  font-family: 'Arial', sans-serif; "
+                "  background: transparent; "
+                "}"
+            ).arg(THEME_ACCENT_PRIMARY);
+            break;
+        case 1:
+            text = "2";
+            style = QString(
+                "QLabel { "
+                "  color: %1; "
+                "  font-size: 120px; "
+                "  font-weight: bold; "
+                "  font-family: 'Arial', sans-serif; "
+                "  background: transparent; "
+                "}"
+            ).arg(THEME_ACCENT_WARNING);
+            break;
+        case 2:
+            text = "1";
+            style = QString(
+                "QLabel { "
+                "  color: %1; "
+                "  font-size: 120px; "
+                "  font-weight: bold; "
+                "  font-family: 'Arial', sans-serif; "
+                "  background: transparent; "
+                "}"
+            ).arg(THEME_ACCENT_SECONDARY);
+            break;
+        case 3:
+            text = "⚔ 對弈開始 ⚔";
+            style = QString(
+                "QLabel { "
+                "  color: %1; "
+                "  font-size: 48px; "
+                "  font-weight: bold; "
+                "  font-family: 'Arial', sans-serif; "
+                "  background: transparent; "
+                "}"
+            ).arg(THEME_ACCENT_SUCCESS);
+            break;
+        default:
+            // 動畫結束
+            m_animationTimer->stop();
+            finishGameStartAnimation();
+            return;
+    }
+    
+    m_animationLabel->setText(text);
+    m_animationLabel->setStyleSheet(style);
+    m_animationStep++;
+}
+
+void Qt_Chess::finishGameStartAnimation() {
+    // 隱藏動畫疊加層
+    if (m_animationOverlay) {
+        m_animationOverlay->hide();
+    }
+    
+    // 如果有待處理的遊戲開始，現在執行它
+    if (m_pendingGameStart) {
+        m_pendingGameStart = false;
+        
+        // 執行實際的遊戲開始邏輯（在動畫期間被延遲）
+        // 如果是電腦先走（玩家執黑），請求引擎走棋
+        if (isComputerTurn()) {
+            QTimer::singleShot(300, this, &Qt_Chess::requestEngineMove);
+        }
+    }
 }

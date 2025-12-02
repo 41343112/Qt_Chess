@@ -283,5 +283,17 @@ private:
     QString getEnginePath() const;
     void updateGameModeUI();             // 更新遊戲模式 UI 狀態
     void applyModernStylesheet();        // 應用現代科技風格全局樣式表
+    
+    // 遊戲開始動畫
+    void playGameStartAnimation();       // 播放遊戲開始動畫
+    void onAnimationStep();              // 動畫步驟更新
+    void finishGameStartAnimation();     // 動畫完成後的處理
+    
+    // 動畫相關成員
+    QWidget* m_animationOverlay;         // 動畫疊加層
+    QLabel* m_animationLabel;            // 動畫文字標籤
+    QTimer* m_animationTimer;            // 動畫計時器
+    int m_animationStep;                 // 動畫當前步驟
+    bool m_pendingGameStart;             // 是否有待處理的遊戲開始
 };
 #endif // QT_CHESS_H
