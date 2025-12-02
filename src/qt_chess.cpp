@@ -548,6 +548,11 @@ void Qt_Chess::setupMenuBar() {
     QAction* flipBoardAction = new QAction("反轉棋盤", this);
     connect(flipBoardAction, &QAction::triggered, this, &Qt_Chess::onFlipBoardClicked);
     settingsMenu->addAction(flipBoardAction);
+
+    // 切換全螢幕動作
+    QAction* toggleFullScreenAction = new QAction("切換全螢幕", this);
+    connect(toggleFullScreenAction, &QAction::triggered, this, &Qt_Chess::onToggleFullScreenClicked);
+    settingsMenu->addAction(toggleFullScreenAction);
 }
 
 void Qt_Chess::updateSquareColor(int displayRow, int displayCol) {
@@ -1982,6 +1987,14 @@ void Qt_Chess::onFlipBoardClicked() {
     m_isBoardFlipped = !m_isBoardFlipped;
     saveBoardFlipSettings();
     updateBoard();
+}
+
+void Qt_Chess::onToggleFullScreenClicked() {
+    if (isFullScreen()) {
+        showNormal();
+    } else {
+        showFullScreen();
+    }
 }
 
 void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {

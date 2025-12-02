@@ -59,6 +59,7 @@ private slots:
     void onPieceIconSettingsClicked();
     void onBoardColorSettingsClicked();
     void onFlipBoardClicked();
+    void onToggleFullScreenClicked();
     void onStartButtonClicked();
     void onExportPGNClicked();
     void onCopyPGNClicked();
