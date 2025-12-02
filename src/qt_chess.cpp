@@ -667,6 +667,8 @@ void Qt_Chess::clearHighlights() {
         }
     }
 
+    // 重新應用上一步移動的高亮
+    applyLastMoveHighlight();
     // 如果被將軍，重新應用國王的紅色背景
     applyCheckHighlight();
 }
