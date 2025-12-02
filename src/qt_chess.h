@@ -282,5 +282,6 @@ private:
     void saveEngineSettings();
     QString getEnginePath() const;
     void updateGameModeUI();             // 更新遊戲模式 UI 狀態
+    void applyModernStylesheet();        // 應用現代科技風格全局樣式表
 };
 #endif // QT_CHESS_H

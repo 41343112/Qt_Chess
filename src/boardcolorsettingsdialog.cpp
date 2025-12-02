@@ -481,9 +481,10 @@ void BoardColorSettingsDialog::setSettings(const BoardColorSettings& settings) {
 
 BoardColorSettingsDialog::BoardColorSettings BoardColorSettingsDialog::getDefaultSettings() {
     BoardColorSettings settings;
-    settings.lightSquareColor = QColor("#F0D9B5");  // 經典淺米色
-    settings.darkSquareColor = QColor("#B58863");   // 經典棕色
-    settings.scheme = ColorScheme::Classic;
+    // 現代科技風格 - 深色系配色
+    settings.lightSquareColor = QColor("#3D5A80");  // 科技藍灰色（淺色格）
+    settings.darkSquareColor = QColor("#1A2D42");   // 深海藍色（深色格）
+    settings.scheme = ColorScheme::OceanBlue;  // 使用海洋藍作為預設
     return settings;
 }
 
@@ -517,8 +518,9 @@ BoardColorSettingsDialog::BoardColorSettings BoardColorSettingsDialog::getPreset
             break;
             
         case ColorScheme::OceanBlue:
-            settings.lightSquareColor = QColor("#A8D8EA");  // 淺海藍色
-            settings.darkSquareColor = QColor("#2E5B6D");   // 深海藍色
+            // 現代科技風格 - 深色海洋藍
+            settings.lightSquareColor = QColor("#3D5A80");  // 科技藍灰色
+            settings.darkSquareColor = QColor("#1A2D42");   // 深海藍色
             break;
             
         case ColorScheme::LightTheme:
@@ -533,9 +535,9 @@ BoardColorSettingsDialog::BoardColorSettings BoardColorSettingsDialog::getPreset
         case ColorScheme::Custom5:
         case ColorScheme::Custom6:
         case ColorScheme::Custom7:
-            // 對於自訂插槽，返回預設顏色作為佔位符
-            settings.lightSquareColor = QColor("#F0D9B5");
-            settings.darkSquareColor = QColor("#B58863");
+            // 對於自訂插槽，返回現代科技風格預設顏色作為佔位符
+            settings.lightSquareColor = QColor("#3D5A80");
+            settings.darkSquareColor = QColor("#1A2D42");
             break;
     }
     
