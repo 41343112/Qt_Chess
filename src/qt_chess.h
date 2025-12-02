@@ -102,6 +102,10 @@ private:
     // 棋盤翻轉狀態
     bool m_isBoardFlipped;
     
+    // 上一步移動的高亮
+    QPoint m_lastMoveFrom;
+    QPoint m_lastMoveTo;
+    
     // 時間控制
     QSlider* m_whiteTimeLimitSlider;  // 白方時間的獨立滑桿
     QLabel* m_whiteTimeLimitLabel;
@@ -186,6 +190,7 @@ private:
     void highlightValidMoves();
     void clearHighlights();
     void applyCheckHighlight(const QPoint& excludeSquare = QPoint(-1, -1));
+    void applyLastMoveHighlight();
     void restorePieceToSquare(const QPoint& square);
     PieceType showPromotionDialog(PieceColor color);
     QPoint getSquareAtPosition(const QPoint& pos) const;
