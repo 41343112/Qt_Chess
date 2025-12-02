@@ -1561,6 +1561,15 @@ void Qt_Chess::resizeEvent(QResizeEvent *event) {
     if (m_pieceSelected) {
         highlightValidMoves();
     }
+    
+    // 如果動畫疊加層正在顯示，更新其大小以匹配新視窗大小
+    if (m_animationOverlay && m_animationOverlay->isVisible()) {
+        QRect windowRect = rect();
+        m_animationOverlay->setGeometry(windowRect);
+        if (m_animationLabel) {
+            m_animationLabel->setGeometry(0, 0, windowRect.width(), windowRect.height());
+        }
+    }
 }
 
 void Qt_Chess::keyPressEvent(QKeyEvent *event) {
@@ -4196,37 +4205,36 @@ void Qt_Chess::applyModernStylesheet() {
 }
 
 void Qt_Chess::playGameStartAnimation() {
-    // 創建動畫疊加層
+    // 創建動畫疊加層（如果尚未創建）
     if (!m_animationOverlay) {
         m_animationOverlay = new QWidget(this);
         m_animationOverlay->setObjectName("animationOverlay");
+        m_animationOverlay->setStyleSheet(
+            "QWidget#animationOverlay { "
+            "  background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, "
+            "    stop:0 rgba(26, 26, 46, 0.95), "
+            "    stop:0.5 rgba(15, 52, 96, 0.95), "
+            "    stop:1 rgba(26, 26, 46, 0.95)); "
+            "}"
+        );
     }
     
-    // 設置疊加層覆蓋整個視窗
-    m_animationOverlay->setGeometry(rect());
-    m_animationOverlay->setStyleSheet(
-        "QWidget#animationOverlay { "
-        "  background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, "
-        "    stop:0 rgba(26, 26, 46, 0.95), "
-        "    stop:0.5 rgba(15, 52, 96, 0.95), "
-        "    stop:1 rgba(26, 26, 46, 0.95)); "
-        "}"
-    );
-    
-    // 創建動畫標籤
+    // 創建動畫標籤（如果尚未創建）
     if (!m_animationLabel) {
         m_animationLabel = new QLabel(m_animationOverlay);
         m_animationLabel->setAlignment(Qt::AlignCenter);
     }
     
-    // 設置標籤位置和大小
-    m_animationLabel->setGeometry(0, 0, m_animationOverlay->width(), m_animationOverlay->height());
-    
-    // 初始化動畫計時器
+    // 初始化動畫計時器（只在構造時連接一次）
     if (!m_animationTimer) {
         m_animationTimer = new QTimer(this);
         connect(m_animationTimer, &QTimer::timeout, this, &Qt_Chess::onAnimationStep);
     }
+    
+    // 每次播放動畫時更新疊加層大小以匹配當前視窗大小
+    QRect windowRect = rect();
+    m_animationOverlay->setGeometry(windowRect);
+    m_animationLabel->setGeometry(0, 0, windowRect.width(), windowRect.height());
     
     // 開始動畫
     m_animationStep = 0;
