@@ -50,7 +50,7 @@ const int BOARD_CONTAINER_MARGIN = 0;  // 棋盤容器每側的邊距（已禁�
 
 // UI 元素的縮放常數
 const int MIN_SQUARE_SIZE = 40;        // 棋盤格子的最小大小
-const int MAX_SQUARE_SIZE = 170;       // 棋盤格子的最大大小
+const int MAX_SQUARE_SIZE = 150;       // 棋盤格子的最大大小
 const int MIN_UI_FONT_SIZE = 10;       // UI 元素的最小字體大小
 const int MAX_UI_FONT_SIZE = 20;       // UI 元素的最大字體大小
 const int UI_FONT_SCALE_DIVISOR = 5;   // 根據格子大小縮放 UI 字體的除數
