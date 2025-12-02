@@ -42,6 +42,10 @@ const int MAX_SLIDER_POSITION = 31; // 滑桿範圍：0（無限制）、1（30�
 const int MAX_MINUTES = 30; // 最大時間限制（分鐘）
 const QString GAME_ENDED_TEXT = "遊戲結束"; // 遊戲結束時顯示的文字
 
+// 上一步移動高亮顏色
+const QString LAST_MOVE_LIGHT_COLOR = "#F7F769";  // 淺色格子的高亮（亮黃色）
+const QString LAST_MOVE_DARK_COLOR = "#BACA2B";   // 深色格子的高亮（橄欖黃色）
+
 // 視窗大小的佈局常數
 const int PANEL_SPACING = 10;          // 面板之間的間距
 const int BASE_MARGINS =   20;           // 基本佈局邊距（不包括棋盤容器的 2*BOARD_CONTAINER_MARGIN）
@@ -50,7 +54,7 @@ const int BOARD_CONTAINER_MARGIN = 0;  // 棋盤容器每側的邊距（已禁�
 
 // UI 元素的縮放常數
 const int MIN_SQUARE_SIZE = 40;        // 棋盤格子的最小大小
-const int MAX_SQUARE_SIZE = 170;       // 棋盤格子的最大大小
+const int MAX_SQUARE_SIZE = 150;       // 棋盤格子的最大大小
 const int MIN_UI_FONT_SIZE = 10;       // UI 元素的最小字體大小
 const int MAX_UI_FONT_SIZE = 20;       // UI 元素的最大字體大小
 const int UI_FONT_SCALE_DIVISOR = 5;   // 根據格子大小縮放 UI 字體的除數
@@ -134,6 +138,8 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_menuBar(nullptr)
     , m_gameStarted(false)
     , m_isBoardFlipped(false)
+    , m_lastMoveFrom(-1, -1)
+    , m_lastMoveTo(-1, -1)
     , m_whiteTimeLimitSlider(nullptr)
     , m_whiteTimeLimitLabel(nullptr)
     , m_whiteTimeLimitTitleLabel(nullptr)
@@ -548,6 +554,11 @@ void Qt_Chess::setupMenuBar() {
     QAction* flipBoardAction = new QAction("反轉棋盤", this);
     connect(flipBoardAction, &QAction::triggered, this, &Qt_Chess::onFlipBoardClicked);
     settingsMenu->addAction(flipBoardAction);
+
+    // 切換全螢幕動作
+    QAction* toggleFullScreenAction = new QAction("切換全螢幕", this);
+    connect(toggleFullScreenAction, &QAction::triggered, this, &Qt_Chess::onToggleFullScreenClicked);
+    settingsMenu->addAction(toggleFullScreenAction);
 }
 
 void Qt_Chess::updateSquareColor(int displayRow, int displayCol) {
@@ -572,6 +583,8 @@ void Qt_Chess::updateBoard() {
         }
     }
 
+    // 高亮上一步移動的格子
+    applyLastMoveHighlight();
     // 如果被將軍，將國王高亮為紅色
     applyCheckHighlight();
     // 如果選擇了棋子，重新應用高亮
@@ -622,6 +635,31 @@ void Qt_Chess::applyCheckHighlight(const QPoint& excludeSquare) {
     }
 }
 
+void Qt_Chess::applyLastMoveHighlight() {
+    // 如果沒有上一步移動，則不高亮
+    if (m_lastMoveFrom.x() < 0 || m_lastMoveTo.x() < 0) {
+        return;
+    }
+    
+    // 高亮「從」格子（黃色）
+    int fromDisplayRow = getDisplayRow(m_lastMoveFrom.y());
+    int fromDisplayCol = getDisplayCol(m_lastMoveFrom.x());
+    bool fromIsLight = (m_lastMoveFrom.y() + m_lastMoveFrom.x()) % 2 == 0;
+    QString fromColor = fromIsLight ? LAST_MOVE_LIGHT_COLOR : LAST_MOVE_DARK_COLOR;
+    m_squares[fromDisplayRow][fromDisplayCol]->setStyleSheet(
+        QString("QPushButton { background-color: %1; border: 1px solid #333; }").arg(fromColor)
+    );
+    
+    // 高亮「到」格子（黃色）
+    int toDisplayRow = getDisplayRow(m_lastMoveTo.y());
+    int toDisplayCol = getDisplayCol(m_lastMoveTo.x());
+    bool toIsLight = (m_lastMoveTo.y() + m_lastMoveTo.x()) % 2 == 0;
+    QString toColor = toIsLight ? LAST_MOVE_LIGHT_COLOR : LAST_MOVE_DARK_COLOR;
+    m_squares[toDisplayRow][toDisplayCol]->setStyleSheet(
+        QString("QPushButton { background-color: %1; border: 1px solid #333; }").arg(toColor)
+    );
+}
+
 void Qt_Chess::clearHighlights() {
     for (int row = 0; row < 8; ++row) {
         for (int col = 0; col < 8; ++col) {
@@ -629,6 +667,8 @@ void Qt_Chess::clearHighlights() {
         }
     }
 
+    // 重新應用上一步移動的高亮
+    applyLastMoveHighlight();
     // 如果被將軍，重新應用國王的紅色背景
     applyCheckHighlight();
 }
@@ -715,6 +755,10 @@ void Qt_Chess::onSquareClicked(int displayRow, int displayCol) {
 
         // 嘗試移動選中的棋子
         if (m_chessBoard.movePiece(m_selectedSquare, clickedSquare)) {
+            // 記錄上一步移動用於高亮顯示
+            m_lastMoveFrom = m_selectedSquare;
+            m_lastMoveTo = clickedSquare;
+            
             m_pieceSelected = false;
             
             // 記錄 UCI 格式的移動
@@ -781,6 +825,10 @@ void Qt_Chess::onNewGameClicked() {
     m_pieceSelected = false;
     m_gameStarted = false;  // 重置遊戲開始狀態
     m_uciMoveHistory.clear();  // 清空 UCI 移動歷史
+    
+    // 重置上一步移動高亮
+    m_lastMoveFrom = QPoint(-1, -1);
+    m_lastMoveTo = QPoint(-1, -1);
 
     // 重置時間控制
     stopTimer();
@@ -1326,6 +1374,10 @@ void Qt_Chess::mouseReleaseEvent(QMouseEvent *event) {
 
             // 嘗試移動棋子
             if (m_chessBoard.movePiece(m_dragStartSquare, logicalDropSquare)) {
+                // 記錄上一步移動用於高亮顯示
+                m_lastMoveFrom = m_dragStartSquare;
+                m_lastMoveTo = logicalDropSquare;
+                
                 m_pieceSelected = false;
                 
                 // 記錄 UCI 格式的移動
@@ -1425,6 +1477,15 @@ void Qt_Chess::resizeEvent(QResizeEvent *event) {
 }
 
 void Qt_Chess::keyPressEvent(QKeyEvent *event) {
+    // ESC 鍵：退出全螢幕
+    if (event->key() == Qt::Key_Escape) {
+        if (isFullScreen()) {
+            showNormal();
+            event->accept();
+            return;
+        }
+    }
+
     // 檢查是否在回放模式或有棋譜可回放
     const std::vector<MoveRecord>& moveHistory = m_chessBoard.getMoveHistory();
     if (moveHistory.empty()) {
@@ -1982,6 +2043,14 @@ void Qt_Chess::onFlipBoardClicked() {
     m_isBoardFlipped = !m_isBoardFlipped;
     saveBoardFlipSettings();
     updateBoard();
+}
+
+void Qt_Chess::onToggleFullScreenClicked() {
+    if (isFullScreen()) {
+        showNormal();
+    } else {
+        showFullScreen();
+    }
 }
 
 void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
@@ -2732,6 +2801,11 @@ void Qt_Chess::resetBoardState() {
     // 重置棋盤到初始狀態
     m_chessBoard.initializeBoard();
     m_pieceSelected = false;
+    
+    // 重置上一步移動高亮
+    m_lastMoveFrom = QPoint(-1, -1);
+    m_lastMoveTo = QPoint(-1, -1);
+    
     updateBoard();
     clearHighlights();
 }
@@ -3562,6 +3636,10 @@ void Qt_Chess::onEngineBestMove(const QString& move) {
     
     // 執行引擎的移動
     if (m_chessBoard.movePiece(from, to)) {
+        // 記錄上一步移動用於高亮顯示
+        m_lastMoveFrom = from;
+        m_lastMoveTo = to;
+        
         // 記錄 UCI 格式的移動
         m_uciMoveHistory.append(move);
         
