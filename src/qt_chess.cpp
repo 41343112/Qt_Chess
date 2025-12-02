@@ -342,7 +342,8 @@ void Qt_Chess::setupUI() {
 
     // 遊戲結束時對方的時間和吃子紀錄面板（棋盤上方，初始隱藏）
     m_topEndGamePanel = new QWidget(m_boardContainer);
-    m_topEndGamePanel->setFixedHeight(50);  // 固定高度，容納時間標籤（40px）加上邊距
+    m_topEndGamePanel->setMaximumHeight(50);  // 最大高度，容納時間標籤（40px）加上邊距
+    m_topEndGamePanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
     QHBoxLayout* topEndGameLayout = new QHBoxLayout(m_topEndGamePanel);
     topEndGameLayout->setContentsMargins(5, 5, 5, 5);
     topEndGameLayout->setSpacing(10);
@@ -397,7 +398,8 @@ void Qt_Chess::setupUI() {
 
     // 遊戲結束時我方的時間和吃子紀錄面板（棋盤下方，初始隱藏）
     m_bottomEndGamePanel = new QWidget(m_boardContainer);
-    m_bottomEndGamePanel->setFixedHeight(50);  // 固定高度，容納時間標籤（40px）加上邊距
+    m_bottomEndGamePanel->setMaximumHeight(50);  // 最大高度，容納時間標籤（40px）加上邊距
+    m_bottomEndGamePanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
     QHBoxLayout* bottomEndGameLayout = new QHBoxLayout(m_bottomEndGamePanel);
     bottomEndGameLayout->setContentsMargins(5, 5, 5, 5);
     bottomEndGameLayout->setSpacing(10);
