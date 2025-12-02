@@ -289,11 +289,20 @@ private:
     void onAnimationStep();              // 動畫步驟更新
     void finishGameStartAnimation();     // 動畫完成後的處理
     
+    // 應用程式啟動動畫
+    void playStartupAnimation();         // 播放啟動動畫
+    void onStartupAnimationStep();       // 啟動動畫步驟更新
+    void finishStartupAnimation();       // 啟動動畫完成後的處理
+    
     // 動畫相關成員
     QWidget* m_animationOverlay;         // 動畫疊加層
     QLabel* m_animationLabel;            // 動畫文字標籤
     QTimer* m_animationTimer;            // 動畫計時器
     int m_animationStep;                 // 動畫當前步驟
     bool m_pendingGameStart;             // 是否有待處理的遊戲開始
+    
+    // 啟動動畫相關成員
+    QTimer* m_startupAnimationTimer;     // 啟動動畫計時器
+    int m_startupAnimationStep;          // 啟動動畫當前步驟
 };
 #endif // QT_CHESS_H

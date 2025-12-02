@@ -215,6 +215,8 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_animationTimer(nullptr)
     , m_animationStep(0)
     , m_pendingGameStart(false)
+    , m_startupAnimationTimer(nullptr)
+    , m_startupAnimationStep(0)
 {
     ui->setupUi(this);
     setWindowTitle("♔ 國際象棋 - 科技對弈 ♚");
@@ -246,6 +248,9 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     updateTimeDisplays();
     updateReplayButtons();  // 設置回放按鈕初始狀態
     updateCapturedPiecesDisplay();  // 初始化被吃掉棋子顯示
+    
+    // 在視窗顯示後播放啟動動畫
+    QTimer::singleShot(100, this, &Qt_Chess::playStartupAnimation);
 }
 
 Qt_Chess::~Qt_Chess()
@@ -2846,38 +2851,65 @@ void Qt_Chess::restoreWidgetsFromGameEnd() {
     }
     
     // 將 widgets 重新設定父物件並添加到右側佈局
-    // 按原始順序：對方吃子紀錄 -> 黑方時間 -> 白方時間 -> 我方吃子紀錄
+    // 順序根據 m_isBoardFlipped 調整：對方在上方，我方在下方
     
-    if (m_capturedWhitePanel) {
-        m_capturedWhitePanel->setParent(m_rightTimePanel);
-        rightLayout->addWidget(m_capturedWhitePanel, 1);
+    // 根據棋盤翻轉狀態決定上下方的吃子面板和時間標籤
+    QWidget* topCapturedPanel = nullptr;
+    QProgressBar* topProgressBar = nullptr;
+    QLabel* topTimeLabel = nullptr;
+    QLabel* bottomTimeLabel = nullptr;
+    QProgressBar* bottomProgressBar = nullptr;
+    QWidget* bottomCapturedPanel = nullptr;
+    
+    if (m_isBoardFlipped) {
+        // 玩家執黑：對方（白方）在上方，我方（黑方）在下方
+        topCapturedPanel = m_capturedBlackPanel;    // 對方（白方）吃掉的我方棋子（黑子）
+        topProgressBar = m_whiteTimeProgressBar;
+        topTimeLabel = m_whiteTimeLabel;
+        bottomTimeLabel = m_blackTimeLabel;
+        bottomProgressBar = m_blackTimeProgressBar;
+        bottomCapturedPanel = m_capturedWhitePanel; // 我方（黑方）吃掉的對方棋子（白子）
+    } else {
+        // 玩家執白：對方（黑方）在上方，我方（白方）在下方
+        topCapturedPanel = m_capturedWhitePanel;    // 對方（黑方）吃掉的我方棋子（白子）
+        topProgressBar = m_blackTimeProgressBar;
+        topTimeLabel = m_blackTimeLabel;
+        bottomTimeLabel = m_whiteTimeLabel;
+        bottomProgressBar = m_whiteTimeProgressBar;
+        bottomCapturedPanel = m_capturedBlackPanel; // 我方（白方）吃掉的對方棋子（黑子）
     }
     
-    if (m_blackTimeProgressBar) {
-        m_blackTimeProgressBar->setParent(m_rightTimePanel);
-        rightLayout->addWidget(m_blackTimeProgressBar, 0, Qt::AlignCenter);
+    // 按順序添加：對方吃子紀錄 -> 對方時間進度條 -> 對方時間 -> 我方時間 -> 我方時間進度條 -> 我方吃子紀錄
+    if (topCapturedPanel) {
+        topCapturedPanel->setParent(m_rightTimePanel);
+        rightLayout->addWidget(topCapturedPanel, 1);
     }
     
-    if (m_blackTimeLabel) {
-        m_blackTimeLabel->setParent(m_rightTimePanel);
-        m_blackTimeLabel->setAlignment(Qt::AlignCenter);
-        rightLayout->addWidget(m_blackTimeLabel, 0, Qt::AlignCenter);
+    if (topProgressBar) {
+        topProgressBar->setParent(m_rightTimePanel);
+        rightLayout->addWidget(topProgressBar, 0, Qt::AlignCenter);
     }
     
-    if (m_whiteTimeLabel) {
-        m_whiteTimeLabel->setParent(m_rightTimePanel);
-        m_whiteTimeLabel->setAlignment(Qt::AlignCenter);
-        rightLayout->addWidget(m_whiteTimeLabel, 0, Qt::AlignCenter);
+    if (topTimeLabel) {
+        topTimeLabel->setParent(m_rightTimePanel);
+        topTimeLabel->setAlignment(Qt::AlignCenter);
+        rightLayout->addWidget(topTimeLabel, 0, Qt::AlignCenter);
     }
     
-    if (m_whiteTimeProgressBar) {
-        m_whiteTimeProgressBar->setParent(m_rightTimePanel);
-        rightLayout->addWidget(m_whiteTimeProgressBar, 0, Qt::AlignCenter);
+    if (bottomTimeLabel) {
+        bottomTimeLabel->setParent(m_rightTimePanel);
+        bottomTimeLabel->setAlignment(Qt::AlignCenter);
+        rightLayout->addWidget(bottomTimeLabel, 0, Qt::AlignCenter);
     }
     
-    if (m_capturedBlackPanel) {
-        m_capturedBlackPanel->setParent(m_rightTimePanel);
-        rightLayout->addWidget(m_capturedBlackPanel, 1);
+    if (bottomProgressBar) {
+        bottomProgressBar->setParent(m_rightTimePanel);
+        rightLayout->addWidget(bottomProgressBar, 0, Qt::AlignCenter);
+    }
+    
+    if (bottomCapturedPanel) {
+        bottomCapturedPanel->setParent(m_rightTimePanel);
+        rightLayout->addWidget(bottomCapturedPanel, 1);
     }
     
     // 更新被吃掉的棋子顯示
@@ -4313,5 +4345,112 @@ void Qt_Chess::finishGameStartAnimation() {
         if (isComputerTurn()) {
             QTimer::singleShot(300, this, &Qt_Chess::requestEngineMove);
         }
+    }
+}
+
+void Qt_Chess::playStartupAnimation() {
+    // 創建動畫疊加層（如果尚未創建）
+    if (!m_animationOverlay) {
+        m_animationOverlay = new QWidget(this);
+        m_animationOverlay->setObjectName("animationOverlay");
+        m_animationOverlay->setStyleSheet(
+            "QWidget#animationOverlay { "
+            "  background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, "
+            "    stop:0 rgba(26, 26, 46, 0.98), "
+            "    stop:0.5 rgba(15, 52, 96, 0.98), "
+            "    stop:1 rgba(26, 26, 46, 0.98)); "
+            "}"
+        );
+    }
+    
+    // 創建動畫標籤（如果尚未創建）
+    if (!m_animationLabel) {
+        m_animationLabel = new QLabel(m_animationOverlay);
+        m_animationLabel->setAlignment(Qt::AlignCenter);
+    }
+    
+    // 初始化啟動動畫計時器（只在構造時連接一次）
+    if (!m_startupAnimationTimer) {
+        m_startupAnimationTimer = new QTimer(this);
+        connect(m_startupAnimationTimer, &QTimer::timeout, this, &Qt_Chess::onStartupAnimationStep);
+    }
+    
+    // 每次播放動畫時更新疊加層大小以匹配當前視窗大小
+    QRect windowRect = rect();
+    m_animationOverlay->setGeometry(windowRect);
+    m_animationLabel->setGeometry(0, 0, windowRect.width(), windowRect.height());
+    
+    // 開始動畫
+    m_startupAnimationStep = 0;
+    m_animationOverlay->raise();
+    m_animationOverlay->show();
+    
+    // 顯示第一幀
+    onStartupAnimationStep();
+    
+    // 啟動動畫計時器（每 600ms 更新一次）
+    m_startupAnimationTimer->start(600);
+}
+
+void Qt_Chess::onStartupAnimationStep() {
+    if (!m_animationLabel || !m_animationOverlay) return;
+    
+    QString text;
+    QString style;
+    
+    // 啟動動畫序列：歡迎訊息 -> 標題 -> 準備就緒
+    switch (m_startupAnimationStep) {
+        case 0:
+            text = "♔ ♕ ♖ ♗ ♘ ♙";
+            style = QString(
+                "QLabel { "
+                "  color: %1; "
+                "  font-size: 72px; "
+                "  font-weight: bold; "
+                "  font-family: 'Arial', sans-serif; "
+                "  background: transparent; "
+                "}"
+            ).arg(THEME_ACCENT_PRIMARY);
+            break;
+        case 1:
+            text = "科技對弈";
+            style = QString(
+                "QLabel { "
+                "  color: %1; "
+                "  font-size: 64px; "
+                "  font-weight: bold; "
+                "  font-family: 'Arial', sans-serif; "
+                "  background: transparent; "
+                "}"
+            ).arg(THEME_ACCENT_WARNING);
+            break;
+        case 2:
+            text = "♚ ♛ ♜ ♝ ♞ ♟";
+            style = QString(
+                "QLabel { "
+                "  color: %1; "
+                "  font-size: 72px; "
+                "  font-weight: bold; "
+                "  font-family: 'Arial', sans-serif; "
+                "  background: transparent; "
+                "}"
+            ).arg(THEME_ACCENT_SECONDARY);
+            break;
+        default:
+            // 動畫結束
+            m_startupAnimationTimer->stop();
+            finishStartupAnimation();
+            return;
+    }
+    
+    m_animationLabel->setText(text);
+    m_animationLabel->setStyleSheet(style);
+    m_startupAnimationStep++;
+}
+
+void Qt_Chess::finishStartupAnimation() {
+    // 隱藏動畫疊加層
+    if (m_animationOverlay) {
+        m_animationOverlay->hide();
     }
 }
