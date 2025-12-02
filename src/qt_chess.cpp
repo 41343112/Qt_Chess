@@ -2801,6 +2801,11 @@ void Qt_Chess::resetBoardState() {
     // 重置棋盤到初始狀態
     m_chessBoard.initializeBoard();
     m_pieceSelected = false;
+    
+    // 重置上一步移動高亮
+    m_lastMoveFrom = QPoint(-1, -1);
+    m_lastMoveTo = QPoint(-1, -1);
+    
     updateBoard();
     clearHighlights();
 }
