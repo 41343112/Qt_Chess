@@ -896,6 +896,14 @@ void Qt_Chess::onStartButtonClicked() {
         saveBoardFlipSettings();
     }
     
+    // 確保時間和吃子紀錄在右側面板（遊戲開始時恢復到正常位置）
+    restoreWidgetsFromGameEnd();
+    
+    // 顯示右側時間面板
+    if (m_rightTimePanel) {
+        m_rightTimePanel->show();
+    }
+    
     if (m_timeControlEnabled && !m_timerStarted) {
         // 重置棋盤到初始狀態
         resetBoardState();
