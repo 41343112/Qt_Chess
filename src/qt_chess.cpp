@@ -4505,13 +4505,10 @@ void Qt_Chess::initializeBackgroundMusic() {
 void Qt_Chess::startBackgroundMusic() {
     if (!m_bgmPlayer || !m_bgmEnabled) return;
     
-    // 注意：由於沒有背景音樂檔案，這裡只是準備好播放器
-    // 如果有背景音樂檔案，可以設定來源：
-    // m_bgmPlayer->setMedia(QUrl("qrc:/resources/sounds/bgm.mp3"));
-    // m_bgmPlayer->play();
-    
-    // 目前沒有背景音樂檔案，所以這個功能是預留的
-    // 當有音樂檔案時，取消下面的註解即可啟用
+
+     m_bgmPlayer->setMedia(QUrl("qrc:/resources/sounds/bgm.mp3"));
+     m_bgmPlayer->play();
+
 }
 
 void Qt_Chess::stopBackgroundMusic() {
