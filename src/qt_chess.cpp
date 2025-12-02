@@ -342,8 +342,7 @@ void Qt_Chess::setupUI() {
 
     // 遊戲結束時對方的時間和吃子紀錄面板（棋盤上方，初始隱藏）
     m_topEndGamePanel = new QWidget(m_boardContainer);
-    m_topEndGamePanel->setMinimumHeight(50);
-    m_topEndGamePanel->setMaximumHeight(80);
+    m_topEndGamePanel->setFixedHeight(40);  // 固定高度，避免蓋住棋盤
     QHBoxLayout* topEndGameLayout = new QHBoxLayout(m_topEndGamePanel);
     topEndGameLayout->setContentsMargins(5, 0, 5, 0);
     topEndGameLayout->setSpacing(10);
@@ -398,8 +397,7 @@ void Qt_Chess::setupUI() {
 
     // 遊戲結束時我方的時間和吃子紀錄面板（棋盤下方，初始隱藏）
     m_bottomEndGamePanel = new QWidget(m_boardContainer);
-    m_bottomEndGamePanel->setMinimumHeight(50);
-    m_bottomEndGamePanel->setMaximumHeight(80);
+    m_bottomEndGamePanel->setFixedHeight(40);  // 固定高度，避免蓋住棋盤
     QHBoxLayout* bottomEndGameLayout = new QHBoxLayout(m_bottomEndGamePanel);
     bottomEndGameLayout->setContentsMargins(5, 0, 5, 0);
     bottomEndGameLayout->setSpacing(10);
@@ -2519,10 +2517,9 @@ void Qt_Chess::moveWidgetsForGameEnd() {
         topLayout->addWidget(opponentTimeLabel);
         opponentTimeLabel->show();
     }
+    // 遊戲結束時不顯示進度條
     if (opponentProgressBar) {
-        opponentProgressBar->setParent(m_topEndGamePanel);
-        topLayout->addWidget(opponentProgressBar);
-        opponentProgressBar->show();
+        opponentProgressBar->hide();
     }
     if (opponentCapturedPanel) {
         opponentCapturedPanel->setParent(m_topEndGamePanel);
@@ -2537,10 +2534,9 @@ void Qt_Chess::moveWidgetsForGameEnd() {
         bottomLayout->addWidget(myTimeLabel);
         myTimeLabel->show();
     }
+    // 遊戲結束時不顯示進度條
     if (myProgressBar) {
-        myProgressBar->setParent(m_bottomEndGamePanel);
-        bottomLayout->addWidget(myProgressBar);
-        myProgressBar->show();
+        myProgressBar->hide();
     }
     if (myCapturedPanel) {
         myCapturedPanel->setParent(m_bottomEndGamePanel);
