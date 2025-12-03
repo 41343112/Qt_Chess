@@ -5089,7 +5089,7 @@ void Qt_Chess::onCheckUpdateClicked() {
     dialog->showCheckingUpdate();
     dialog->show();
     
-    // 連接信號
+    // 連接檢查更新信號
     connect(m_updateManager, &UpdateManager::updateAvailable, 
             [this, dialog](const QString& latestVersion, const QString& downloadUrl, const QString& releaseNotes) {
         dialog->setUpdateInfo(m_updateManager->getCurrentVersion(), latestVersion, downloadUrl, releaseNotes);
@@ -5105,6 +5105,17 @@ void Qt_Chess::onCheckUpdateClicked() {
         dialog->showError(errorMessage);
     });
     
+    // 連接下載進度信號（在外層連接一次，避免重複）
+    connect(m_updateManager, &UpdateManager::downloadProgress,
+            dialog, &UpdateDialog::updateProgress);
+    
+    connect(m_updateManager, &UpdateManager::downloadComplete,
+            dialog, &UpdateDialog::downloadComplete);
+    
+    connect(m_updateManager, &UpdateManager::downloadError,
+            dialog, &UpdateDialog::downloadFailed);
+    
+    // 連接下載請求信號
     connect(dialog, &UpdateDialog::downloadRequested, 
             [this, dialog]() {
         dialog->startDownload();
@@ -5116,18 +5127,8 @@ void Qt_Chess::onCheckUpdateClicked() {
         QString fileName = downloadUrl.split('/').last();
         if (fileName.isEmpty()) {
             // 使用通用名稱作為後備
-            fileName = QString("Qt_Chess_Update_%1").arg(APP_VERSION);
+            fileName = "Qt_Chess_Update";
         }
-        
-        // 連接下載進度信號
-        connect(m_updateManager, &UpdateManager::downloadProgress,
-                dialog, &UpdateDialog::updateProgress);
-        
-        connect(m_updateManager, &UpdateManager::downloadComplete,
-                dialog, &UpdateDialog::downloadComplete);
-        
-        connect(m_updateManager, &UpdateManager::downloadError,
-                dialog, &UpdateDialog::downloadFailed);
         
         // 開始下載
         m_updateManager->downloadUpdate(downloadUrl, fileName);

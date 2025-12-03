@@ -135,7 +135,8 @@ void UpdateDialog::downloadComplete(const QString& filePath)
     
     m_downloadButton->setText("開啟檔案位置");
     m_downloadButton->setEnabled(true);
-    m_downloadButton->disconnect();
+    // 僅中斷 clicked 信號的連接
+    disconnect(m_downloadButton, &QPushButton::clicked, this, &UpdateDialog::onDownloadClicked);
     connect(m_downloadButton, &QPushButton::clicked, [filePath]() {
         QFileInfo fileInfo(filePath);
         QDesktopServices::openUrl(QUrl::fromLocalFile(fileInfo.absolutePath()));

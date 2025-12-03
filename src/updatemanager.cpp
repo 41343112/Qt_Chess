@@ -181,9 +181,11 @@ bool UpdateManager::compareVersions(const QString& version1, const QString& vers
     QVersionNumber v1 = QVersionNumber::fromString(version1);
     QVersionNumber v2 = QVersionNumber::fromString(version2);
     
-    // 如果版本號無效，回退到簡單的字串比較
+    // 如果任一版本號無效，則認為沒有更新可用
+    // 這比使用可能不正確的字串比較更安全
     if (v1.isNull() || v2.isNull()) {
-        return version1 > version2;
+        qDebug() << "Invalid version number format:" << version1 << "or" << version2;
+        return false;
     }
     
     return v1 > v2;  // version1 較新返回 true
