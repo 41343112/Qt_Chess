@@ -35,6 +35,7 @@
 #include "boardcolorsettingsdialog.h"
 #include "networkmanager.h"
 #include "networkgamedialog.h"
+#include "updatemanager.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -79,6 +80,7 @@ private slots:
     void onNetworkGameStartReceived(PieceColor remotePlayerColor, int whiteTimeMs, int blackTimeMs, int incrementMs);
     void onNetworkResignReceived();
     void onNetworkNewGameRequested();
+    void onCheckUpdateClicked();
 
 private:
     Ui::Qt_Chess *ui;
@@ -213,6 +215,9 @@ private:
     QString m_remotePlayerName;          // 遠端玩家名稱
     QString m_localPlayerName;           // 本地玩家名稱
     bool m_isNetworkGame;                // 是否為網路對戰
+    
+    // 更新管理器
+    UpdateManager* m_updateManager;      // 更新管理器
     
     void setupUI();
     void setupMenuBar();

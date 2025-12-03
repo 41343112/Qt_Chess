@@ -18,7 +18,9 @@ SOURCES += \
     src/pieceiconsettingsdialog.cpp \
     src/boardcolorsettingsdialog.cpp \
     src/networkmanager.cpp \
-    src/networkgamedialog.cpp
+    src/networkgamedialog.cpp \
+    src/updatemanager.cpp \
+    src/updatedialog.cpp
 
 HEADERS += \
     src/qt_chess.h \
@@ -30,7 +32,9 @@ HEADERS += \
     src/boardcolorsettingsdialog.h \
     src/theme.h \
     src/networkmanager.h \
-    src/networkgamedialog.h
+    src/networkgamedialog.h \
+    src/updatemanager.h \
+    src/updatedialog.h
 
 FORMS += \
     src/qt_chess.ui

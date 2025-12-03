@@ -6,6 +6,8 @@
 #include "boardcolorsettingsdialog.h"
 #include "networkmanager.h"
 #include "networkgamedialog.h"
+#include "updatemanager.h"
+#include "updatedialog.h"
 #include <QMessageBox>
 #include <QFont>
 #include <QDialog>
@@ -216,6 +218,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_networkModeButton(nullptr)
     , m_connectionStatusLabel(nullptr)
     , m_isNetworkGame(false)
+    , m_updateManager(nullptr)
     , m_bgmPlayer(nullptr)
     , m_bgmEnabled(true)
     , m_bgmVolume(30)
@@ -259,6 +262,11 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     loadEngineSettings();  // 載入引擎設定
     initializeEngine();  // 初始化棋局引擎
     initializeNetworkManager();  // 初始化網路管理器
+    
+    // 初始化更新管理器
+    m_updateManager = new UpdateManager(this);
+    m_updateManager->setCurrentVersion("1.0.0");  // 設定當前版本
+    
     updateBoard();
     updateStatus();
     updateTimeDisplays();
@@ -692,6 +700,14 @@ void Qt_Chess::setupMenuBar() {
     toggleBgmAction->setChecked(m_bgmEnabled);
     connect(toggleBgmAction, &QAction::triggered, this, &Qt_Chess::onToggleBackgroundMusicClicked);
     settingsMenu->addAction(toggleBgmAction);
+    
+    // 幫助選單
+    QMenu* helpMenu = m_menuBar->addMenu("❓ 幫助");
+    
+    // 檢查更新動作
+    QAction* checkUpdateAction = new QAction("🔄 檢查更新", this);
+    connect(checkUpdateAction, &QAction::triggered, this, &Qt_Chess::onCheckUpdateClicked);
+    helpMenu->addAction(checkUpdateAction);
 }
 
 void Qt_Chess::updateSquareColor(int displayRow, int displayCol) {
@@ -5060,4 +5076,57 @@ void Qt_Chess::sendNetworkMove(const QPoint& from, const QPoint& to, PieceType p
     if (m_isNetworkGame && m_networkManager->isConnected()) {
         m_networkManager->sendMove(from, to, promotionType);
     }
+}
+
+void Qt_Chess::onCheckUpdateClicked() {
+    // 建立更新對話框
+    UpdateDialog* dialog = new UpdateDialog(this);
+    dialog->showCheckingUpdate();
+    dialog->show();
+    
+    // 連接信號
+    connect(m_updateManager, &UpdateManager::updateAvailable, 
+            [this, dialog](const QString& latestVersion, const QString& downloadUrl, const QString& releaseNotes) {
+        dialog->setUpdateInfo(m_updateManager->getCurrentVersion(), latestVersion, downloadUrl, releaseNotes);
+    });
+    
+    connect(m_updateManager, &UpdateManager::noUpdateAvailable, 
+            [dialog]() {
+        dialog->showNoUpdate();
+    });
+    
+    connect(m_updateManager, &UpdateManager::checkError, 
+            [dialog](const QString& errorMessage) {
+        dialog->showError(errorMessage);
+    });
+    
+    connect(dialog, &UpdateDialog::downloadRequested, 
+            [this, dialog]() {
+        dialog->startDownload();
+        
+        // 從對話框取得下載 URL
+        QString downloadUrl = dialog->getDownloadUrl();
+        
+        // 從 URL 取得檔案名稱
+        QString fileName = downloadUrl.split('/').last();
+        if (fileName.isEmpty()) {
+            fileName = "Qt_Chess_Update.zip";
+        }
+        
+        // 連接下載進度信號
+        connect(m_updateManager, &UpdateManager::downloadProgress,
+                dialog, &UpdateDialog::updateProgress);
+        
+        connect(m_updateManager, &UpdateManager::downloadComplete,
+                dialog, &UpdateDialog::downloadComplete);
+        
+        connect(m_updateManager, &UpdateManager::downloadError,
+                dialog, &UpdateDialog::downloadFailed);
+        
+        // 開始下載
+        m_updateManager->downloadUpdate(downloadUrl, fileName);
+    });
+    
+    // 檢查更新
+    m_updateManager->checkForUpdates("41343112", "Qt_Chess");
 }
