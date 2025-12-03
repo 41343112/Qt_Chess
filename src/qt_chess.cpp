@@ -3873,7 +3873,7 @@ void Qt_Chess::onComputerModeClicked() {
     }
     
     // 切換到電腦模式，顯示選邊按鈕
-    // 預設選擇執白（如果尚未選擇）
+    // 如果之前不是電腦模式，則預設選擇執白
     if (m_currentGameMode == GameMode::HumanVsHuman || m_currentGameMode == GameMode::NetworkGame) {
         m_currentGameMode = GameMode::HumanVsComputer;
     }
@@ -4948,6 +4948,11 @@ void Qt_Chess::stopNetworkGame() {
 bool Qt_Chess::isNetworkTurn() const {
     // 檢查是否輪到本地玩家
     if (!m_isNetworkGame || !m_networkManager->isConnected()) {
+        return false;
+    }
+    
+    // 檢查遊戲是否還在進行中
+    if (m_chessBoard.getGameResult() != GameResult::InProgress) {
         return false;
     }
     

@@ -69,8 +69,10 @@ quint16 NetworkManager::getServerPort() const
 
 bool NetworkManager::connectToServer(const QString& host, quint16 port)
 {
+    // 如果已經連接，先斷開
     if (m_socket && m_socket->state() == QTcpSocket::ConnectedState) {
-        return true;
+        qDebug() << "已有連接，先斷開舊連接";
+        disconnectFromServer();
     }
 
     if (m_socket) {
