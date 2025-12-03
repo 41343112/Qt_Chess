@@ -71,7 +71,7 @@ private slots:
     void onExportPGNClicked();
     void onCopyPGNClicked();
     void onToggleBackgroundMusicClicked();
-    void onNetworkGameClicked();
+    void onNetworkModeClicked();
     void onNetworkConnected();
     void onNetworkDisconnected();
     void onNetworkError(const QString& error);
@@ -339,7 +339,6 @@ private:
     void initializeNetworkManager();
     void startNetworkGame();
     void stopNetworkGame();
-    void onNetworkModeClicked();
     void updateNetworkStatusUI();
     bool isNetworkTurn() const;
     void sendNetworkMove(const QPoint& from, const QPoint& to, PieceType promotionType = PieceType::None);
