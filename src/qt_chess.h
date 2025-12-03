@@ -11,17 +11,22 @@
 #include <QKeyEvent>
 #include <QMap>
 #include <QSoundEffect>
+#include <QMediaPlayer>
+#include <QAudioOutput>
 #include <QMenuBar>
 #include <QMenu>
 #include <QAction>
 #include <QComboBox>
 #include <QSlider>
 #include <QTimer>
+#include <QRandomGenerator>
 #include <QGroupBox>
 #include <QListWidget>
 #include <QProgressBar>
 #include <QRadioButton>
 #include <QButtonGroup>
+#include <QPropertyAnimation>
+#include <QGraphicsOpacityEffect>
 #include <vector>
 #include "chessboard.h"
 #include "chessengine.h"
@@ -63,6 +68,7 @@ private slots:
     void onStartButtonClicked();
     void onExportPGNClicked();
     void onCopyPGNClicked();
+    void onToggleBackgroundMusicClicked();
 
 private:
     Ui::Qt_Chess *ui;
@@ -91,6 +97,14 @@ private:
     QSoundEffect m_checkSound;
     QSoundEffect m_checkmateSound;
     SoundSettingsDialog::SoundSettings m_soundSettings;
+    
+    // 背景音樂
+    QMediaPlayer* m_bgmPlayer;
+    QAudioOutput* m_audioOutput;  // Qt6 音量控制
+    bool m_bgmEnabled;
+    int m_bgmVolume;  // 0-100
+    QStringList m_bgmList;  // 背景音樂列表
+    int m_lastBgmIndex;     // 上一次播放的音樂索引，避免重複
     
     // 棋子圖示設定
     PieceIconSettingsDialog::PieceIconSettings m_pieceIconSettings;
@@ -282,5 +296,39 @@ private:
     void saveEngineSettings();
     QString getEnginePath() const;
     void updateGameModeUI();             // 更新遊戲模式 UI 狀態
+    void applyModernStylesheet();        // 應用現代科技風格全局樣式表
+    
+    // 遊戲開始動畫
+    void playGameStartAnimation();       // 播放遊戲開始動畫
+    void onAnimationStep();              // 動畫步驟更新
+    void finishGameStartAnimation();     // 動畫完成後的處理
+    
+    // 應用程式啟動動畫
+    void playStartupAnimation();         // 播放啟動動畫
+    void onStartupAnimationStep();       // 啟動動畫步驟更新
+    void finishStartupAnimation();       // 啟動動畫完成後的處理
+    void playStartupTextAnimation(QLabel* label, const QString& text, const QString& color, int fontSize);
+    
+    // 背景音樂控制
+    void initializeBackgroundMusic();    // 初始化背景音樂
+    void startBackgroundMusic();         // 開始播放背景音樂
+    void stopBackgroundMusic();          // 停止背景音樂
+    void toggleBackgroundMusic();        // 切換背景音樂開關
+    void setBackgroundMusicVolume(int volume);  // 設定背景音樂音量 (0-100)
+    
+    // 動畫相關成員
+    QWidget* m_animationOverlay;         // 動畫疊加層
+    QLabel* m_animationLabel;            // 動畫文字標籤
+    QLabel* m_animationSubLabel;         // 動畫副標籤（用於多行動畫）
+    QTimer* m_animationTimer;            // 動畫計時器
+    int m_animationStep;                 // 動畫當前步驟
+    bool m_pendingGameStart;             // 是否有待處理的遊戲開始
+    
+    // 啟動動畫相關成員
+    QTimer* m_startupAnimationTimer;     // 啟動動畫計時器
+    int m_startupAnimationStep;          // 啟動動畫當前步驟
+    QPropertyAnimation* m_fadeAnimation; // 淡入淡出動畫
+    QPropertyAnimation* m_scaleAnimation; // 縮放動畫
+    QGraphicsOpacityEffect* m_opacityEffect; // 透明度效果
 };
 #endif // QT_CHESS_H

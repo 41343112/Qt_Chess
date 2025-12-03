@@ -35,16 +35,27 @@
 #include <algorithm>
 
 namespace {
-const QString CHECK_HIGHLIGHT_STYLE = "QPushButton { background-color: #FF6B6B; border: 2px solid #FF0000; }";
+const QString CHECK_HIGHLIGHT_STYLE = "QPushButton { background-color: rgba(255, 80, 80, 0.85); border: 2px solid #FF3333; }";
 const int DEFAULT_ICON_SIZE = 40; // 預設圖示大小（像素）
 const int MAX_TIME_LIMIT_SECONDS = 1800; // 最大時間限制：30 分鐘
 const int MAX_SLIDER_POSITION = 31; // 滑桿範圍：0（無限制）、1（30秒）、2-31（1-30 分鐘）
 const int MAX_MINUTES = 30; // 最大時間限制（分鐘）
 const QString GAME_ENDED_TEXT = "遊戲結束"; // 遊戲結束時顯示的文字
 
-// 上一步移動高亮顏色
-const QString LAST_MOVE_LIGHT_COLOR = "#F7F769";  // 淺色格子的高亮（亮黃色）
-const QString LAST_MOVE_DARK_COLOR = "#BACA2B";   // 深色格子的高亮（橄欖黃色）
+// 上一步移動高亮顏色 - 現代科技風格的青色/霓虹色調
+const QString LAST_MOVE_LIGHT_COLOR = "#7FDBDB";  // 淺色格子的高亮（科技青色）
+const QString LAST_MOVE_DARK_COLOR = "#4ECDC4";   // 深色格子的高亮（霓虹青色）
+
+// ===== 現代科技風格主題顏色 =====
+const QString THEME_BG_DARK = "#1A1A2E";           // 深色背景
+const QString THEME_BG_MEDIUM = "#16213E";         // 中等深度背景
+const QString THEME_BG_PANEL = "#0F3460";          // 面板背景
+const QString THEME_ACCENT_PRIMARY = "#00D9FF";    // 主要強調色（霓虹青色）
+const QString THEME_ACCENT_SECONDARY = "#E94560";  // 次要強調色（霓虹粉色）
+const QString THEME_ACCENT_SUCCESS = "#00FF88";    // 成功色（霓虹綠色）
+const QString THEME_ACCENT_WARNING = "#FFD93D";    // 警告色（霓虹黃色）
+const QString THEME_TEXT_PRIMARY = "#EAEAEA";      // 主要文字顏色
+const QString THEME_BORDER = "#2A4066";            // 邊框顏色
 
 // 視窗大小的佈局常數
 const int PANEL_SPACING = 10;          // 面板之間的間距
@@ -199,9 +210,24 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_difficultyLabel(nullptr)
     , m_difficultyValueLabel(nullptr)
     , m_thinkingLabel(nullptr)
+    , m_bgmPlayer(nullptr)
+    , m_bgmEnabled(true)
+    , m_bgmVolume(30)
+    , m_lastBgmIndex(-1)
+    , m_animationOverlay(nullptr)
+    , m_animationLabel(nullptr)
+    , m_animationSubLabel(nullptr)
+    , m_animationTimer(nullptr)
+    , m_animationStep(0)
+    , m_pendingGameStart(false)
+    , m_startupAnimationTimer(nullptr)
+    , m_startupAnimationStep(0)
+    , m_fadeAnimation(nullptr)
+    , m_scaleAnimation(nullptr)
+    , m_opacityEffect(nullptr)
 {
     ui->setupUi(this);
-    setWindowTitle("國際象棋 - 雙人對弈");
+    setWindowTitle("♔ 國際象棋 - 科技對弈 ♚");
     resize(900, 660);  // 增加寬度以容納時間控制面板
 
     // 設置最小視窗大小以確保所有內容都能完整顯示而不被裁切
@@ -210,9 +236,13 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     setMinimumSize(814, 420);
 
     setMouseTracking(true);
+    
+    // 應用現代科技風格全局樣式表
+    applyModernStylesheet();
 
     loadSoundSettings();
     initializeSounds();
+    initializeBackgroundMusic();  // 初始化背景音樂
     loadPieceIconSettings();
     loadBoardColorSettings();
     loadBoardFlipSettings();
@@ -227,10 +257,20 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     updateTimeDisplays();
     updateReplayButtons();  // 設置回放按鈕初始狀態
     updateCapturedPiecesDisplay();  // 初始化被吃掉棋子顯示
+    
+    // 在視窗顯示後播放啟動動畫
+    QTimer::singleShot(100, this, &Qt_Chess::playStartupAnimation);
 }
 
 Qt_Chess::~Qt_Chess()
 {
+    // 停止並清理背景音樂
+    if (m_bgmPlayer) {
+        m_bgmPlayer->stop();
+        delete m_bgmPlayer;
+        m_bgmPlayer = nullptr;
+    }
+    
     // 停止並清理棋局引擎
     if (m_chessEngine) {
         m_chessEngine->stopEngine();
@@ -254,14 +294,24 @@ void Qt_Chess::setupUI() {
     m_moveListPanel->setMinimumWidth(MIN_PANEL_WIDTH);  // 限制最小寬度
     m_moveListPanel->setMaximumWidth(MAX_PANEL_WIDTH);  // 限制最大寬度
     QVBoxLayout* moveListLayout = new QVBoxLayout(m_moveListPanel);
-    moveListLayout->setContentsMargins(0, 0, 0, 0);
+    moveListLayout->setContentsMargins(5, 5, 5, 5);
 
-    QLabel* moveListTitle = new QLabel("棋譜", m_moveListPanel);
+    // 棋譜標題 - 現代科技風格
+    QLabel* moveListTitle = new QLabel("📜 棋譜記錄", m_moveListPanel);
     moveListTitle->setAlignment(Qt::AlignCenter);
     QFont titleFont;
-    titleFont.setPointSize(12);
+    titleFont.setPointSize(13);
     titleFont.setBold(true);
     moveListTitle->setFont(titleFont);
+    moveListTitle->setStyleSheet(QString(
+        "QLabel { "
+        "  color: %1; "
+        "  padding: 8px; "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "    stop:0 transparent, stop:0.5 rgba(0, 217, 255, 0.2), stop:1 transparent); "
+        "  border-bottom: 2px solid %1; "
+        "}"
+    ).arg(THEME_ACCENT_PRIMARY));
     moveListLayout->addWidget(moveListTitle);
 
     m_moveListWidget = new QListWidget(m_moveListPanel);
@@ -280,53 +330,92 @@ void Qt_Chess::setupUI() {
     });
     moveListLayout->addWidget(m_moveListWidget);
 
-    // 匯出PGN按鈕（初始隱藏）
-    m_exportPGNButton = new QPushButton("匯出 PGN", m_moveListPanel);
+    // 匯出PGN按鈕（初始隱藏）- 現代科技風格
+    m_exportPGNButton = new QPushButton("📤 匯出 PGN", m_moveListPanel);
     m_exportPGNButton->hide();
     connect(m_exportPGNButton, &QPushButton::clicked, this, &Qt_Chess::onExportPGNClicked);
     moveListLayout->addWidget(m_exportPGNButton);
 
-    // 複製棋譜按鈕（初始隱藏）
-    m_copyPGNButton = new QPushButton("複製棋譜", m_moveListPanel);
+    // 複製棋譜按鈕（初始隱藏）- 現代科技風格
+    m_copyPGNButton = new QPushButton("📋 複製棋譜", m_moveListPanel);
     m_copyPGNButton->hide();
     connect(m_copyPGNButton, &QPushButton::clicked, this, &Qt_Chess::onCopyPGNClicked);
     moveListLayout->addWidget(m_copyPGNButton);
 
-    // 回放控制按鈕（始終可見）
-    m_replayTitle = new QLabel("回放控制", m_moveListPanel);
+    // 回放控制按鈕標題 - 現代科技風格
+    m_replayTitle = new QLabel("🎬 回放控制", m_moveListPanel);
     m_replayTitle->setAlignment(Qt::AlignCenter);
     QFont replayFont;
-    replayFont.setPointSize(10);
+    replayFont.setPointSize(11);
     replayFont.setBold(true);
     m_replayTitle->setFont(replayFont);
+    m_replayTitle->setStyleSheet(QString(
+        "QLabel { "
+        "  color: %1; "
+        "  padding: 6px; "
+        "  margin-top: 5px; "
+        "}"
+    ).arg(THEME_ACCENT_WARNING));
     moveListLayout->addWidget(m_replayTitle);
 
+    // 回放按鈕容器
     QWidget* replayButtonContainer = new QWidget(m_moveListPanel);
     QGridLayout* replayButtonLayout = new QGridLayout(replayButtonContainer);
     replayButtonLayout->setContentsMargins(0, 0, 0, 0);
-    replayButtonLayout->setSpacing(5);
+    replayButtonLayout->setSpacing(4);
+
+    // 回放按鈕樣式 - 現代科技風格霓虹效果
+    QString replayButtonStyle = QString(
+        "QPushButton { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %1, stop:1 %2); "
+        "  color: %3; "
+        "  border: 2px solid %4; "
+        "  border-radius: 6px; "
+        "  padding: 6px 10px; "
+        "  font-size: 14px; "
+        "  font-weight: bold; "
+        "}"
+        "QPushButton:hover { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %1, stop:0.5 rgba(255, 217, 61, 0.3), stop:1 %2); "
+        "  border-color: %5; "
+        "  color: %5; "
+        "}"
+        "QPushButton:pressed { "
+        "  background: %5; "
+        "  color: %2; "
+        "}"
+        "QPushButton:disabled { "
+        "  background: rgba(30, 30, 50, 0.5); "
+        "  color: #555; "
+        "  border-color: #333; "
+        "}"
+    ).arg(THEME_BG_PANEL, THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_BORDER, THEME_ACCENT_WARNING);
 
     m_replayFirstButton = new QPushButton("⏮", replayButtonContainer);
     m_replayFirstButton->setToolTip("第一步");
     m_replayFirstButton->setEnabled(false);  // 初始停用
+    m_replayFirstButton->setStyleSheet(replayButtonStyle);
     connect(m_replayFirstButton, &QPushButton::clicked, this, &Qt_Chess::onReplayFirstClicked);
     replayButtonLayout->addWidget(m_replayFirstButton, 0, 0);
 
     m_replayPrevButton = new QPushButton("◀", replayButtonContainer);
     m_replayPrevButton->setToolTip("上一步");
     m_replayPrevButton->setEnabled(false);  // 初始停用
+    m_replayPrevButton->setStyleSheet(replayButtonStyle);
     connect(m_replayPrevButton, &QPushButton::clicked, this, &Qt_Chess::onReplayPrevClicked);
     replayButtonLayout->addWidget(m_replayPrevButton, 0, 1);
 
     m_replayNextButton = new QPushButton("▶", replayButtonContainer);
     m_replayNextButton->setToolTip("下一步");
     m_replayNextButton->setEnabled(false);  // 初始停用
+    m_replayNextButton->setStyleSheet(replayButtonStyle);
     connect(m_replayNextButton, &QPushButton::clicked, this, &Qt_Chess::onReplayNextClicked);
     replayButtonLayout->addWidget(m_replayNextButton, 0, 2);
 
     m_replayLastButton = new QPushButton("⏭", replayButtonContainer);
     m_replayLastButton->setToolTip("最後一步");
     m_replayLastButton->setEnabled(false);  // 初始停用
+    m_replayLastButton->setStyleSheet(replayButtonStyle);
     connect(m_replayLastButton, &QPushButton::clicked, this, &Qt_Chess::onReplayLastClicked);
     replayButtonLayout->addWidget(m_replayLastButton, 0, 3);
 
@@ -341,7 +430,7 @@ void Qt_Chess::setupUI() {
     // 棋盤容器 - 使用垂直佈局以在棋盤上方和下方放置被吃棋子
     m_boardContainer = new QWidget(this);
     m_boardContainer->setMouseTracking(true);
-    QVBoxLayout* boardContainerVLayout = new QVBoxLayout(m_boardContainer);
+    QVBoxLayout* boardContainerVLayout = new QVBoxLayout(m_boardContainer);;
     boardContainerVLayout->setContentsMargins(BOARD_CONTAINER_MARGIN, BOARD_CONTAINER_MARGIN,
                                              BOARD_CONTAINER_MARGIN, BOARD_CONTAINER_MARGIN);
     boardContainerVLayout->setSpacing(5);
@@ -445,32 +534,51 @@ void Qt_Chess::setupUI() {
     m_blackTimeProgressBar->setTextVisible(false);
     m_blackTimeProgressBar->setFixedWidth(100);  // 與時間標籤同寬
     m_blackTimeProgressBar->setMaximumHeight(8);
-    m_blackTimeProgressBar->setStyleSheet(
-        "QProgressBar { border: 1px solid #333; border-radius: 3px; background-color: #444; }"
-        "QProgressBar::chunk { background-color: #4CAF50; border-radius: 2px; }"
-    );
+    m_blackTimeProgressBar->setStyleSheet(QString(
+        "QProgressBar { border: 2px solid %1; border-radius: 4px; background-color: %2; }"
+        "QProgressBar::chunk { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "  stop:0 %3, stop:1 %4); border-radius: 2px; }"
+    ).arg(THEME_BORDER, THEME_BG_DARK, THEME_ACCENT_PRIMARY, THEME_ACCENT_SUCCESS));
     m_blackTimeProgressBar->hide();  // 初始隱藏
     rightTimePanelLayout->addWidget(m_blackTimeProgressBar, 0, Qt::AlignCenter);
 
-    // 黑方時間標籤 - 初始隱藏
+    // 黑方時間標籤 - 現代科技風格數位顯示
     m_blackTimeLabel = new QLabel("--:--", m_rightTimePanel);
     m_blackTimeLabel->setFont(timeFont);
     m_blackTimeLabel->setAlignment(Qt::AlignCenter);
-    m_blackTimeLabel->setStyleSheet("QLabel { background-color: rgba(51, 51, 51, 200); color: #FFF; padding: 8px; border-radius: 5px; }");
-    m_blackTimeLabel->setFixedSize(100, 40);  // 固定大小
+    m_blackTimeLabel->setStyleSheet(QString(
+        "QLabel { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgba(15, 52, 96, 0.95), stop:1 rgba(26, 26, 46, 0.95)); "
+        "  color: %1; "
+        "  padding: 10px; "
+        "  border: 2px solid %2; "
+        "  border-radius: 8px; "
+        "  font-family: 'Consolas', 'Monaco', monospace; "
+        "}"
+    ).arg(THEME_ACCENT_PRIMARY, THEME_BORDER));
+    m_blackTimeLabel->setFixedSize(110, 45);  // 稍大的固定大小
     m_blackTimeLabel->hide();  // 初始隱藏
     rightTimePanelLayout->addWidget(m_blackTimeLabel, 0, Qt::AlignCenter);
 
-    // 白方時間標籤 - 初始隱藏
+    // 白方時間標籤 - 現代科技風格數位顯示
     m_whiteTimeLabel = new QLabel("--:--", m_rightTimePanel);
     m_whiteTimeLabel->setFont(timeFont);
     m_whiteTimeLabel->setAlignment(Qt::AlignCenter);
-    m_whiteTimeLabel->setStyleSheet("QLabel { background-color: rgba(51, 51, 51, 200); color: #FFF; padding: 8px; border-radius: 5px; }");
-    m_whiteTimeLabel->setFixedSize(100, 40);  // 固定大小
+    m_whiteTimeLabel->setStyleSheet(QString(
+        "QLabel { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgba(15, 52, 96, 0.95), stop:1 rgba(26, 26, 46, 0.95)); "
+        "  color: %1; "
+        "  padding: 10px; "
+        "  border: 2px solid %2; "
+        "  border-radius: 8px; "
+        "  font-family: 'Consolas', 'Monaco', monospace; "
+        "}"
+    ).arg(THEME_ACCENT_SUCCESS, THEME_BORDER));
+    m_whiteTimeLabel->setFixedSize(110, 45);  // 稍大的固定大小
     m_whiteTimeLabel->hide();  // 初始隱藏
     rightTimePanelLayout->addWidget(m_whiteTimeLabel, 0, Qt::AlignCenter);
 
-    // 白方時間進度條 - 放在時間標籤下方，初始隱藏
+    // 白方時間進度條 - 現代科技風格漸變
     m_whiteTimeProgressBar = new QProgressBar(m_rightTimePanel);
     m_whiteTimeProgressBar->setMinimum(0);
     m_whiteTimeProgressBar->setMaximum(100);
@@ -478,10 +586,11 @@ void Qt_Chess::setupUI() {
     m_whiteTimeProgressBar->setTextVisible(false);
     m_whiteTimeProgressBar->setFixedWidth(100);  // 與時間標籤同寬
     m_whiteTimeProgressBar->setMaximumHeight(8);
-    m_whiteTimeProgressBar->setStyleSheet(
-        "QProgressBar { border: 1px solid #333; border-radius: 3px; background-color: #444; }"
-        "QProgressBar::chunk { background-color: #4CAF50; border-radius: 2px; }"
-    );
+    m_whiteTimeProgressBar->setStyleSheet(QString(
+        "QProgressBar { border: 2px solid %1; border-radius: 4px; background-color: %2; }"
+        "QProgressBar::chunk { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "  stop:0 %3, stop:1 %4); border-radius: 2px; }"
+    ).arg(THEME_BORDER, THEME_BG_DARK, THEME_ACCENT_SUCCESS, THEME_ACCENT_PRIMARY));
     m_whiteTimeProgressBar->hide();  // 初始隱藏
     rightTimePanelLayout->addWidget(m_whiteTimeProgressBar, 0, Qt::AlignCenter);
 
@@ -516,49 +625,58 @@ void Qt_Chess::setupMenuBar() {
     m_menuBar = menuBar();
 
     // 遊戲選單
-    QMenu* gameMenu = m_menuBar->addMenu("遊戲");
+    QMenu* gameMenu = m_menuBar->addMenu("🎮 遊戲");
 
     // 新遊戲動作
-    QAction* newGameAction = new QAction("新遊戲", this);
+    QAction* newGameAction = new QAction("🔄 新遊戲", this);
     connect(newGameAction, &QAction::triggered, this, &Qt_Chess::onNewGameClicked);
     gameMenu->addAction(newGameAction);
 
     gameMenu->addSeparator();
 
     // 放棄動作
-    QAction* giveUpAction = new QAction("放棄", this);
+    QAction* giveUpAction = new QAction("🏳 放棄", this);
     connect(giveUpAction, &QAction::triggered, this, &Qt_Chess::onGiveUpClicked);
     gameMenu->addAction(giveUpAction);
 
     // 設定選單
-    QMenu* settingsMenu = m_menuBar->addMenu("設定");
+    QMenu* settingsMenu = m_menuBar->addMenu("⚙ 設定");
 
     // 音效設定動作
-    QAction* soundSettingsAction = new QAction("音效設定", this);
+    QAction* soundSettingsAction = new QAction("🔊 音效設定", this);
     connect(soundSettingsAction, &QAction::triggered, this, &Qt_Chess::onSoundSettingsClicked);
     settingsMenu->addAction(soundSettingsAction);
 
     // 棋子圖標設定動作
-    QAction* pieceIconSettingsAction = new QAction("棋子圖標設定", this);
+    QAction* pieceIconSettingsAction = new QAction("♟ 棋子圖標設定", this);
     connect(pieceIconSettingsAction, &QAction::triggered, this, &Qt_Chess::onPieceIconSettingsClicked);
     settingsMenu->addAction(pieceIconSettingsAction);
 
     // 棋盤顏色設定動作
-    QAction* boardColorSettingsAction = new QAction("棋盤顏色設定", this);
+    QAction* boardColorSettingsAction = new QAction("🎨 棋盤顏色設定", this);
     connect(boardColorSettingsAction, &QAction::triggered, this, &Qt_Chess::onBoardColorSettingsClicked);
     settingsMenu->addAction(boardColorSettingsAction);
 
     settingsMenu->addSeparator();
 
     // 反轉棋盤動作
-    QAction* flipBoardAction = new QAction("反轉棋盤", this);
+    QAction* flipBoardAction = new QAction("🔃 反轉棋盤", this);
     connect(flipBoardAction, &QAction::triggered, this, &Qt_Chess::onFlipBoardClicked);
     settingsMenu->addAction(flipBoardAction);
 
     // 切換全螢幕動作
-    QAction* toggleFullScreenAction = new QAction("切換全螢幕", this);
+    QAction* toggleFullScreenAction = new QAction("📺 切換全螢幕", this);
     connect(toggleFullScreenAction, &QAction::triggered, this, &Qt_Chess::onToggleFullScreenClicked);
     settingsMenu->addAction(toggleFullScreenAction);
+    
+    settingsMenu->addSeparator();
+    
+    // 背景音樂開關動作
+    QAction* toggleBgmAction = new QAction("🎵 背景音樂", this);
+    toggleBgmAction->setCheckable(true);
+    toggleBgmAction->setChecked(m_bgmEnabled);
+    connect(toggleBgmAction, &QAction::triggered, this, &Qt_Chess::onToggleBackgroundMusicClicked);
+    settingsMenu->addAction(toggleBgmAction);
 }
 
 void Qt_Chess::updateSquareColor(int displayRow, int displayCol) {
@@ -567,8 +685,9 @@ void Qt_Chess::updateSquareColor(int displayRow, int displayCol) {
     int logicalCol = getLogicalCol(displayCol);
     bool isLight = (logicalRow + logicalCol) % 2 == 0;
     QColor color = isLight ? m_boardColorSettings.lightSquareColor : m_boardColorSettings.darkSquareColor;
+    // 現代科技風格 - 帶有微妙的內發光邊框效果
     m_squares[displayRow][displayCol]->setStyleSheet(
-        QString("QPushButton { background-color: %1; border: 1px solid #333; }").arg(color.name())
+        QString("QPushButton { background-color: %1; border: 1px solid rgba(0, 217, 255, 0.3); }").arg(color.name())
         );
 }
 
@@ -678,11 +797,11 @@ void Qt_Chess::highlightValidMoves() {
 
     if (!m_pieceSelected) return;
 
-    // 高亮選中的格子（m_selectedSquare 是邏輯坐標）
+    // 高亮選中的格子（m_selectedSquare 是邏輯坐標）- 現代科技風格霓虹綠
     int displayRow = getDisplayRow(m_selectedSquare.y());
     int displayCol = getDisplayCol(m_selectedSquare.x());
     m_squares[displayRow][displayCol]->setStyleSheet(
-        "QPushButton { background-color: #7FC97F; border: 2px solid #00FF00; }"
+        QString("QPushButton { background-color: rgba(0, 255, 136, 0.6); border: 3px solid %1; }").arg(THEME_ACCENT_SUCCESS)
         );
 
     // 高亮有效的移動
@@ -697,16 +816,16 @@ void Qt_Chess::highlightValidMoves() {
                 bool isLight = (logicalRow + logicalCol) % 2 == 0;
 
                 if (isCapture) {
-                    // 將吃子移動高亮為紅色
-                    QString color = isLight ? "#FFB3B3" : "#FF8080";
+                    // 將吃子移動高亮為霓虹紅/粉色
+                    QString color = isLight ? "rgba(255, 100, 120, 0.7)" : "rgba(233, 69, 96, 0.8)";
                     m_squares[displayRow][displayCol]->setStyleSheet(
-                        QString("QPushButton { background-color: %1; border: 2px solid #FF0000; }").arg(color)
+                        QString("QPushButton { background-color: %1; border: 3px solid %2; }").arg(color, THEME_ACCENT_SECONDARY)
                         );
                 } else {
-                    // 將非吃子移動高亮為橙色
-                    QString color = isLight ? "#FFE4B5" : "#DEB887";
+                    // 將非吃子移動高亮為霓虹黃色
+                    QString color = isLight ? "rgba(255, 217, 61, 0.5)" : "rgba(255, 217, 61, 0.7)";
                     m_squares[displayRow][displayCol]->setStyleSheet(
-                        QString("QPushButton { background-color: %1; border: 2px solid #FFA500; }").arg(color)
+                        QString("QPushButton { background-color: %1; border: 3px solid %2; }").arg(color, THEME_ACCENT_WARNING)
                         );
                 }
             }
@@ -825,6 +944,9 @@ void Qt_Chess::onNewGameClicked() {
     m_pieceSelected = false;
     m_gameStarted = false;  // 重置遊戲開始狀態
     m_uciMoveHistory.clear();  // 清空 UCI 移動歷史
+    
+    // 停止背景音樂（遊戲未開始）
+    stopBackgroundMusic();
     
     // 重置上一步移動高亮
     m_lastMoveFrom = QPoint(-1, -1);
@@ -1009,10 +1131,9 @@ void Qt_Chess::onStartButtonClicked() {
         // 當遊戲開始時，將右側伸展設為 1
         setRightPanelStretch(1);
         
-        // 如果是電腦先走（玩家執黑），請求引擎走棋
-        if (isComputerTurn()) {
-            QTimer::singleShot(500, this, &Qt_Chess::requestEngineMove);
-        }
+        // 播放遊戲開始動畫
+        m_pendingGameStart = isComputerTurn();  // 標記是否需要在動畫後請求引擎走棋
+        playGameStartAnimation();
     } else if (!m_timeControlEnabled && !m_gameStarted) {
         // 重置棋盤到初始狀態（即使沒有時間控制）
         resetBoardState();
@@ -1050,10 +1171,9 @@ void Qt_Chess::onStartButtonClicked() {
         // 當遊戲開始時，將右側伸展設為 1
         setRightPanelStretch(1);
         
-        // 如果是電腦先走（玩家執黑），請求引擎走棋
-        if (isComputerTurn()) {
-            QTimer::singleShot(500, this, &Qt_Chess::requestEngineMove);
-        }
+        // 播放遊戲開始動畫
+        m_pendingGameStart = isComputerTurn();  // 標記是否需要在動畫後請求引擎走棋
+        playGameStartAnimation();
     }
 }
 
@@ -1473,6 +1593,15 @@ void Qt_Chess::resizeEvent(QResizeEvent *event) {
     // 調整大小後重新應用高亮
     if (m_pieceSelected) {
         highlightValidMoves();
+    }
+    
+    // 如果動畫疊加層正在顯示，更新其大小以匹配新視窗大小
+    if (m_animationOverlay && m_animationOverlay->isVisible()) {
+        QRect windowRect = rect();
+        m_animationOverlay->setGeometry(windowRect);
+        if (m_animationLabel) {
+            m_animationLabel->setGeometry(0, 0, windowRect.width(), windowRect.height());
+        }
     }
 }
 
@@ -2054,21 +2183,25 @@ void Qt_Chess::onToggleFullScreenClicked() {
 }
 
 void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
-    // 時間控制群組框
-    QGroupBox* timeControlGroup = new QGroupBox("時間控制", this);
+    // 時間控制群組框 - 現代科技風格
+    QGroupBox* timeControlGroup = new QGroupBox("⏱ 遊戲設定", this);
     QVBoxLayout* timeControlLayout = new QVBoxLayout(timeControlGroup);
 
     QFont labelFont;
     labelFont.setPointSize(10);
 
-    // 白方時間標籤和滑桿
-    m_whiteTimeLimitTitleLabel = new QLabel("白方時間:", this);
+    // 白方時間標籤和滑桿 - 現代科技風格
+    m_whiteTimeLimitTitleLabel = new QLabel("♔ 白方時間:", this);
     m_whiteTimeLimitTitleLabel->setFont(labelFont);
+    m_whiteTimeLimitTitleLabel->setStyleSheet(QString("QLabel { color: %1; font-weight: bold; }").arg(THEME_ACCENT_SUCCESS));
     timeControlLayout->addWidget(m_whiteTimeLimitTitleLabel);
 
     m_whiteTimeLimitLabel = new QLabel("不限時", this);
     m_whiteTimeLimitLabel->setFont(labelFont);
     m_whiteTimeLimitLabel->setAlignment(Qt::AlignCenter);
+    m_whiteTimeLimitLabel->setStyleSheet(QString(
+        "QLabel { color: %1; padding: 4px; background: rgba(0, 255, 136, 0.1); border-radius: 4px; }"
+    ).arg(THEME_ACCENT_SUCCESS));
     timeControlLayout->addWidget(m_whiteTimeLimitLabel);
 
     // 白方時間的水平滑桿 - 離散值
@@ -2082,14 +2215,18 @@ void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
     connect(m_whiteTimeLimitSlider, &QSlider::valueChanged, this, &Qt_Chess::onWhiteTimeLimitChanged);
     timeControlLayout->addWidget(m_whiteTimeLimitSlider);
 
-    // 黑方時間標籤和滑桿
-    m_blackTimeLimitTitleLabel = new QLabel("黑方時間:", this);
+    // 黑方時間標籤和滑桿 - 現代科技風格
+    m_blackTimeLimitTitleLabel = new QLabel("♚ 黑方時間:", this);
     m_blackTimeLimitTitleLabel->setFont(labelFont);
+    m_blackTimeLimitTitleLabel->setStyleSheet(QString("QLabel { color: %1; font-weight: bold; }").arg(THEME_ACCENT_PRIMARY));
     timeControlLayout->addWidget(m_blackTimeLimitTitleLabel);
 
     m_blackTimeLimitLabel = new QLabel("不限時", this);
     m_blackTimeLimitLabel->setFont(labelFont);
     m_blackTimeLimitLabel->setAlignment(Qt::AlignCenter);
+    m_blackTimeLimitLabel->setStyleSheet(QString(
+        "QLabel { color: %1; padding: 4px; background: rgba(0, 217, 255, 0.1); border-radius: 4px; }"
+    ).arg(THEME_ACCENT_PRIMARY));
     timeControlLayout->addWidget(m_blackTimeLimitLabel);
 
     // 黑方時間的水平滑桿 - 離散值
@@ -2102,14 +2239,18 @@ void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
     connect(m_blackTimeLimitSlider, &QSlider::valueChanged, this, &Qt_Chess::onBlackTimeLimitChanged);
     timeControlLayout->addWidget(m_blackTimeLimitSlider);
 
-    // 增量標籤和滑桿
-    m_incrementTitleLabel = new QLabel("每著加秒:", this);
+    // 增量標籤和滑桿 - 現代科技風格
+    m_incrementTitleLabel = new QLabel("⏳ 每著加秒:", this);
     m_incrementTitleLabel->setFont(labelFont);
+    m_incrementTitleLabel->setStyleSheet(QString("QLabel { color: %1; font-weight: bold; }").arg(THEME_ACCENT_SECONDARY));
     timeControlLayout->addWidget(m_incrementTitleLabel);
 
     m_incrementLabel = new QLabel("0秒", this);
     m_incrementLabel->setFont(labelFont);
     m_incrementLabel->setAlignment(Qt::AlignCenter);
+    m_incrementLabel->setStyleSheet(QString(
+        "QLabel { color: %1; padding: 4px; background: rgba(233, 69, 96, 0.1); border-radius: 4px; }"
+    ).arg(THEME_ACCENT_SECONDARY));
     timeControlLayout->addWidget(m_incrementLabel);
 
     // 增量的水平滑桿 - 填充可用寬度
@@ -2123,39 +2264,64 @@ void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
     timeControlLayout->addWidget(m_incrementSlider);
 
     // 對弈模式 - 直接接在時間控制下方（同一個群組框內）
-    QLabel* gameModeLabel = new QLabel("對弈模式:", this);
+    QLabel* gameModeLabel = new QLabel("⚔ 對弈模式:", this);
     gameModeLabel->setFont(labelFont);
+    gameModeLabel->setStyleSheet(QString("QLabel { color: %1; font-weight: bold; }").arg(THEME_ACCENT_PRIMARY));
     timeControlLayout->addWidget(gameModeLabel);
     
-    // 使用方塊按鈕選擇雙人或電腦對弈
+    // 使用方塊按鈕選擇雙人或電腦對弈 - 現代科技風格
     QHBoxLayout* gameModeButtonsLayout = new QHBoxLayout();
     
+    // 現代科技風格按鈕樣式 - 雙人模式（霓虹綠色）
+    QString humanModeStyle = QString(
+        "QPushButton { "
+        "  border: 2px solid %1; border-radius: 8px; padding: 8px; "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %2, stop:1 %3); "
+        "  color: %4; font-weight: bold; "
+        "}"
+        "QPushButton:checked { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %5, stop:1 rgba(0, 255, 136, 0.6)); "
+        "  color: %3; border-color: %5; "
+        "}"
+        "QPushButton:hover { "
+        "  border-color: %5; "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %2, stop:0.5 rgba(0, 255, 136, 0.2), stop:1 %3); "
+        "}"
+    ).arg(THEME_BORDER, THEME_BG_PANEL, THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_ACCENT_SUCCESS);
+    
+    // 現代科技風格按鈕樣式 - 電腦模式（霓虹青色）
+    QString computerModeStyle = QString(
+        "QPushButton { "
+        "  border: 2px solid %1; border-radius: 8px; padding: 8px; "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %2, stop:1 %3); "
+        "  color: %4; font-weight: bold; "
+        "}"
+        "QPushButton:checked { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %5, stop:1 rgba(0, 217, 255, 0.6)); "
+        "  color: %3; border-color: %5; "
+        "}"
+        "QPushButton:hover { "
+        "  border-color: %5; "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %2, stop:0.5 rgba(0, 217, 255, 0.2), stop:1 %3); "
+        "}"
+    ).arg(THEME_BORDER, THEME_BG_PANEL, THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_ACCENT_PRIMARY);
+    
     // 雙人對弈按鈕
-    m_humanModeButton = new QPushButton("雙人", this);
+    m_humanModeButton = new QPushButton("👥 雙人", this);
     m_humanModeButton->setFont(labelFont);
     m_humanModeButton->setCheckable(true);
     m_humanModeButton->setChecked(true);
-    m_humanModeButton->setMinimumSize(60, 40);
-    m_humanModeButton->setStyleSheet(
-        "QPushButton { border: 2px solid #555; border-radius: 5px; padding: 5px; background-color: #9E9E9E; color: #333; }"
-        "QPushButton:checked { background-color: #4CAF50; color: white; border-color: #2E7D32; }"
-        "QPushButton:hover { background-color: #BDBDBD; }"
-        "QPushButton:checked:hover { background-color: #66BB6A; }"
-    );
+    m_humanModeButton->setMinimumSize(70, 45);
+    m_humanModeButton->setStyleSheet(humanModeStyle);
     connect(m_humanModeButton, &QPushButton::clicked, this, &Qt_Chess::onHumanModeClicked);
     gameModeButtonsLayout->addWidget(m_humanModeButton);
     
     // 電腦對弈按鈕
-    m_computerModeButton = new QPushButton("電腦", this);
+    m_computerModeButton = new QPushButton("🤖 電腦", this);
     m_computerModeButton->setFont(labelFont);
     m_computerModeButton->setCheckable(true);
-    m_computerModeButton->setMinimumSize(60, 40);
-    m_computerModeButton->setStyleSheet(
-        "QPushButton { border: 2px solid #555; border-radius: 5px; padding: 5px; background-color: #9E9E9E; color: #333; }"
-        "QPushButton:checked { background-color: #2196F3; color: white; border-color: #1565C0; }"
-        "QPushButton:hover { background-color: #BDBDBD; }"
-        "QPushButton:checked:hover { background-color: #42A5F5; }"
-    );
+    m_computerModeButton->setMinimumSize(70, 45);
+    m_computerModeButton->setStyleSheet(computerModeStyle);
     connect(m_computerModeButton, &QPushButton::clicked, this, &Qt_Chess::onComputerModeClicked);
     gameModeButtonsLayout->addWidget(m_computerModeButton);
     
@@ -2166,36 +2332,46 @@ void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
     QHBoxLayout* colorButtonsLayout = new QHBoxLayout(m_colorSelectionWidget);
     colorButtonsLayout->setContentsMargins(0, 5, 0, 5);
     
-    // 統一的按鈕樣式（灰色未選中，藍色選中）
-    QString colorButtonStyle = 
-        "QPushButton { border: 2px solid #555; border-radius: 5px; padding: 3px; background-color: #9E9E9E; color: #333; }"
-        "QPushButton:checked { background-color: #2196F3; color: white; border-color: #1565C0; }"
-        "QPushButton:hover { background-color: #BDBDBD; }"
-        "QPushButton:checked:hover { background-color: #42A5F5; }";
+    // 統一的按鈕樣式 - 現代科技風格（霓虹粉色選中效果）
+    QString colorButtonStyle = QString(
+        "QPushButton { "
+        "  border: 2px solid %1; border-radius: 6px; padding: 6px; "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %2, stop:1 %3); "
+        "  color: %4; font-weight: bold; "
+        "}"
+        "QPushButton:checked { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %5, stop:1 rgba(233, 69, 96, 0.6)); "
+        "  color: white; border-color: %5; "
+        "}"
+        "QPushButton:hover { "
+        "  border-color: %5; "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %2, stop:0.5 rgba(233, 69, 96, 0.2), stop:1 %3); "
+        "}"
+    ).arg(THEME_BORDER, THEME_BG_PANEL, THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_ACCENT_SECONDARY);
     
     // 執白按鈕
-    m_whiteButton = new QPushButton("執白", this);
+    m_whiteButton = new QPushButton("♔ 執白", this);
     m_whiteButton->setFont(labelFont);
     m_whiteButton->setCheckable(true);
-    m_whiteButton->setMinimumSize(50, 35);
+    m_whiteButton->setMinimumSize(55, 38);
     m_whiteButton->setStyleSheet(colorButtonStyle);
     connect(m_whiteButton, &QPushButton::clicked, this, &Qt_Chess::onWhiteColorClicked);
     colorButtonsLayout->addWidget(m_whiteButton);
     
     // 隨機按鈕
-    m_randomButton = new QPushButton("隨機", this);
+    m_randomButton = new QPushButton("🎲 隨機", this);
     m_randomButton->setFont(labelFont);
     m_randomButton->setCheckable(true);
-    m_randomButton->setMinimumSize(50, 35);
+    m_randomButton->setMinimumSize(55, 38);
     m_randomButton->setStyleSheet(colorButtonStyle);
     connect(m_randomButton, &QPushButton::clicked, this, &Qt_Chess::onRandomColorClicked);
     colorButtonsLayout->addWidget(m_randomButton);
     
     // 執黑按鈕
-    m_blackButton = new QPushButton("執黑", this);
+    m_blackButton = new QPushButton("♚ 執黑", this);
     m_blackButton->setFont(labelFont);
     m_blackButton->setCheckable(true);
-    m_blackButton->setMinimumSize(50, 35);
+    m_blackButton->setMinimumSize(55, 38);
     m_blackButton->setStyleSheet(colorButtonStyle);
     connect(m_blackButton, &QPushButton::clicked, this, &Qt_Chess::onBlackColorClicked);
     colorButtonsLayout->addWidget(m_blackButton);
@@ -2211,8 +2387,9 @@ void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
     timeControlLayout->addWidget(m_gameModeStatusLabel);
     
     // 難度設定
-    m_difficultyLabel = new QLabel("電腦難度:", this);
+    m_difficultyLabel = new QLabel("🎯 電腦難度:", this);
     m_difficultyLabel->setFont(labelFont);
+    m_difficultyLabel->setStyleSheet(QString("QLabel { color: %1; font-weight: bold; }").arg(THEME_ACCENT_WARNING));
     timeControlLayout->addWidget(m_difficultyLabel);
     
     // 初始值為 0（初學者），顯示 ELO 和中文難度名稱
@@ -2221,6 +2398,8 @@ void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
     m_difficultyValueLabel = new QLabel(QString("%1 (ELO %2)").arg(initialDiffName).arg(initialElo), this);
     m_difficultyValueLabel->setFont(labelFont);
     m_difficultyValueLabel->setAlignment(Qt::AlignCenter);
+    m_difficultyValueLabel->setStyleSheet(QString("QLabel { color: %1; font-weight: bold; padding: 4px; "
+        "background: rgba(255, 217, 61, 0.15); border-radius: 4px; }").arg(THEME_ACCENT_WARNING));
     timeControlLayout->addWidget(m_difficultyValueLabel);
     
     m_difficultySlider = new QSlider(Qt::Horizontal, this);
@@ -2232,11 +2411,21 @@ void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
     connect(m_difficultySlider, &QSlider::valueChanged, this, &Qt_Chess::onDifficultyChanged);
     timeControlLayout->addWidget(m_difficultySlider);
     
-    // 電腦思考中的提示標籤（初始隱藏）
-    m_thinkingLabel = new QLabel("電腦思考中...", this);
+    // 電腦思考中的提示標籤（初始隱藏）- 現代科技風格動畫效果
+    m_thinkingLabel = new QLabel("🔄 電腦思考中...", this);
     m_thinkingLabel->setFont(labelFont);
     m_thinkingLabel->setAlignment(Qt::AlignCenter);
-    m_thinkingLabel->setStyleSheet("QLabel { color: #FF6B6B; font-weight: bold; }");
+    m_thinkingLabel->setStyleSheet(QString(
+        "QLabel { "
+        "  color: %1; "
+        "  font-weight: bold; "
+        "  padding: 8px; "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "    stop:0 rgba(233, 69, 96, 0.3), stop:0.5 rgba(0, 217, 255, 0.3), stop:1 rgba(233, 69, 96, 0.3)); "
+        "  border: 2px solid %1; "
+        "  border-radius: 8px; "
+        "}"
+    ).arg(THEME_ACCENT_SECONDARY));
     m_thinkingLabel->hide();
     timeControlLayout->addWidget(m_thinkingLabel);
     
@@ -2252,24 +2441,65 @@ void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
 
     timeControlPanelLayout->addWidget(timeControlGroup, 1);
 
-    // 開始 button - placed at the bottom of the time control panel, outside the group box
-    m_startButton = new QPushButton("開始", this);
-    m_startButton->setMinimumHeight(40);
+    // 開始按鈕 - 現代科技風格霓虹效果
+    m_startButton = new QPushButton("▶ 開始對弈", this);
+    m_startButton->setMinimumHeight(50);
     QFont startButtonFont;
-    startButtonFont.setPointSize(12);
+    startButtonFont.setPointSize(14);
     startButtonFont.setBold(true);
     m_startButton->setFont(startButtonFont);
     m_startButton->setEnabled(true);  // 始終啟用以允許開始遊戲
+    m_startButton->setStyleSheet(QString(
+        "QPushButton { "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "    stop:0 %1, stop:0.5 rgba(0, 255, 136, 0.8), stop:1 %1); "
+        "  color: %2; "
+        "  border: 3px solid %1; "
+        "  border-radius: 12px; "
+        "  padding: 10px; "
+        "}"
+        "QPushButton:hover { "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "    stop:0 %1, stop:0.3 rgba(0, 255, 136, 0.9), stop:0.7 rgba(0, 217, 255, 0.9), stop:1 %1); "
+        "  border-color: white; "
+        "}"
+        "QPushButton:pressed { "
+        "  background: %1; "
+        "}"
+        "QPushButton:disabled { "
+        "  background: rgba(50, 50, 70, 0.6); "
+        "  color: #666; "
+        "  border-color: #444; "
+        "}"
+    ).arg(THEME_ACCENT_SUCCESS, THEME_BG_DARK));
     connect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onStartButtonClicked);
     timeControlPanelLayout->addWidget(m_startButton, 0);  // 伸展因子 0 以保持按鈕高度
 
-    // 放棄按鈕 - 放在開始按鈕下方，初始隱藏
-    m_giveUpButton = new QPushButton("放棄", this);
-    m_giveUpButton->setMinimumHeight(40);
+    // 放棄按鈕 - 現代科技風格紅色警告效果
+    m_giveUpButton = new QPushButton("🏳 放棄認輸", this);
+    m_giveUpButton->setMinimumHeight(45);
     QFont giveUpButtonFont;
     giveUpButtonFont.setPointSize(12);
     giveUpButtonFont.setBold(true);
     m_giveUpButton->setFont(giveUpButtonFont);
+    m_giveUpButton->setStyleSheet(QString(
+        "QPushButton { "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "    stop:0 %1, stop:0.5 rgba(233, 69, 96, 0.7), stop:1 %1); "
+        "  color: %2; "
+        "  border: 3px solid %3; "
+        "  border-radius: 10px; "
+        "  padding: 8px; "
+        "}"
+        "QPushButton:hover { "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "    stop:0 %3, stop:0.5 rgba(255, 100, 120, 0.9), stop:1 %3); "
+        "  border-color: #FF6B6B; "
+        "}"
+        "QPushButton:pressed { "
+        "  background: %3; "
+        "}"
+    ).arg(THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_ACCENT_SECONDARY));
     m_giveUpButton->hide();  // 初始隱藏
     connect(m_giveUpButton, &QPushButton::clicked, this, &Qt_Chess::onGiveUpClicked);
     timeControlPanelLayout->addWidget(m_giveUpButton, 0);  // 伸展因子 0 以保持按鈕高度
@@ -2292,7 +2522,7 @@ void Qt_Chess::onWhiteTimeLimitChanged(int value) {
     // 開始 button is always enabled
     if (m_startButton) {
         m_startButton->setEnabled(true);
-        m_startButton->setText("開始");
+        m_startButton->setText("▶ 開始對弈");
     }
 
     updateTimeDisplays();
@@ -2496,6 +2726,9 @@ void Qt_Chess::handleGameEnd() {
     stopTimer();
     m_timerStarted = false;
     m_gameStarted = false;  // 標記遊戲已結束
+    
+    // 停止背景音樂（遊戲已結束）
+    stopBackgroundMusic();
 
     // 隱藏放棄按鈕
     if (m_giveUpButton) {
@@ -2649,38 +2882,65 @@ void Qt_Chess::restoreWidgetsFromGameEnd() {
     }
     
     // 將 widgets 重新設定父物件並添加到右側佈局
-    // 按原始順序：對方吃子紀錄 -> 黑方時間 -> 白方時間 -> 我方吃子紀錄
+    // 順序根據 m_isBoardFlipped 調整：對方在上方，我方在下方
     
-    if (m_capturedWhitePanel) {
-        m_capturedWhitePanel->setParent(m_rightTimePanel);
-        rightLayout->addWidget(m_capturedWhitePanel, 1);
+    // 根據棋盤翻轉狀態決定上下方的吃子面板和時間標籤
+    QWidget* topCapturedPanel = nullptr;
+    QProgressBar* topProgressBar = nullptr;
+    QLabel* topTimeLabel = nullptr;
+    QLabel* bottomTimeLabel = nullptr;
+    QProgressBar* bottomProgressBar = nullptr;
+    QWidget* bottomCapturedPanel = nullptr;
+    
+    if (m_isBoardFlipped) {
+        // 玩家執黑：對方（白方）在上方，我方（黑方）在下方
+        topCapturedPanel = m_capturedBlackPanel;    // 對方（白方）吃掉的我方棋子（黑子）
+        topProgressBar = m_whiteTimeProgressBar;
+        topTimeLabel = m_whiteTimeLabel;
+        bottomTimeLabel = m_blackTimeLabel;
+        bottomProgressBar = m_blackTimeProgressBar;
+        bottomCapturedPanel = m_capturedWhitePanel; // 我方（黑方）吃掉的對方棋子（白子）
+    } else {
+        // 玩家執白：對方（黑方）在上方，我方（白方）在下方
+        topCapturedPanel = m_capturedWhitePanel;    // 對方（黑方）吃掉的我方棋子（白子）
+        topProgressBar = m_blackTimeProgressBar;
+        topTimeLabel = m_blackTimeLabel;
+        bottomTimeLabel = m_whiteTimeLabel;
+        bottomProgressBar = m_whiteTimeProgressBar;
+        bottomCapturedPanel = m_capturedBlackPanel; // 我方（白方）吃掉的對方棋子（黑子）
     }
     
-    if (m_blackTimeProgressBar) {
-        m_blackTimeProgressBar->setParent(m_rightTimePanel);
-        rightLayout->addWidget(m_blackTimeProgressBar, 0, Qt::AlignCenter);
+    // 按順序添加：對方吃子紀錄 -> 對方時間進度條 -> 對方時間 -> 我方時間 -> 我方時間進度條 -> 我方吃子紀錄
+    if (topCapturedPanel) {
+        topCapturedPanel->setParent(m_rightTimePanel);
+        rightLayout->addWidget(topCapturedPanel, 1);
     }
     
-    if (m_blackTimeLabel) {
-        m_blackTimeLabel->setParent(m_rightTimePanel);
-        m_blackTimeLabel->setAlignment(Qt::AlignCenter);
-        rightLayout->addWidget(m_blackTimeLabel, 0, Qt::AlignCenter);
+    if (topProgressBar) {
+        topProgressBar->setParent(m_rightTimePanel);
+        rightLayout->addWidget(topProgressBar, 0, Qt::AlignCenter);
     }
     
-    if (m_whiteTimeLabel) {
-        m_whiteTimeLabel->setParent(m_rightTimePanel);
-        m_whiteTimeLabel->setAlignment(Qt::AlignCenter);
-        rightLayout->addWidget(m_whiteTimeLabel, 0, Qt::AlignCenter);
+    if (topTimeLabel) {
+        topTimeLabel->setParent(m_rightTimePanel);
+        topTimeLabel->setAlignment(Qt::AlignCenter);
+        rightLayout->addWidget(topTimeLabel, 0, Qt::AlignCenter);
     }
     
-    if (m_whiteTimeProgressBar) {
-        m_whiteTimeProgressBar->setParent(m_rightTimePanel);
-        rightLayout->addWidget(m_whiteTimeProgressBar, 0, Qt::AlignCenter);
+    if (bottomTimeLabel) {
+        bottomTimeLabel->setParent(m_rightTimePanel);
+        bottomTimeLabel->setAlignment(Qt::AlignCenter);
+        rightLayout->addWidget(bottomTimeLabel, 0, Qt::AlignCenter);
     }
     
-    if (m_capturedBlackPanel) {
-        m_capturedBlackPanel->setParent(m_rightTimePanel);
-        rightLayout->addWidget(m_capturedBlackPanel, 1);
+    if (bottomProgressBar) {
+        bottomProgressBar->setParent(m_rightTimePanel);
+        rightLayout->addWidget(bottomProgressBar, 0, Qt::AlignCenter);
+    }
+    
+    if (bottomCapturedPanel) {
+        bottomCapturedPanel->setParent(m_rightTimePanel);
+        rightLayout->addWidget(bottomCapturedPanel, 1);
     }
     
     // 更新被吃掉的棋子顯示
@@ -2773,6 +3033,9 @@ void Qt_Chess::saveTimeControlSettings() {
 void Qt_Chess::showTimeControlAfterTimeout() {
     // 標記遊戲已結束
     m_gameStarted = false;
+    
+    // 停止背景音樂（超時結束）
+    stopBackgroundMusic();
 
     // 顯示時間控制面板 so user can adjust settings
     if (m_timeControlPanel) {
@@ -3179,20 +3442,37 @@ void Qt_Chess::updateCapturedPiecesDisplay() {
         }
     };
 
-    // 顯示被吃掉的白色棋子（對方吃子紀錄，從上往下，與棋盤頂部貼齊）
-    // 這裡顯示的是黑方吃掉的白子，所以顯示黑方的分差
-    int whitePanelEndY = 0;
-    if (m_capturedWhitePanel) {
-        whitePanelEndY = displayCapturedPieces(m_capturedWhitePanel, capturedWhite, m_capturedWhiteLabels);
-        updateScoreDiffLabel(m_blackScoreDiffLabel, m_capturedWhitePanel, blackDiff, whitePanelEndY);
-    }
-
-    // 顯示被吃掉的黑色棋子（我方吃子紀錄，從上往下）
-    // 這裡顯示的是白方吃掉的黑子，所以顯示白方的分差
-    int blackPanelEndY = 0;
-    if (m_capturedBlackPanel) {
-        blackPanelEndY = displayCapturedPieces(m_capturedBlackPanel, capturedBlack, m_capturedBlackLabels);
-        updateScoreDiffLabel(m_whiteScoreDiffLabel, m_capturedBlackPanel, whiteDiff, blackPanelEndY);
+    // 根據棋盤是否翻轉來決定哪個面板顯示哪方的被吃棋子
+    // 上方面板（m_capturedWhitePanel）應該顯示對方被吃掉的棋子
+    // 下方面板（m_capturedBlackPanel）應該顯示我方吃掉的對方棋子
+    
+    int topPanelEndY = 0;
+    int bottomPanelEndY = 0;
+    
+    if (m_isBoardFlipped) {
+        // 棋盤翻轉：玩家執黑
+        // 上方面板顯示被吃掉的黑子（對方白方吃掉的我方黑子）
+        // 下方面板顯示被吃掉的白子（我方黑方吃掉的對方白子）
+        if (m_capturedWhitePanel) {
+            topPanelEndY = displayCapturedPieces(m_capturedWhitePanel, capturedBlack, m_capturedWhiteLabels);
+            updateScoreDiffLabel(m_blackScoreDiffLabel, m_capturedWhitePanel, whiteDiff, topPanelEndY);
+        }
+        if (m_capturedBlackPanel) {
+            bottomPanelEndY = displayCapturedPieces(m_capturedBlackPanel, capturedWhite, m_capturedBlackLabels);
+            updateScoreDiffLabel(m_whiteScoreDiffLabel, m_capturedBlackPanel, blackDiff, bottomPanelEndY);
+        }
+    } else {
+        // 棋盤不翻轉：玩家執白
+        // 上方面板顯示被吃掉的白子（對方黑方吃掉的我方白子）
+        // 下方面板顯示被吃掉的黑子（我方白方吃掉的對方黑子）
+        if (m_capturedWhitePanel) {
+            topPanelEndY = displayCapturedPieces(m_capturedWhitePanel, capturedWhite, m_capturedWhiteLabels);
+            updateScoreDiffLabel(m_blackScoreDiffLabel, m_capturedWhitePanel, blackDiff, topPanelEndY);
+        }
+        if (m_capturedBlackPanel) {
+            bottomPanelEndY = displayCapturedPieces(m_capturedBlackPanel, capturedBlack, m_capturedBlackLabels);
+            updateScoreDiffLabel(m_whiteScoreDiffLabel, m_capturedBlackPanel, whiteDiff, bottomPanelEndY);
+        }
     }
 }
 
@@ -3776,4 +4056,530 @@ void Qt_Chess::saveEngineSettings() {
     }
     
     settings.sync();
+}
+
+void Qt_Chess::applyModernStylesheet() {
+    // 現代科技風格全局樣式表
+    QString styleSheet = QString(
+        // 主視窗背景
+        "QMainWindow { "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:1, "
+        "    stop:0 %1, stop:0.5 %2, stop:1 %1); "
+        "}"
+        
+        // 中央部件
+        "QWidget#centralwidget { "
+        "  background: transparent; "
+        "}"
+        
+        // 選單欄
+        "QMenuBar { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+        "    stop:0 %3, stop:1 %1); "
+        "  color: %4; "
+        "  border-bottom: 2px solid %5; "
+        "  padding: 4px 8px; "
+        "  font-weight: bold; "
+        "}"
+        "QMenuBar::item { "
+        "  padding: 6px 12px; "
+        "  background: transparent; "
+        "  border-radius: 4px; "
+        "}"
+        "QMenuBar::item:selected { "
+        "  background: rgba(0, 217, 255, 0.3); "
+        "  color: %5; "
+        "}"
+        "QMenuBar::item:pressed { "
+        "  background: rgba(0, 217, 255, 0.5); "
+        "}"
+        
+        // 下拉選單
+        "QMenu { "
+        "  background-color: %1; "
+        "  border: 2px solid %5; "
+        "  border-radius: 8px; "
+        "  padding: 4px; "
+        "}"
+        "QMenu::item { "
+        "  padding: 8px 24px; "
+        "  color: %4; "
+        "  border-radius: 4px; "
+        "}"
+        "QMenu::item:selected { "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "    stop:0 rgba(0, 217, 255, 0.4), stop:1 rgba(233, 69, 96, 0.4)); "
+        "  color: white; "
+        "}"
+        "QMenu::separator { "
+        "  height: 2px; "
+        "  background: %6; "
+        "  margin: 4px 8px; "
+        "}"
+        
+        // 群組框
+        "QGroupBox { "
+        "  font-weight: bold; "
+        "  color: %5; "
+        "  border: 2px solid %6; "
+        "  border-radius: 10px; "
+        "  margin-top: 12px; "
+        "  padding-top: 10px; "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+        "    stop:0 rgba(15, 52, 96, 0.9), stop:1 rgba(26, 26, 46, 0.9)); "
+        "}"
+        "QGroupBox::title { "
+        "  subcontrol-origin: margin; "
+        "  subcontrol-position: top left; "
+        "  padding: 4px 12px; "
+        "  color: %5; "
+        "  background: %3; "
+        "  border: 1px solid %5; "
+        "  border-radius: 6px; "
+        "  left: 10px; "
+        "}"
+        
+        // 按鈕
+        "QPushButton { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+        "    stop:0 %3, stop:1 %1); "
+        "  color: %4; "
+        "  border: 2px solid %6; "
+        "  border-radius: 8px; "
+        "  padding: 8px 16px; "
+        "  font-weight: bold; "
+        "}"
+        "QPushButton:hover { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+        "    stop:0 %3, stop:0.5 rgba(0, 217, 255, 0.3), stop:1 %1); "
+        "  border: 2px solid %5; "
+        "  color: %5; "
+        "}"
+        "QPushButton:pressed { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+        "    stop:0 %1, stop:1 %3); "
+        "  border: 2px solid %7; "
+        "}"
+        "QPushButton:disabled { "
+        "  background: rgba(30, 30, 50, 0.6); "
+        "  color: #666; "
+        "  border: 2px solid #444; "
+        "}"
+        "QPushButton:checked { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+        "    stop:0 %5, stop:1 rgba(0, 217, 255, 0.6)); "
+        "  color: %1; "
+        "  border: 2px solid %5; "
+        "}"
+        
+        // 標籤
+        "QLabel { "
+        "  color: %4; "
+        "  font-weight: normal; "
+        "}"
+        
+        // 滑桿
+        "QSlider::groove:horizontal { "
+        "  border: 1px solid %6; "
+        "  height: 8px; "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "    stop:0 %1, stop:1 %3); "
+        "  border-radius: 4px; "
+        "}"
+        "QSlider::handle:horizontal { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+        "    stop:0 %5, stop:1 rgba(0, 217, 255, 0.7)); "
+        "  border: 2px solid %5; "
+        "  width: 18px; "
+        "  margin: -6px 0; "
+        "  border-radius: 9px; "
+        "}"
+        "QSlider::handle:horizontal:hover { "
+        "  background: %5; "
+        "  border: 2px solid white; "
+        "}"
+        "QSlider::sub-page:horizontal { "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "    stop:0 %5, stop:1 %7); "
+        "  border-radius: 4px; "
+        "}"
+        
+        // 列表視窗
+        "QListWidget { "
+        "  background-color: rgba(26, 26, 46, 0.95); "
+        "  border: 2px solid %6; "
+        "  border-radius: 8px; "
+        "  color: %4; "
+        "  alternate-background-color: rgba(15, 52, 96, 0.5); "
+        "}"
+        "QListWidget::item { "
+        "  padding: 6px; "
+        "  border-radius: 4px; "
+        "}"
+        "QListWidget::item:selected { "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "    stop:0 rgba(0, 217, 255, 0.5), stop:1 rgba(233, 69, 96, 0.3)); "
+        "  color: white; "
+        "}"
+        "QListWidget::item:hover { "
+        "  background: rgba(0, 217, 255, 0.2); "
+        "}"
+        
+        // 進度條
+        "QProgressBar { "
+        "  border: 2px solid %6; "
+        "  border-radius: 6px; "
+        "  background-color: rgba(26, 26, 46, 0.9); "
+        "  text-align: center; "
+        "  color: %4; "
+        "}"
+        "QProgressBar::chunk { "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "    stop:0 %8, stop:1 %5); "
+        "  border-radius: 4px; "
+        "}"
+        
+        // 狀態欄
+        "QStatusBar { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+        "    stop:0 %1, stop:1 %3); "
+        "  color: %4; "
+        "  border-top: 2px solid %5; "
+        "}"
+        
+        // 訊息框
+        "QMessageBox { "
+        "  background-color: %1; "
+        "}"
+        "QMessageBox QLabel { "
+        "  color: %4; "
+        "}"
+        
+        // 對話框
+        "QDialog { "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:1, "
+        "    stop:0 %1, stop:0.5 %2, stop:1 %1); "
+        "}"
+        
+        // 滾動條
+        "QScrollBar:vertical { "
+        "  border: none; "
+        "  background: %1; "
+        "  width: 12px; "
+        "  margin: 0; "
+        "  border-radius: 6px; "
+        "}"
+        "QScrollBar::handle:vertical { "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "    stop:0 %6, stop:1 %5); "
+        "  min-height: 30px; "
+        "  border-radius: 6px; "
+        "}"
+        "QScrollBar::handle:vertical:hover { "
+        "  background: %5; "
+        "}"
+        "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { "
+        "  height: 0; "
+        "}"
+    ).arg(THEME_BG_DARK, THEME_BG_MEDIUM, THEME_BG_PANEL, THEME_TEXT_PRIMARY, 
+          THEME_ACCENT_PRIMARY, THEME_BORDER, THEME_ACCENT_SECONDARY, THEME_ACCENT_SUCCESS);
+    
+    setStyleSheet(styleSheet);
+}
+
+void Qt_Chess::playGameStartAnimation() {
+    // 創建動畫疊加層（如果尚未創建）
+    if (!m_animationOverlay) {
+        m_animationOverlay = new QWidget(this);
+        m_animationOverlay->setObjectName("animationOverlay");
+        m_animationOverlay->setStyleSheet(
+            "QWidget#animationOverlay { "
+            "  background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, "
+            "    stop:0 rgba(26, 26, 46, 0.95), "
+            "    stop:0.5 rgba(15, 52, 96, 0.95), "
+            "    stop:1 rgba(26, 26, 46, 0.95)); "
+            "}"
+        );
+    }
+    
+    // 創建動畫標籤（如果尚未創建）
+    if (!m_animationLabel) {
+        m_animationLabel = new QLabel(m_animationOverlay);
+        m_animationLabel->setAlignment(Qt::AlignCenter);
+    }
+    
+    // 初始化動畫計時器（只在構造時連接一次）
+    if (!m_animationTimer) {
+        m_animationTimer = new QTimer(this);
+        connect(m_animationTimer, &QTimer::timeout, this, &Qt_Chess::onAnimationStep);
+    }
+    
+    // 每次播放動畫時更新疊加層大小以匹配當前視窗大小
+    QRect windowRect = rect();
+    m_animationOverlay->setGeometry(windowRect);
+    m_animationLabel->setGeometry(0, 0, windowRect.width(), windowRect.height());
+    
+    // 開始動畫
+    m_animationStep = 0;
+    m_animationOverlay->raise();
+    m_animationOverlay->show();
+    
+    // 顯示第一幀
+    onAnimationStep();
+    
+    // 啟動動畫計時器（每 800ms 更新一次）
+    m_animationTimer->start(800);
+}
+
+void Qt_Chess::onAnimationStep() {
+    if (!m_animationLabel || !m_animationOverlay) return;
+    
+    QString text;
+    QString style;
+    
+    // 根據動畫步驟設置不同的文字和樣式
+    // 已移除 3-2-1 倒數，直接顯示開始訊息
+    switch (m_animationStep) {
+        case 0:
+            text = "⚔ 對弈開始 ⚔";
+            style = QString(
+                "QLabel { "
+                "  color: %1; "
+                "  font-size: 48px; "
+                "  font-weight: bold; "
+                "  font-family: 'Arial', sans-serif; "
+                "  background: transparent; "
+                "}"
+            ).arg(THEME_ACCENT_SUCCESS);
+            break;
+        default:
+            // 動畫結束
+            m_animationTimer->stop();
+            finishGameStartAnimation();
+            return;
+    }
+    
+    m_animationLabel->setText(text);
+    m_animationLabel->setStyleSheet(style);
+    m_animationStep++;
+}
+
+void Qt_Chess::finishGameStartAnimation() {
+    // 隱藏動畫疊加層
+    if (m_animationOverlay) {
+        m_animationOverlay->hide();
+    }
+    
+    // 遊戲開始動畫結束後開始播放背景音樂（只在遊戲進行中播放）
+    if (m_gameStarted) {
+        startBackgroundMusic();
+    }
+    
+    // 如果有待處理的遊戲開始，現在執行它
+    if (m_pendingGameStart) {
+        m_pendingGameStart = false;
+        
+        // 執行實際的遊戲開始邏輯（在動畫期間被延遲）
+        // 如果是電腦先走（玩家執黑），請求引擎走棋
+        if (isComputerTurn()) {
+            QTimer::singleShot(300, this, &Qt_Chess::requestEngineMove);
+        }
+    }
+}
+
+void Qt_Chess::playStartupAnimation() {
+    // 創建動畫疊加層（如果尚未創建）
+    if (!m_animationOverlay) {
+        m_animationOverlay = new QWidget(this);
+        m_animationOverlay->setObjectName("animationOverlay");
+        m_animationOverlay->setStyleSheet(
+            "QWidget#animationOverlay { "
+            "  background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, "
+            "    stop:0 rgba(26, 26, 46, 0.98), "
+            "    stop:0.5 rgba(15, 52, 96, 0.98), "
+            "    stop:1 rgba(26, 26, 46, 0.98)); "
+            "}"
+        );
+    }
+    
+    // 創建動畫標籤（如果尚未創建）
+    if (!m_animationLabel) {
+        m_animationLabel = new QLabel(m_animationOverlay);
+        m_animationLabel->setAlignment(Qt::AlignCenter);
+    }
+    
+    // 創建副標籤（用於顯示副標題）
+    if (!m_animationSubLabel) {
+        m_animationSubLabel = new QLabel(m_animationOverlay);
+        m_animationSubLabel->setAlignment(Qt::AlignCenter);
+    }
+    
+    // 初始化啟動動畫計時器（只在構造時連接一次）
+    if (!m_startupAnimationTimer) {
+        m_startupAnimationTimer = new QTimer(this);
+        connect(m_startupAnimationTimer, &QTimer::timeout, this, &Qt_Chess::onStartupAnimationStep);
+    }
+    
+    // 每次播放動畫時更新疊加層大小以匹配當前視窗大小
+    QRect windowRect = rect();
+    m_animationOverlay->setGeometry(windowRect);
+    m_animationLabel->setGeometry(0, windowRect.height() / 4, windowRect.width(), windowRect.height() / 2);
+    m_animationSubLabel->setGeometry(0, windowRect.height() * 2 / 3, windowRect.width(), windowRect.height() / 4);
+    
+    // 開始動畫
+    m_startupAnimationStep = 0;
+    m_animationOverlay->raise();
+    m_animationOverlay->show();
+    
+    // 顯示第一幀並開始淡入效果
+    onStartupAnimationStep();
+    
+    // 啟動動畫計時器（每 700ms 更新一次，更流暢）
+    m_startupAnimationTimer->start(700);
+}
+
+void Qt_Chess::playStartupTextAnimation(QLabel* label, const QString& text, const QString& color, int fontSize) {
+    if (!label) return;
+    
+    // 設置文字和樣式
+    label->setText(text);
+    label->setStyleSheet(QString(
+        "QLabel { "
+        "  color: %1; "
+        "  font-size: %2px; "
+        "  font-weight: bold; "
+        "  font-family: 'Arial', sans-serif; "
+        "  background: transparent; "
+        "}"
+    ).arg(color).arg(fontSize));
+}
+
+void Qt_Chess::onStartupAnimationStep() {
+    if (!m_animationLabel || !m_animationOverlay) return;
+    
+    // 動態啟動動畫序列：多階段視覺效果
+    switch (m_startupAnimationStep) {
+        case 0:
+            // 第一幀：白色棋子符號，從上方滑入
+            playStartupTextAnimation(m_animationLabel, "♔ ♕ ♖ ♗ ♘ ♙", THEME_ACCENT_PRIMARY, 80);
+            if (m_animationSubLabel) m_animationSubLabel->setText("");
+            break;
+        case 1:
+            // 第二幀：標題「科技對弈」放大顯示
+            playStartupTextAnimation(m_animationLabel, "⚡ 科技對弈 ⚡", THEME_ACCENT_WARNING, 72);
+            if (m_animationSubLabel) {
+                m_animationSubLabel->setStyleSheet(QString(
+                    "QLabel { color: %1; font-size: 24px; background: transparent; }"
+                ).arg(THEME_ACCENT_PRIMARY));
+                m_animationSubLabel->setText("TECH CHESS BATTLE");
+            }
+            break;
+        case 2:
+            // 第三幀：黑色棋子符號
+            playStartupTextAnimation(m_animationLabel, "♚ ♛ ♜ ♝ ♞ ♟", THEME_ACCENT_SECONDARY, 80);
+            if (m_animationSubLabel) m_animationSubLabel->setText("");
+            break;
+        case 3:
+            // 第四幀：準備就緒
+            playStartupTextAnimation(m_animationLabel, "🎮 準備就緒 🎮", THEME_ACCENT_SUCCESS, 64);
+            if (m_animationSubLabel) {
+                m_animationSubLabel->setStyleSheet(QString(
+                    "QLabel { color: %1; font-size: 20px; background: transparent; }"
+                ).arg(THEME_ACCENT_SUCCESS));
+                m_animationSubLabel->setText("READY TO PLAY");
+            }
+            break;
+        default:
+            // 動畫結束
+            m_startupAnimationTimer->stop();
+            finishStartupAnimation();
+            return;
+    }
+    
+    m_startupAnimationStep++;
+}
+
+void Qt_Chess::finishStartupAnimation() {
+    // 隱藏動畫疊加層
+    if (m_animationOverlay) {
+        m_animationOverlay->hide();
+    }
+    
+    // 啟動動畫結束後不播放背景音樂
+    // 背景音樂只在遊戲開始時播放
+}
+
+void Qt_Chess::initializeBackgroundMusic() {
+    // 創建背景音樂播放器 (Qt6 API)
+    m_bgmPlayer = new QMediaPlayer(this);
+    m_audioOutput = new QAudioOutput(this);
+    m_bgmPlayer->setAudioOutput(m_audioOutput);
+    
+    // 設定音量 (Qt6 使用 0.0-1.0 浮點數)
+    m_audioOutput->setVolume(m_bgmVolume / 100.0);
+    
+    // 初始化背景音樂列表 - 使用 resources/backgroundsounds 中的5首音樂
+    m_bgmList.clear();
+    m_bgmList << "qrc:/resources/backgroundsounds/backgroundsound_1.mp3"
+              << "qrc:/resources/backgroundsounds/backgroundsound_2.mp3"
+              << "qrc:/resources/backgroundsounds/backgroundsound_3.mp3"
+              << "qrc:/resources/backgroundsounds/backgroundsound_4.mp3"
+              << "qrc:/resources/backgroundsounds/backgroundsound_5.mp3";
+    
+    // 設定循環播放 - 當媒體結束時重新播放 (Qt6 使用 playbackStateChanged)
+    connect(m_bgmPlayer, &QMediaPlayer::playbackStateChanged, this, [this](QMediaPlayer::PlaybackState state) {
+        if (state == QMediaPlayer::StoppedState && m_bgmEnabled && m_gameStarted) {
+            // 媒體播放完畢，重新開始（只在遊戲進行中才循環播放）
+            m_bgmPlayer->setPosition(0);
+            m_bgmPlayer->play();
+        }
+    });
+}
+
+void Qt_Chess::startBackgroundMusic() {
+    if (!m_bgmPlayer || !m_bgmEnabled || m_bgmList.isEmpty()) return;
+    
+    // 隨機選擇一首背景音樂，但不能與上一次相同
+    int newIndex;
+    if (m_bgmList.size() == 1) {
+        newIndex = 0;
+    } else {
+        do {
+            newIndex = QRandomGenerator::global()->bounded(m_bgmList.size());
+        } while (newIndex == m_lastBgmIndex);
+    }
+    
+    m_lastBgmIndex = newIndex;
+    QString bgmPath = m_bgmList[newIndex];
+    
+    // 設定並播放背景音樂 (Qt6 使用 setSource)
+    m_bgmPlayer->setSource(QUrl(bgmPath));
+    m_bgmPlayer->play();
+}
+
+void Qt_Chess::stopBackgroundMusic() {
+    if (m_bgmPlayer) {
+        m_bgmPlayer->stop();
+    }
+}
+
+void Qt_Chess::toggleBackgroundMusic() {
+    m_bgmEnabled = !m_bgmEnabled;
+    if (m_bgmEnabled && m_gameStarted) {
+        // 只有在遊戲進行中才啟動背景音樂
+        startBackgroundMusic();
+    } else {
+        stopBackgroundMusic();
+    }
+}
+
+void Qt_Chess::onToggleBackgroundMusicClicked() {
+    toggleBackgroundMusic();
+}
+
+void Qt_Chess::setBackgroundMusicVolume(int volume) {
+    m_bgmVolume = qBound(0, volume, 100);
+    if (m_audioOutput) {
+        m_audioOutput->setVolume(m_bgmVolume / 100.0);
+    }
 }

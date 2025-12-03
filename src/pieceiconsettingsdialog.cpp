@@ -1,4 +1,5 @@
 #include "pieceiconsettingsdialog.h"
+#include "theme.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QGroupBox>
@@ -20,8 +21,12 @@
 PieceIconSettingsDialog::PieceIconSettingsDialog(QWidget *parent)
     : QDialog(parent)
 {
-    setWindowTitle("棋子圖標設定");
+    setWindowTitle("♟ 棋子圖標設定");
     resize(700, 600);
+    
+    // 應用現代科技風格
+    applyModernDialogStyle();
+    
     setupUI();
 }
 
@@ -29,12 +34,84 @@ PieceIconSettingsDialog::~PieceIconSettingsDialog()
 {
 }
 
+void PieceIconSettingsDialog::applyModernDialogStyle()
+{
+    // 現代科技風格對話框樣式表
+    QString styleSheet = QString(
+        "QDialog { "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:1, "
+        "    stop:0 %1, stop:0.5 %2, stop:1 %1); "
+        "}"
+        "QGroupBox { "
+        "  font-weight: bold; "
+        "  color: %3; "
+        "  border: 2px solid %4; "
+        "  border-radius: 10px; "
+        "  margin-top: 12px; "
+        "  padding-top: 10px; "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+        "    stop:0 rgba(15, 52, 96, 0.9), stop:1 rgba(26, 26, 46, 0.9)); "
+        "}"
+        "QGroupBox::title { "
+        "  subcontrol-origin: margin; "
+        "  subcontrol-position: top left; "
+        "  padding: 4px 12px; "
+        "  color: %3; "
+        "  background: %5; "
+        "  border: 1px solid %3; "
+        "  border-radius: 6px; "
+        "  left: 10px; "
+        "}"
+        "QLabel { color: %6; }"
+        "QRadioButton { color: %6; }"
+        "QRadioButton::indicator { width: 16px; height: 16px; }"
+        "QRadioButton::indicator:unchecked { "
+        "  border: 2px solid %4; border-radius: 8px; background: %1; "
+        "}"
+        "QRadioButton::indicator:checked { "
+        "  border: 2px solid %3; border-radius: 8px; "
+        "  background: qradialgradient(cx:0.5, cy:0.5, radius:0.5, "
+        "    fx:0.5, fy:0.5, stop:0 %3, stop:0.5 %3, stop:0.7 transparent); "
+        "}"
+        "QPushButton { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %5, stop:1 %1); "
+        "  color: %6; border: 2px solid %4; border-radius: 8px; "
+        "  padding: 6px 12px; font-weight: bold; "
+        "}"
+        "QPushButton:hover { "
+        "  border-color: %3; "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+        "    stop:0 %5, stop:0.5 rgba(0, 217, 255, 0.3), stop:1 %1); "
+        "}"
+        "QPushButton:pressed { background: %3; color: %1; }"
+        "QSlider::groove:horizontal { "
+        "  border: 1px solid %4; height: 8px; "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 %1, stop:1 %5); "
+        "  border-radius: 4px; "
+        "}"
+        "QSlider::handle:horizontal { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %3, stop:1 rgba(0, 217, 255, 0.7)); "
+        "  border: 2px solid %3; width: 16px; margin: -5px 0; border-radius: 8px; "
+        "}"
+        "QSlider::sub-page:horizontal { "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 %3, stop:1 %7); "
+        "  border-radius: 4px; "
+        "}"
+        "QScrollArea { background: transparent; border: none; }"
+        "QScrollArea > QWidget > QWidget { background: transparent; }"
+    ).arg(Theme::BG_DARK, Theme::BG_MEDIUM, Theme::ACCENT_PRIMARY, 
+          Theme::BORDER, Theme::BG_PANEL, Theme::TEXT_PRIMARY, 
+          Theme::ACCENT_SECONDARY);
+    
+    setStyleSheet(styleSheet);
+}
+
 void PieceIconSettingsDialog::setupUI()
 {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     
     // 圖示集選擇群組（帶視覺預覽）
-    QGroupBox* iconSetGroup = new QGroupBox("圖標集選擇 - 點擊預覽圖選擇", this);
+    QGroupBox* iconSetGroup = new QGroupBox("🎨 圖標集選擇 - 點擊預覽圖選擇", this);
     QVBoxLayout* iconSetLayout = new QVBoxLayout(iconSetGroup);
     
     // 為單選按鈕創建按鈕群組

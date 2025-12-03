@@ -1,4 +1,5 @@
 #include "boardcolorsettingsdialog.h"
+#include "theme.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QGroupBox>
@@ -10,9 +11,6 @@
 
 // 常數
 namespace {
-    const QString HOVER_BORDER_COLOR = "#4A90E2";
-    const QString HOVER_BACKGROUND_COLOR = "#F0F0F0";
-    const QString PRESSED_BACKGROUND_COLOR = "#E0E0E0";
     const int MAX_CUSTOM_SLOTS = 7;
     
     // 預設配色方案（不包括自訂插槽）
@@ -35,9 +33,12 @@ namespace {
 BoardColorSettingsDialog::BoardColorSettingsDialog(QWidget *parent)
     : QDialog(parent)
 {
-    setWindowTitle("棋盤顏色設定");
+    setWindowTitle("🎨 棋盤顏色設定");
     setModal(true);
     resize(650, 500);
+    
+    // 應用現代科技風格
+    applyModernDialogStyle();
     
     m_settings = getDefaultSettings();
     loadCustomSlots();
@@ -231,12 +232,12 @@ QPushButton* BoardColorSettingsDialog::createPresetPreview(ColorScheme scheme, c
     // 設置內容元件幾何以填充按鈕
     contentWidget->setGeometry(0, 0, PREVIEW_BUTTON_WIDTH, PREVIEW_BUTTON_HEIGHT);
     
-    // 添加懸停效果
+    // 添加懸停效果 - 使用共用主題顏色
     button->setStyleSheet(
         QString("QPushButton { border: 2px solid transparent; border-radius: 5px; background-color: transparent; }"
                 "QPushButton:hover { border: 2px solid %1; background-color: %2; }"
                 "QPushButton:pressed { background-color: %3; }")
-        .arg(HOVER_BORDER_COLOR, HOVER_BACKGROUND_COLOR, PRESSED_BACKGROUND_COLOR)
+        .arg(Theme::HOVER_BORDER, Theme::HOVER_BG, Theme::PRESSED_BG)
     );
     
     // 連接點擊事件
@@ -481,9 +482,10 @@ void BoardColorSettingsDialog::setSettings(const BoardColorSettings& settings) {
 
 BoardColorSettingsDialog::BoardColorSettings BoardColorSettingsDialog::getDefaultSettings() {
     BoardColorSettings settings;
-    settings.lightSquareColor = QColor("#F0D9B5");  // 經典淺米色
-    settings.darkSquareColor = QColor("#B58863");   // 經典棕色
-    settings.scheme = ColorScheme::Classic;
+    // 現代科技風格 - 深色系配色
+    settings.lightSquareColor = QColor("#3D5A80");  // 科技藍灰色（淺色格）
+    settings.darkSquareColor = QColor("#1A2D42");   // 深海藍色（深色格）
+    settings.scheme = ColorScheme::OceanBlue;  // 使用海洋藍作為預設
     return settings;
 }
 
@@ -517,8 +519,9 @@ BoardColorSettingsDialog::BoardColorSettings BoardColorSettingsDialog::getPreset
             break;
             
         case ColorScheme::OceanBlue:
-            settings.lightSquareColor = QColor("#A8D8EA");  // 淺海藍色
-            settings.darkSquareColor = QColor("#2E5B6D");   // 深海藍色
+            // 現代科技風格 - 深色海洋藍
+            settings.lightSquareColor = QColor("#3D5A80");  // 科技藍灰色
+            settings.darkSquareColor = QColor("#1A2D42");   // 深海藍色
             break;
             
         case ColorScheme::LightTheme:
@@ -533,9 +536,9 @@ BoardColorSettingsDialog::BoardColorSettings BoardColorSettingsDialog::getPreset
         case ColorScheme::Custom5:
         case ColorScheme::Custom6:
         case ColorScheme::Custom7:
-            // 對於自訂插槽，返回預設顏色作為佔位符
-            settings.lightSquareColor = QColor("#F0D9B5");
-            settings.darkSquareColor = QColor("#B58863");
+            // 對於自訂插槽，返回現代科技風格預設顏色作為佔位符
+            settings.lightSquareColor = QColor("#3D5A80");
+            settings.darkSquareColor = QColor("#1A2D42");
             break;
     }
     
@@ -589,4 +592,64 @@ bool BoardColorSettingsDialog::isCustomSlot(ColorScheme scheme) const {
            scheme == ColorScheme::Custom5 ||
            scheme == ColorScheme::Custom6 ||
            scheme == ColorScheme::Custom7;
+}
+
+void BoardColorSettingsDialog::applyModernDialogStyle() {
+    // 現代科技風格對話框樣式表
+    QString styleSheet = QString(
+        "QDialog { "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:1, "
+        "    stop:0 %1, stop:0.5 %2, stop:1 %1); "
+        "}"
+        "QGroupBox { "
+        "  font-weight: bold; "
+        "  color: %3; "
+        "  border: 2px solid %4; "
+        "  border-radius: 10px; "
+        "  margin-top: 12px; "
+        "  padding-top: 10px; "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+        "    stop:0 rgba(15, 52, 96, 0.9), stop:1 rgba(26, 26, 46, 0.9)); "
+        "}"
+        "QGroupBox::title { "
+        "  subcontrol-origin: margin; "
+        "  subcontrol-position: top left; "
+        "  padding: 4px 12px; "
+        "  color: %3; "
+        "  background: %5; "
+        "  border: 1px solid %3; "
+        "  border-radius: 6px; "
+        "  left: 10px; "
+        "}"
+        "QLabel { color: %6; }"
+        "QPushButton { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %5, stop:1 %1); "
+        "  color: %6; border: 2px solid %4; border-radius: 8px; "
+        "  padding: 6px 12px; font-weight: bold; "
+        "}"
+        "QPushButton:hover { "
+        "  border-color: %3; "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+        "    stop:0 %5, stop:0.5 rgba(0, 217, 255, 0.3), stop:1 %1); "
+        "}"
+        "QPushButton:pressed { background: %3; color: %1; }"
+        "QRadioButton { color: %6; }"
+        "QRadioButton::indicator { width: 16px; height: 16px; }"
+        "QRadioButton::indicator:unchecked { "
+        "  border: 2px solid %4; border-radius: 8px; background: %1; "
+        "}"
+        "QRadioButton::indicator:checked { "
+        "  border: 2px solid %3; border-radius: 8px; "
+        "  background: qradialgradient(cx:0.5, cy:0.5, radius:0.5, "
+        "    fx:0.5, fy:0.5, stop:0 %3, stop:0.5 %3, stop:0.7 transparent); "
+        "}"
+        "QLineEdit { "
+        "  background: %1; color: %6; border: 2px solid %4; "
+        "  border-radius: 6px; padding: 4px 8px; "
+        "}"
+        "QLineEdit:focus { border-color: %3; }"
+    ).arg(Theme::BG_DARK, Theme::BG_MEDIUM, Theme::ACCENT_PRIMARY, 
+          Theme::BORDER, Theme::BG_PANEL, Theme::TEXT_PRIMARY);
+    
+    setStyleSheet(styleSheet);
 }
