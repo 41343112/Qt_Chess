@@ -2609,8 +2609,8 @@ void Qt_Chess::onWhiteTimeLimitChanged(int value) {
     m_timeControlEnabled = (m_whiteTimeMs > 0 || m_blackTimeMs > 0);
     m_timerStarted = false;
 
-    // 開始 button is always enabled
-    if (m_startButton) {
+    // 開始 button is always enabled, but don't change text if in online mode
+    if (m_startButton && !m_isOnlineGame) {
         m_startButton->setEnabled(true);
         m_startButton->setText("▶ 開始對弈");
     }
@@ -2629,10 +2629,10 @@ void Qt_Chess::onBlackTimeLimitChanged(int value) {
     m_timeControlEnabled = (m_whiteTimeMs > 0 || m_blackTimeMs > 0);
     m_timerStarted = false;
 
-    // 開始 button is always enabled
-    if (m_startButton) {
+    // 開始 button is always enabled, but don't change text if in online mode
+    if (m_startButton && !m_isOnlineGame) {
         m_startButton->setEnabled(true);
-        m_startButton->setText("開始");
+        m_startButton->setText("▶ 開始對弈");
     }
 
     updateTimeDisplays();
@@ -4941,6 +4941,7 @@ void Qt_Chess::onNetworkError(const QString& error) {
     
     // 恢復開始按鈕的原始功能和樣式
     if (m_startButton) {
+        m_startButton->show();  // 確保按鈕顯示
         disconnect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onCancelRoomClicked);
         connect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onStartButtonClicked);
         m_startButton->setText("▶ 開始對弈");
@@ -4969,6 +4970,11 @@ void Qt_Chess::onNetworkError(const QString& error) {
             "}"
         ).arg(THEME_ACCENT_SUCCESS, THEME_BG_DARK));
     }
+    
+    // 恢復時間控制
+    if (m_whiteTimeLimitSlider) m_whiteTimeLimitSlider->setEnabled(true);
+    if (m_blackTimeLimitSlider) m_blackTimeLimitSlider->setEnabled(true);
+    if (m_incrementSlider) m_incrementSlider->setEnabled(true);
     
     // 返回雙人模式
     m_onlineModeButton->setChecked(false);
@@ -5053,12 +5059,20 @@ void Qt_Chess::onGameStartReceived(PieceColor playerColor) {
             "}"
         ).arg(THEME_ACCENT_SUCCESS, THEME_BG_DARK));
         
-        // 只有房主可以開始遊戲，房客不行
+        // 房主和房客的UI狀態
         if (m_networkManager->getRole() == NetworkRole::Server) {
+            // 房主：啟用開始按鈕和時間控制
             m_startButton->setEnabled(true);
+            if (m_whiteTimeLimitSlider) m_whiteTimeLimitSlider->setEnabled(true);
+            if (m_blackTimeLimitSlider) m_blackTimeLimitSlider->setEnabled(true);
+            if (m_incrementSlider) m_incrementSlider->setEnabled(true);
         } else {
-            m_startButton->setEnabled(false);
+            // 房客：隱藏開始按鈕，禁用時間控制
+            m_startButton->hide();
             m_connectionStatusLabel->setText("✅ 連線成功！等待房主開始遊戲...");
+            if (m_whiteTimeLimitSlider) m_whiteTimeLimitSlider->setEnabled(false);
+            if (m_blackTimeLimitSlider) m_blackTimeLimitSlider->setEnabled(false);
+            if (m_incrementSlider) m_incrementSlider->setEnabled(false);
         }
     }
     
@@ -5084,6 +5098,7 @@ void Qt_Chess::onOpponentDisconnected() {
     
     // 恢復開始按鈕的原始功能和樣式
     if (m_startButton) {
+        m_startButton->show();  // 確保按鈕顯示
         disconnect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onCancelRoomClicked);
         connect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onStartButtonClicked);
         m_startButton->setText("▶ 開始對弈");
@@ -5113,6 +5128,11 @@ void Qt_Chess::onOpponentDisconnected() {
         ).arg(THEME_ACCENT_SUCCESS, THEME_BG_DARK));
     }
     
+    // 恢復時間控制
+    if (m_whiteTimeLimitSlider) m_whiteTimeLimitSlider->setEnabled(true);
+    if (m_blackTimeLimitSlider) m_blackTimeLimitSlider->setEnabled(true);
+    if (m_incrementSlider) m_incrementSlider->setEnabled(true);
+    
     // 返回雙人模式
     m_onlineModeButton->setChecked(false);
     m_humanModeButton->setChecked(true);
@@ -5138,6 +5158,7 @@ void Qt_Chess::onCancelRoomClicked() {
         
         // 恢復開始按鈕的原始功能和樣式
         if (m_startButton) {
+            m_startButton->show();  // 確保按鈕顯示
             disconnect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onCancelRoomClicked);
             connect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onStartButtonClicked);
             m_startButton->setText("▶ 開始對弈");
@@ -5166,6 +5187,11 @@ void Qt_Chess::onCancelRoomClicked() {
                 "}"
             ).arg(THEME_ACCENT_SUCCESS, THEME_BG_DARK));
         }
+        
+        // 恢復時間控制
+        if (m_whiteTimeLimitSlider) m_whiteTimeLimitSlider->setEnabled(true);
+        if (m_blackTimeLimitSlider) m_blackTimeLimitSlider->setEnabled(true);
+        if (m_incrementSlider) m_incrementSlider->setEnabled(true);
         
         // 返回雙人模式
         m_onlineModeButton->setChecked(false);
