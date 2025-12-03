@@ -120,7 +120,7 @@ void NetworkGameDialog::setupUI()
     
     m_roomNumberLabel = new QLabel(tr("房間號碼:"), this);
     m_roomNumberEdit = new QLineEdit(this);
-    m_roomNumberEdit->setPlaceholderText(tr("輸入房間號碼，例如: ABCD1234"));
+    m_roomNumberEdit->setPlaceholderText(tr("輸入房間號碼，例如: ABCDEFGHJK"));
     m_roomNumberEdit->setStyleSheet("QLineEdit { font-size: 14pt; }");
     joinLayout->addRow(m_roomNumberLabel, m_roomNumberEdit);
     
@@ -206,8 +206,8 @@ void NetworkGameDialog::onJoinGameClicked()
     
     // 驗證房間號碼格式
     QString roomNumber = m_roomNumberEdit->text().trimmed().toUpper();
-    if (roomNumber.length() != 8) {
-        QMessageBox::warning(this, tr("警告"), tr("房間號碼格式不正確！應為8個字符。"));
+    if (roomNumber.length() != 10) {
+        QMessageBox::warning(this, tr("警告"), tr("房間號碼格式不正確！應為10個字符。"));
         return;
     }
     
@@ -270,18 +270,63 @@ QString NetworkGameDialog::getRoomNumber() const
 
 QString NetworkGameDialog::generateRoomNumber()
 {
-    // 生成一個簡單的房間號碼
-    // 格式：4個字母 + 4個數字（例如：ABCD1234）
-    QString roomNumber;
+    // 生成房間號碼，編碼 IP 地址和端口
+    // 格式：將 IP:Port 編碼為 Base32 字符串
     
-    // 生成4個隨機字母（A-Z）
-    for (int i = 0; i < 4; ++i) {
-        roomNumber += QChar('A' + QRandomGenerator::global()->bounded(26));
+    // 獲取本機 IP 位址
+    QString localIp;
+    QList<QHostAddress> ipAddressesList = QNetworkInterface::allAddresses();
+    
+    // 優先選擇非本地回環的 IPv4 地址
+    for (const QHostAddress& address : ipAddressesList) {
+        if (address != QHostAddress::LocalHost && address.toIPv4Address()) {
+            localIp = address.toString();
+            // 優先選擇局域網 IP，但如果沒有找到，就使用第一個非本地 IP
+            if (localIp.startsWith("192.168.") || localIp.startsWith("10.") || localIp.startsWith("172.")) {
+                break;
+            }
+        }
     }
     
-    // 生成4個隨機數字（0-9）
+    // 如果沒有找到合適的 IP，使用本地回環地址
+    if (localIp.isEmpty()) {
+        localIp = "127.0.0.1";
+    }
+    
+    // 生成一個隨機端口（8000-9999 範圍）
+    quint16 port = 8000 + QRandomGenerator::global()->bounded(2000);
+    
+    // 將 IP 和端口編碼為房間號碼
+    return encodeRoomNumber(localIp, port);
+}
+
+QString NetworkGameDialog::encodeRoomNumber(const QString& ip, quint16 port) const
+{
+    // 將 IP 地址和端口編碼為簡潔的房間號碼
+    // 使用 Base32 字符集（不含易混淆的字符：0, O, I, L）
+    const QString base32Chars = "123456789ABCDEFGHJKMNPQRSTUVWXYZ";
+    
+    // 解析 IP 地址
+    QStringList ipParts = ip.split('.');
+    if (ipParts.size() != 4) {
+        return "ERROR11111"; // 錯誤情況
+    }
+    
+    // 將 IP 的 4 個八位元組和端口打包成一個 48 位的數字
+    // IP: 4 bytes (32 bits), Port: 2 bytes (16 bits) = 48 bits total
+    quint64 encoded = 0;
+    
     for (int i = 0; i < 4; ++i) {
-        roomNumber += QString::number(QRandomGenerator::global()->bounded(10));
+        encoded = (encoded << 8) | ipParts[i].toUInt();
+    }
+    encoded = (encoded << 16) | port;
+    
+    // 將 48 位數字轉換為 Base32 字符串（需要 10 個字符：48/5 = 9.6）
+    QString roomNumber;
+    for (int i = 0; i < 10; ++i) {
+        int index = encoded % 32;
+        roomNumber = base32Chars[index] + roomNumber;
+        encoded /= 32;
     }
     
     return roomNumber;
@@ -289,27 +334,40 @@ QString NetworkGameDialog::generateRoomNumber()
 
 void NetworkGameDialog::parseRoomNumber(const QString& roomNumber, QString& ip, quint16& port) const
 {
-    // 從房間號碼解析出 IP 和端口
-    // 這是一個簡化的實現，實際應用中應該使用服務器來管理房間
+    // 從房間號碼解碼出 IP 和端口
+    // 使用 Base32 解碼
+    const QString base32Chars = "123456789ABCDEFGHJKMNPQRSTUVWXYZ";
     
-    // 對於本地測試，我們將房間號碼映射到端口
-    // 使用房間號碼的哈希值來生成端口號（8000-9000範圍）
-    uint hash = qHash(roomNumber);
-    port = 8000 + (hash % 1000);
-    
-    // 獲取本機 IP 作為服務器地址
-    ip = "127.0.0.1";  // 默認為本地
-    
-    // 嘗試獲取局域網 IP
-    QList<QHostAddress> ipAddressesList = QNetworkInterface::allAddresses();
-    for (const QHostAddress& address : ipAddressesList) {
-        if (address != QHostAddress::LocalHost && address.toIPv4Address()) {
-            QString ipStr = address.toString();
-            // 如果是局域網 IP（192.168.x.x 或 10.x.x.x）
-            if (ipStr.startsWith("192.168.") || ipStr.startsWith("10.")) {
-                ip = ipStr;
-                break;
-            }
-        }
+    // 驗證房間號碼長度
+    if (roomNumber.length() != 10) {
+        ip = "127.0.0.1";
+        port = 8888;
+        return;
     }
+    
+    // 將 Base32 字符串轉換回 48 位數字
+    quint64 decoded = 0;
+    for (int i = 0; i < 10; ++i) {
+        int index = base32Chars.indexOf(roomNumber[i].toUpper());
+        if (index == -1) {
+            // 無效字符
+            ip = "127.0.0.1";
+            port = 8888;
+            return;
+        }
+        decoded = decoded * 32 + index;
+    }
+    
+    // 提取端口（低 16 位）
+    port = decoded & 0xFFFF;
+    decoded >>= 16;
+    
+    // 提取 IP 地址（高 32 位）
+    QStringList ipParts;
+    for (int i = 0; i < 4; ++i) {
+        ipParts.prepend(QString::number(decoded & 0xFF));
+        decoded >>= 8;
+    }
+    
+    ip = ipParts.join('.');
 }
