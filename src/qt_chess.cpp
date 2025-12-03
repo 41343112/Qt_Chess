@@ -37,6 +37,7 @@
 #include <QDebug>
 #include <QDesktopServices>
 #include <QUrl>
+#include <QTextEdit>
 #include <algorithm>
 
 namespace {
@@ -4980,16 +4981,76 @@ void Qt_Chess::showRoomInfoDialog(const QString& roomNumber, quint16 port) {
         }
     }
     
-    QString message = QString(
-        "房間已創建！\n\n"
-        "房間號碼: %1\n"
-        "您的IP地址: %2\n"
-        "端口: %3\n\n"
-        "請將房號和IP地址告訴您的對手。\n"
-        "對手需要輸入您的IP地址和房號才能加入。"
-    ).arg(roomNumber, ipAddress).arg(port);
+    // 建立連線碼（簡化格式）
+    QString connectionCode = QString("%1:%2").arg(ipAddress, roomNumber);
     
-    m_roomInfoLabel->setText(QString("房號: %1 | IP: %2").arg(roomNumber, ipAddress));
+    // 創建自訂對話框
+    QDialog dialog(this);
+    dialog.setWindowTitle(tr("🎉 房間已創建！"));
+    dialog.setMinimumWidth(450);
     
-    QMessageBox::information(this, "房間資訊", message);
+    QVBoxLayout* layout = new QVBoxLayout(&dialog);
+    
+    // 標題
+    QLabel* titleLabel = new QLabel(tr("<h2>✅ 房間創建成功！</h2>"), &dialog);
+    titleLabel->setAlignment(Qt::AlignCenter);
+    titleLabel->setStyleSheet("QLabel { color: #4CAF50; padding: 10px; }");
+    layout->addWidget(titleLabel);
+    
+    // 說明文字
+    QLabel* instructionLabel = new QLabel(
+        tr("<p><b>📱 請將以下連線碼傳給您的朋友：</b></p>"), &dialog);
+    instructionLabel->setWordWrap(true);
+    instructionLabel->setStyleSheet("QLabel { font-size: 11pt; padding: 5px; }");
+    layout->addWidget(instructionLabel);
+    
+    // 連線碼顯示（大字體，可選取）
+    QTextEdit* codeEdit = new QTextEdit(&dialog);
+    codeEdit->setPlainText(connectionCode);
+    codeEdit->setReadOnly(true);
+    codeEdit->setMaximumHeight(60);
+    codeEdit->setAlignment(Qt::AlignCenter);
+    QFont codeFont = codeEdit->font();
+    codeFont.setPointSize(16);
+    codeFont.setBold(true);
+    codeEdit->setFont(codeFont);
+    codeEdit->setStyleSheet("QTextEdit { background-color: #E3F2FD; border: 2px solid #2196F3; border-radius: 5px; padding: 10px; }");
+    layout->addWidget(codeEdit);
+    
+    // 複製按鈕
+    QPushButton* copyButton = new QPushButton(tr("📋 複製連線碼"), &dialog);
+    copyButton->setStyleSheet("QPushButton { background-color: #4CAF50; color: white; padding: 10px; font-size: 12pt; font-weight: bold; border-radius: 5px; }");
+    connect(copyButton, &QPushButton::clicked, [connectionCode]() {
+        QClipboard* clipboard = QApplication::clipboard();
+        clipboard->setText(connectionCode);
+        QMessageBox::information(nullptr, tr("已複製"), 
+            tr("連線碼已複製到剪貼簿！\n\n請用通訊軟體（如LINE、WeChat）傳給朋友"));
+    });
+    layout->addWidget(copyButton);
+    
+    layout->addSpacing(10);
+    
+    // 詳細資訊（可摺疊）
+    QLabel* detailLabel = new QLabel(
+        tr("<p><b>詳細資訊：</b><br>"
+           "房間號碼：<span style='color: #2196F3; font-weight: bold;'>%1</span><br>"
+           "您的IP地址：<span style='color: #2196F3; font-weight: bold;'>%2</span></p>"
+           "<p style='color: #666; font-size: 9pt;'>"
+           "💡 朋友收到連線碼後，選擇「加入房間」並貼上即可</p>").arg(roomNumber, ipAddress), &dialog);
+    detailLabel->setWordWrap(true);
+    detailLabel->setStyleSheet("QLabel { padding: 10px; background-color: #f5f5f5; border-radius: 5px; }");
+    layout->addWidget(detailLabel);
+    
+    layout->addSpacing(10);
+    
+    // 關閉按鈕
+    QPushButton* closeButton = new QPushButton(tr("知道了"), &dialog);
+    closeButton->setStyleSheet("QPushButton { padding: 8px; font-size: 11pt; }");
+    connect(closeButton, &QPushButton::clicked, &dialog, &QDialog::accept);
+    layout->addWidget(closeButton);
+    
+    // 更新房間資訊標籤
+    m_roomInfoLabel->setText(QString("🎮 房號: %1 | IP: %2").arg(roomNumber, ipAddress));
+    
+    dialog.exec();
 }

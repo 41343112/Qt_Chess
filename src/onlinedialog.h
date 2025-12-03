@@ -9,6 +9,7 @@
 #include <QGroupBox>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QTextEdit>
 
 class OnlineDialog : public QDialog
 {
@@ -31,9 +32,11 @@ public:
 private slots:
     void onCreateRoomClicked();
     void onJoinRoomClicked();
+    void onPasteConnectionInfo();
 
 private:
     void setupUI();
+    void parseConnectionInfo(const QString& info);
 
     Mode m_mode;
     
@@ -43,6 +46,8 @@ private:
     QWidget* m_joinRoomWidget;
     QLineEdit* m_hostAddressEdit;
     QLineEdit* m_roomNumberEdit;
+    QTextEdit* m_connectionInfoEdit;
+    QPushButton* m_pasteButton;
     
     QPushButton* m_okButton;
     QPushButton* m_cancelButton;
