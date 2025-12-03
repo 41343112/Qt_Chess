@@ -29,7 +29,10 @@ Qt_Chess 現在支援從 GitHub Releases 自動檢查和下載最新版本的功
 - `checkForUpdates()` - 檢查 GitHub Releases API 獲取最新版本
 - `downloadUpdate()` - 下載更新檔案到下載資料夾
 - 自動選擇適合當前平台的檔案（Windows、Linux、macOS）
-- 使用語義化版本比較（Semantic Versioning）
+- 使用 QVersionNumber 進行強健的語義化版本比較（Semantic Versioning）
+- 支援預發布版本（例如：1.0.0-beta.1）
+- 版本號正規化處理（自動移除 'v' 前綴）
+- 安全的錯誤處理（無效版本號時不會誤報更新）
 
 ### UpdateDialog 類別
 
@@ -42,13 +45,28 @@ Qt_Chess 現在支援從 GitHub Releases 自動檢查和下載最新版本的功
 
 ## 版本號設定
 
-當前版本號在 `qt_chess.cpp` 中設定：
+當前版本號在 `qt_chess.cpp` 的常數中設定：
 
 ```cpp
-m_updateManager->setCurrentVersion("1.0.0");
+const QString APP_VERSION = "1.0.0";           // 應用程式版本
 ```
 
-發布新版本時，請記得更新此版本號。
+發布新版本時，請記得更新此常數。版本號會在初始化時設定到 UpdateManager：
+
+```cpp
+m_updateManager->setCurrentVersion(APP_VERSION);
+```
+
+## GitHub 倉庫設定
+
+GitHub 倉庫資訊也在常數中定義，便於維護：
+
+```cpp
+const QString GITHUB_REPO_OWNER = "41343112";  // GitHub 倉庫擁有者
+const QString GITHUB_REPO_NAME = "Qt_Chess";   // GitHub 倉庫名稱
+```
+
+如果倉庫擁有者或名稱變更，只需修改這些常數即可。
 
 ## GitHub Release 要求
 
