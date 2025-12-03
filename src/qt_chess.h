@@ -216,9 +216,6 @@ private:
     QString m_localPlayerName;           // 本地玩家名稱
     bool m_isNetworkGame;                // 是否為網路對戰
     
-    // 更新管理器
-    UpdateManager* m_updateManager;      // 更新管理器
-    
     void setupUI();
     void setupMenuBar();
     void updateBoard();
@@ -362,5 +359,8 @@ private:
     QPropertyAnimation* m_fadeAnimation; // 淡入淡出動畫
     QPropertyAnimation* m_scaleAnimation; // 縮放動畫
     QGraphicsOpacityEffect* m_opacityEffect; // 透明度效果
+    
+    // 更新管理器
+    UpdateManager* m_updateManager;      // 更新管理器
 };
 #endif // QT_CHESS_H

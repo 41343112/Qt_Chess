@@ -218,7 +218,6 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_networkModeButton(nullptr)
     , m_connectionStatusLabel(nullptr)
     , m_isNetworkGame(false)
-    , m_updateManager(nullptr)
     , m_bgmPlayer(nullptr)
     , m_bgmEnabled(true)
     , m_bgmVolume(30)
@@ -234,6 +233,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_fadeAnimation(nullptr)
     , m_scaleAnimation(nullptr)
     , m_opacityEffect(nullptr)
+    , m_updateManager(nullptr)
 {
     ui->setupUi(this);
     setWindowTitle("♔ 國際象棋 - 科技對弈 ♚");
