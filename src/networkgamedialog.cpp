@@ -287,7 +287,7 @@ QString NetworkGameDialog::generateRoomNumber()
     return roomNumber;
 }
 
-void NetworkGameDialog::parseRoomNumber(const QString& roomNumber, QString& ip, quint16& port)
+void NetworkGameDialog::parseRoomNumber(const QString& roomNumber, QString& ip, quint16& port) const
 {
     // 從房間號碼解析出 IP 和端口
     // 這是一個簡化的實現，實際應用中應該使用服務器來管理房間

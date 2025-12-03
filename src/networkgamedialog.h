@@ -43,7 +43,7 @@ private:
     void setupUI();
     void updateUIState();
     QString generateRoomNumber();  // 生成房間號碼
-    void parseRoomNumber(const QString& roomNumber, QString& ip, quint16& port);  // 解析房間號碼
+    void parseRoomNumber(const QString& roomNumber, QString& ip, quint16& port) const;  // 解析房間號碼
 
     QRadioButton* m_hostRadio;
     QRadioButton* m_joinRadio;
