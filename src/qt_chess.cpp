@@ -960,6 +960,20 @@ void Qt_Chess::onSquareClicked(int displayRow, int displayCol) {
 }
 
 void Qt_Chess::onNewGameClicked() {
+    // 如果是網路遊戲且已連線，詢問是否要發送新遊戲請求
+    if (m_isNetworkGame && m_networkManager && m_networkManager->isConnected()) {
+        QMessageBox::StandardButton reply = QMessageBox::question(
+            this,
+            tr("新遊戲"),
+            tr("是否向對手發送新遊戲請求？"),
+            QMessageBox::Yes | QMessageBox::No
+        );
+        
+        if (reply == QMessageBox::Yes) {
+            m_networkManager->sendNewGameRequest();
+        }
+    }
+    
     // 如果在回放模式中，先退出
     if (m_isReplayMode) {
         exitReplayMode();
@@ -3827,6 +3841,15 @@ QString Qt_Chess::getEnginePath() const {
 }
 
 void Qt_Chess::onHumanModeClicked() {
+    // 如果之前是網路模式，斷開連線
+    if (m_isNetworkGame) {
+        stopNetworkGame();
+        m_isNetworkGame = false;
+        if (m_connectionStatusLabel) {
+            m_connectionStatusLabel->hide();
+        }
+    }
+    
     m_currentGameMode = GameMode::HumanVsHuman;
     updateGameModeUI();
     
@@ -3840,9 +3863,18 @@ void Qt_Chess::onHumanModeClicked() {
 }
 
 void Qt_Chess::onComputerModeClicked() {
+    // 如果之前是網路模式，斷開連線
+    if (m_isNetworkGame) {
+        stopNetworkGame();
+        m_isNetworkGame = false;
+        if (m_connectionStatusLabel) {
+            m_connectionStatusLabel->hide();
+        }
+    }
+    
     // 切換到電腦模式，顯示選邊按鈕
     // 預設選擇執白（如果尚未選擇）
-    if (m_currentGameMode == GameMode::HumanVsHuman) {
+    if (m_currentGameMode == GameMode::HumanVsHuman || m_currentGameMode == GameMode::NetworkGame) {
         m_currentGameMode = GameMode::HumanVsComputer;
     }
     
@@ -3899,18 +3931,24 @@ void Qt_Chess::onBlackColorClicked() {
 
 void Qt_Chess::updateGameModeUI() {
     bool isHumanMode = (m_currentGameMode == GameMode::HumanVsHuman);
+    bool isNetworkMode = (m_currentGameMode == GameMode::NetworkGame);
+    bool isComputerMode = (m_currentGameMode == GameMode::HumanVsComputer || 
+                           m_currentGameMode == GameMode::ComputerVsHuman);
     
     // 更新按鈕選中狀態
     if (m_humanModeButton) {
         m_humanModeButton->setChecked(isHumanMode);
     }
     if (m_computerModeButton) {
-        m_computerModeButton->setChecked(!isHumanMode);
+        m_computerModeButton->setChecked(isComputerMode);
+    }
+    if (m_networkModeButton) {
+        m_networkModeButton->setChecked(isNetworkMode);
     }
     
-    // 更新選邊按鈕
+    // 更新選邊按鈕（只在電腦模式顯示）
     if (m_colorSelectionWidget) {
-        m_colorSelectionWidget->setVisible(!isHumanMode);
+        m_colorSelectionWidget->setVisible(isComputerMode);
     }
     if (m_whiteButton) {
         // 如果是隨機選擇，不高亮執白按鈕
@@ -3930,10 +3968,15 @@ void Qt_Chess::updateGameModeUI() {
         m_gameModeStatusLabel->hide();
     }
     
-    // 更新難度控制的可見性
-    if (m_difficultyLabel) m_difficultyLabel->setVisible(!isHumanMode);
-    if (m_difficultyValueLabel) m_difficultyValueLabel->setVisible(!isHumanMode);
-    if (m_difficultySlider) m_difficultySlider->setVisible(!isHumanMode);
+    // 更新難度控制的可見性（只在電腦模式顯示）
+    if (m_difficultyLabel) m_difficultyLabel->setVisible(isComputerMode);
+    if (m_difficultyValueLabel) m_difficultyValueLabel->setVisible(isComputerMode);
+    if (m_difficultySlider) m_difficultySlider->setVisible(isComputerMode);
+    
+    // 更新網路連線狀態標籤的可見性
+    if (m_connectionStatusLabel) {
+        m_connectionStatusLabel->setVisible(isNetworkMode && m_isNetworkGame);
+    }
 }
 
 void Qt_Chess::onDifficultyChanged(int value) {
