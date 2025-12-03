@@ -104,6 +104,14 @@ private:
     QSoundEffect m_checkmateSound;
     SoundSettingsDialog::SoundSettings m_soundSettings;
     
+    // 線上對戰
+    NetworkManager* m_networkManager;    // 網路管理器
+    QPushButton* m_onlineModeButton;     // 線上對戰按鈕
+    QLabel* m_connectionStatusLabel;     // 連線狀態標籤
+    QLabel* m_roomInfoLabel;             // 房間資訊標籤
+    bool m_isOnlineGame;                 // 是否為線上對戰
+    bool m_waitingForOpponent;           // 等待對手
+    
     // 背景音樂
     QMediaPlayer* m_bgmPlayer;
     QAudioOutput* m_audioOutput;  // Qt6 音量控制
@@ -201,14 +209,6 @@ private:
     QLabel* m_difficultyValueLabel;
     QLabel* m_thinkingLabel;  // 顯示「電腦思考中...」
     QStringList m_uciMoveHistory;  // UCI 格式的移動歷史
-    
-    // 線上對戰
-    NetworkManager* m_networkManager;    // 網路管理器
-    QPushButton* m_onlineModeButton;     // 線上對戰按鈕
-    QLabel* m_connectionStatusLabel;     // 連線狀態標籤
-    QLabel* m_roomInfoLabel;             // 房間資訊標籤
-    bool m_isOnlineGame;                 // 是否為線上對戰
-    bool m_waitingForOpponent;           // 等待對手
     
     void setupUI();
     void setupMenuBar();
