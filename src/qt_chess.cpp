@@ -222,6 +222,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_onlineModeButton(nullptr)
     , m_connectionStatusLabel(nullptr)
     , m_roomInfoLabel(nullptr)
+    , m_cancelRoomButton(nullptr)
     , m_isOnlineGame(false)
     , m_waitingForOpponent(false)
     , m_bgmPlayer(nullptr)
@@ -2459,6 +2460,16 @@ void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
         "padding: 8px; border-radius: 4px; font-weight: bold; }").arg(THEME_ACCENT_PRIMARY));
     m_roomInfoLabel->hide();  // 初始隱藏
     timeControlLayout->addWidget(m_roomInfoLabel);
+    
+    // 取消房間按鈕（等待對手時顯示）
+    m_cancelRoomButton = new QPushButton("✗ 取消等待", this);
+    m_cancelRoomButton->setFont(labelFont);
+    m_cancelRoomButton->setStyleSheet(QString("QPushButton { background-color: #f44336; color: white; "
+        "padding: 8px; border-radius: 4px; font-weight: bold; }"
+        "QPushButton:hover { background-color: #d32f2f; }"));
+    m_cancelRoomButton->hide();  // 初始隱藏
+    connect(m_cancelRoomButton, &QPushButton::clicked, this, &Qt_Chess::onCancelRoomClicked);
+    timeControlLayout->addWidget(m_cancelRoomButton);
     
     // 難度設定
     m_difficultyLabel = new QLabel("🎯 電腦難度:", this);
@@ -4815,6 +4826,7 @@ void Qt_Chess::onOnlineModeClicked() {
                 m_connectionStatusLabel->setText("🔄 等待對手加入...");
                 m_connectionStatusLabel->show();
                 m_roomInfoLabel->show();
+                m_cancelRoomButton->show();  // 顯示取消按鈕
                 
                 // 不要立即開始遊戲，等待對手加入
             } else {
@@ -4885,12 +4897,11 @@ void Qt_Chess::onRoomCreated(const QString& roomNumber, quint16 port) {
 
 void Qt_Chess::onOpponentJoined() {
     m_waitingForOpponent = false;
-    m_connectionStatusLabel->setText("✅ 對手已加入");
+    m_cancelRoomButton->hide();  // 隱藏取消按鈕
+    m_connectionStatusLabel->setText("✅ 對手已加入，等待連線確認...");
     
-    QMessageBox::information(this, "對手已加入", "對手已成功加入房間，遊戲即將開始！");
-    
-    // 開始新遊戲
-    onNewGameClicked();
+    // 房主：等待客戶端確認連線後再開始遊戲
+    // 遊戲將在收到 gameStartReceived 信號時開始
 }
 
 void Qt_Chess::onOpponentMove(const QPoint& from, const QPoint& to, PieceType promotionType) {
@@ -4924,13 +4935,20 @@ void Qt_Chess::onOpponentMove(const QPoint& from, const QPoint& to, PieceType pr
 }
 
 void Qt_Chess::onGameStartReceived(PieceColor playerColor) {
-    m_connectionStatusLabel->setText("✅ 遊戲開始");
+    m_cancelRoomButton->hide();  // 隱藏取消按鈕
+    m_connectionStatusLabel->setText("✅ 連線成功！遊戲開始");
+    
+    // 顯示遊戲開始訊息
+    QMessageBox::information(this, "連線成功", "已成功連線到對手，遊戲即將開始！");
     
     // 如果玩家執黑，翻轉棋盤
     if (playerColor == PieceColor::Black && !m_isBoardFlipped) {
         m_isBoardFlipped = true;
         updateBoard();
     }
+    
+    // 開始新遊戲
+    onNewGameClicked();
 }
 
 void Qt_Chess::onOpponentDisconnected() {
@@ -4944,6 +4962,34 @@ void Qt_Chess::onOpponentDisconnected() {
     m_currentGameMode = GameMode::HumanVsHuman;
     m_connectionStatusLabel->hide();
     m_roomInfoLabel->hide();
+    m_cancelRoomButton->hide();
+}
+
+void Qt_Chess::onCancelRoomClicked() {
+    // 用戶取消等待
+    if (m_waitingForOpponent) {
+        int response = QMessageBox::question(this, "取消等待", 
+            "確定要取消等待對手加入嗎？", 
+            QMessageBox::Yes | QMessageBox::No);
+        
+        if (response == QMessageBox::Yes) {
+            // 關閉網路連線
+            m_networkManager->closeConnection();
+            
+            m_isOnlineGame = false;
+            m_waitingForOpponent = false;
+            
+            // 返回雙人模式
+            m_onlineModeButton->setChecked(false);
+            m_humanModeButton->setChecked(true);
+            m_currentGameMode = GameMode::HumanVsHuman;
+            m_connectionStatusLabel->hide();
+            m_roomInfoLabel->hide();
+            m_cancelRoomButton->hide();
+            
+            QMessageBox::information(this, "已取消", "已取消等待，返回雙人模式");
+        }
+    }
 }
 
 void Qt_Chess::updateConnectionStatus() {

@@ -42,10 +42,11 @@ bool NetworkManager::createRoom(quint16 port)
     connect(m_server, &QTcpServer::newConnection, this, &NetworkManager::onNewConnection);
     connect(m_server, &QTcpServer::acceptError, this, &NetworkManager::onServerError);
     
-    // 如果未指定端口，使用隨機端口
-    if (port == 0) {
-        port = QRandomGenerator::global()->bounded(MIN_AUTO_PORT, MAX_AUTO_PORT);
-    }
+    // 生成房號
+    m_roomNumber = generateRoomNumber();
+    
+    // 根據房號計算端口（PORT_BASE + 房號）
+    port = PORT_BASE + m_roomNumber.toInt();
     
     // 監聽所有網絡接口
     if (!m_server->listen(QHostAddress::Any, port)) {
@@ -58,7 +59,6 @@ bool NetworkManager::createRoom(quint16 port)
     m_port = m_server->serverPort();
     m_role = NetworkRole::Server;
     m_status = ConnectionStatus::Connected;
-    m_roomNumber = generateRoomNumber();
     m_playerColor = PieceColor::White;  // 房主執白
     m_opponentColor = PieceColor::Black;
     
@@ -169,8 +169,7 @@ void NetworkManager::onNewConnection()
     
     emit opponentJoined();
     
-    // 發送遊戲開始消息
-    sendGameStart(m_playerColor);
+    // 等待客戶端發送 JoinRoom 消息，然後在 processMessage 中處理
 }
 
 void NetworkManager::onConnected()
@@ -263,12 +262,18 @@ void NetworkManager::processMessage(const QJsonObject& message)
             QJsonObject response;
             response["type"] = messageTypeToString(MessageType::JoinAccepted);
             sendMessage(response);
+            
+            // 發送遊戲開始消息給客戶端
+            sendGameStart(m_playerColor);
         }
         break;
         
     case MessageType::JoinAccepted:
         // 客戶端收到加入接受
         emit opponentJoined();
+        
+        // 客戶端也發送遊戲開始確認給服務器
+        sendGameStart(m_playerColor);
         break;
         
     case MessageType::GameStart: {
