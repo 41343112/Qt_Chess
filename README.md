@@ -98,6 +98,15 @@
     - **遊戲進行中回放時計時器自動暫停**
     - 點擊「退出回放」返回當前遊戲狀態並繼續對弈
     - **計時器在退出回放後自動恢復**
+- **自動更新功能**：
+  - 從 GitHub Releases 自動檢查最新版本
+  - 透過「幫助」選單 → 「檢查更新」存取
+  - 顯示當前版本和最新版本資訊
+  - 顯示發行說明（Release Notes）
+  - 一鍵下載最新版本到下載資料夾
+  - 顯示下載進度和檔案大小
+  - 支援 Windows、Linux 和 macOS 平台
+  - 參閱 [AUTO_UPDATE_FEATURE.md](docs/AUTO_UPDATE_FEATURE.md) 以獲得使用說明
 
 ## 建置方式
 
@@ -201,6 +210,13 @@ make
       - 點擊「退出回放」按鈕返回當前遊戲狀態
       - 計時器自動恢復，繼續對弈
     - 回放模式中棋盤互動被停用，棋譜列表會高亮顯示當前回放的棋步
+18. **檢查更新**：點擊「幫助」選單 >「檢查更新」以進行：
+    - 自動連接 GitHub 檢查最新版本
+    - 顯示當前版本和最新版本對比
+    - 查看最新版本的發行說明
+    - 點擊「下載更新」按鈕開始下載
+    - 下載進度會即時顯示
+    - 下載完成後可直接開啟檔案所在資料夾
 
 ## 遊戲規則
 
@@ -232,6 +248,8 @@ make
 - `soundsettingsdialog.h/cpp` - 自訂音訊的音效設定對話框
 - `pieceiconsettingsdialog.h/cpp` - 自訂棋子圖形的圖標設定對話框
 - `boardcolorsettingsdialog.h/cpp` - 自訂棋盤顏色的顏色設定對話框
+- `updatemanager.h/cpp` - 更新管理器，處理版本檢查和下載
+- `updatedialog.h/cpp` - 更新對話框，顯示更新資訊和進度
 - `qt_chess.ui` - Qt UI 設計檔案
 - `resources.qrc` - 嵌入音效檔案的 Qt 資源檔案
 - `engine/` - Stockfish 西洋棋引擎目錄
@@ -241,6 +259,7 @@ make
   - `BOARD_FLIP_FEATURE.md` - 棋盤翻轉功能說明
   - `BOARD_COLOR_QUICK_START.md` - 棋盤顏色設定快速入門
   - `ADDING_ICON_SETS.md` - 新增棋子圖標集說明
+  - `AUTO_UPDATE_FEATURE.md` - 自動更新功能使用說明
 
 ## 授權條款
 

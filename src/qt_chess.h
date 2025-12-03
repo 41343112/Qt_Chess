@@ -35,6 +35,7 @@
 #include "boardcolorsettingsdialog.h"
 #include "networkmanager.h"
 #include "networkgamedialog.h"
+#include "updatemanager.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -79,6 +80,7 @@ private slots:
     void onNetworkGameStartReceived(PieceColor remotePlayerColor, int whiteTimeMs, int blackTimeMs, int incrementMs);
     void onNetworkResignReceived();
     void onNetworkNewGameRequested();
+    void onCheckUpdateClicked();
 
 private:
     Ui::Qt_Chess *ui;
@@ -357,5 +359,8 @@ private:
     QPropertyAnimation* m_fadeAnimation; // 淡入淡出動畫
     QPropertyAnimation* m_scaleAnimation; // 縮放動畫
     QGraphicsOpacityEffect* m_opacityEffect; // 透明度效果
+    
+    // 更新管理器
+    UpdateManager* m_updateManager;      // 更新管理器
 };
 #endif // QT_CHESS_H
