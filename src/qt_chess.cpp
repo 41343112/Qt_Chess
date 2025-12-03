@@ -13,6 +13,7 @@
 #include <QPushButton>
 #include <QEvent>
 #include <QResizeEvent>
+#include <QPointer>
 #include <QSettings>
 #include <QIcon>
 #include <QPixmap>
@@ -4614,8 +4615,8 @@ void Qt_Chess::onCheckForUpdatesClicked() {
     // 標記為手動檢查
     m_manualUpdateCheck = true;
     
-    // 顯示檢查中訊息
-    QMessageBox* checkingBox = new QMessageBox(this);
+    // 顯示檢查中訊息（使用 QPointer 防止懸空指標）
+    QPointer<QMessageBox> checkingBox = new QMessageBox(this);
     checkingBox->setWindowTitle("檢查更新");
     checkingBox->setText("正在檢查更新...");
     checkingBox->setStandardButtons(QMessageBox::NoButton);
@@ -4627,11 +4628,16 @@ void Qt_Chess::onCheckForUpdatesClicked() {
     m_updateChecker->checkForUpdates();
     
     // 當檢查完成時關閉訊息框（使用 SingleShot 連接避免重複連接）
-    connect(m_updateChecker, &UpdateChecker::updateCheckFinished, checkingBox, [checkingBox]() {
-        checkingBox->close();
+    // 使用 QPointer 檢查對話框是否仍然有效
+    connect(m_updateChecker, &UpdateChecker::updateCheckFinished, this, [checkingBox]() {
+        if (checkingBox) {
+            checkingBox->close();
+        }
     }, Qt::SingleShotConnection);
-    connect(m_updateChecker, &UpdateChecker::updateCheckFailed, checkingBox, [checkingBox]() {
-        checkingBox->close();
+    connect(m_updateChecker, &UpdateChecker::updateCheckFailed, this, [checkingBox]() {
+        if (checkingBox) {
+            checkingBox->close();
+        }
     }, Qt::SingleShotConnection);
 }
 
@@ -4642,6 +4648,16 @@ void Qt_Chess::onUpdateCheckFinished(bool updateAvailable) {
         QString releaseUrl = m_updateChecker->getReleaseUrl();
         QString releaseNotes = m_updateChecker->getReleaseNotes();
         
+        // 格式化更新說明（如果太長則截斷）
+        QString formattedNotes;
+        if (releaseNotes.isEmpty()) {
+            formattedNotes = "無更新說明";
+        } else if (releaseNotes.length() > RELEASE_NOTES_PREVIEW_LENGTH) {
+            formattedNotes = releaseNotes.left(RELEASE_NOTES_PREVIEW_LENGTH) + "...";
+        } else {
+            formattedNotes = releaseNotes;
+        }
+        
         // 建立訊息內容
         QString message = QString(
             "發現新版本！\n\n"
@@ -4649,8 +4665,7 @@ void Qt_Chess::onUpdateCheckFinished(bool updateAvailable) {
             "最新版本：%2\n\n"
             "更新說明：\n%3\n\n"
             "是否前往下載頁面？"
-        ).arg(currentVersion, latestVersion, 
-              releaseNotes.isEmpty() ? "無更新說明" : releaseNotes.left(RELEASE_NOTES_PREVIEW_LENGTH) + (releaseNotes.length() > RELEASE_NOTES_PREVIEW_LENGTH ? "..." : ""));
+        ).arg(currentVersion, latestVersion, formattedNotes);
         
         QMessageBox msgBox(this);
         msgBox.setWindowTitle("有可用更新");

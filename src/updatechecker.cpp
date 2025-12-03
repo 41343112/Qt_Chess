@@ -38,8 +38,9 @@ void UpdateChecker::checkForUpdates()
     QUrl url(apiUrl);
     QNetworkRequest request(url);
     
-    // 設定 User-Agent header (GitHub API 需要)
-    request.setRawHeader("User-Agent", "Qt_Chess");
+    // 設定 User-Agent header (GitHub API 需要，包含版本號以便除錯)
+    QString userAgent = QString("Qt_Chess/%1").arg(APP_VERSION);
+    request.setRawHeader("User-Agent", userAgent.toUtf8());
     
     m_networkManager->get(request);
 }
