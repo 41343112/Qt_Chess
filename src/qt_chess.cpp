@@ -4,6 +4,7 @@
 #include "soundsettingsdialog.h"
 #include "pieceiconsettingsdialog.h"
 #include "boardcolorsettingsdialog.h"
+#include "updatechecker.h"
 #include <QMessageBox>
 #include <QFont>
 #include <QDialog>
@@ -32,6 +33,8 @@
 #include <QDir>
 #include <QCoreApplication>
 #include <QDebug>
+#include <QDesktopServices>
+#include <QUrl>
 #include <algorithm>
 
 namespace {
@@ -225,6 +228,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_fadeAnimation(nullptr)
     , m_scaleAnimation(nullptr)
     , m_opacityEffect(nullptr)
+    , m_updateChecker(nullptr)
 {
     ui->setupUi(this);
     setWindowTitle("♔ 國際象棋 - 科技對弈 ♚");
@@ -252,6 +256,18 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     loadTimeControlSettings();  // 在 setupUI() 之後載入以確保元件存在
     loadEngineSettings();  // 載入引擎設定
     initializeEngine();  // 初始化棋局引擎
+    
+    // 初始化更新檢查器
+    m_updateChecker = new UpdateChecker(this);
+    connect(m_updateChecker, &UpdateChecker::updateAvailable, this, &Qt_Chess::onUpdateAvailable);
+    connect(m_updateChecker, &UpdateChecker::noUpdateAvailable, this, &Qt_Chess::onNoUpdateAvailable);
+    connect(m_updateChecker, &UpdateChecker::checkFailed, this, &Qt_Chess::onUpdateCheckFailed);
+    
+    // 啟動後自動檢查更新（延遲 2 秒以避免影響啟動動畫）
+    QTimer::singleShot(2000, this, [this]() {
+        m_updateChecker->checkForUpdates();
+    });
+    
     updateBoard();
     updateStatus();
     updateTimeDisplays();
@@ -677,6 +693,14 @@ void Qt_Chess::setupMenuBar() {
     toggleBgmAction->setChecked(m_bgmEnabled);
     connect(toggleBgmAction, &QAction::triggered, this, &Qt_Chess::onToggleBackgroundMusicClicked);
     settingsMenu->addAction(toggleBgmAction);
+    
+    // 幫助選單
+    QMenu* helpMenu = m_menuBar->addMenu("❓ 幫助");
+    
+    // 檢查更新動作
+    QAction* checkUpdateAction = new QAction("🔄 檢查更新", this);
+    connect(checkUpdateAction, &QAction::triggered, this, &Qt_Chess::onCheckForUpdatesClicked);
+    helpMenu->addAction(checkUpdateAction);
 }
 
 void Qt_Chess::updateSquareColor(int displayRow, int displayCol) {
@@ -4510,13 +4534,11 @@ void Qt_Chess::finishStartupAnimation() {
 }
 
 void Qt_Chess::initializeBackgroundMusic() {
-    // 創建背景音樂播放器 (Qt6 API)
+    // 創建背景音樂播放器 (Qt5 API)
     m_bgmPlayer = new QMediaPlayer(this);
-    m_audioOutput = new QAudioOutput(this);
-    m_bgmPlayer->setAudioOutput(m_audioOutput);
     
-    // 設定音量 (Qt6 使用 0.0-1.0 浮點數)
-    m_audioOutput->setVolume(m_bgmVolume / 100.0);
+    // 設定音量 (Qt5 使用 0-100 整數)
+    m_bgmPlayer->setVolume(m_bgmVolume);
     
     // 初始化背景音樂列表 - 使用 resources/backgroundsounds 中的5首音樂
     m_bgmList.clear();
@@ -4526,8 +4548,8 @@ void Qt_Chess::initializeBackgroundMusic() {
               << "qrc:/resources/backgroundsounds/backgroundsound_4.mp3"
               << "qrc:/resources/backgroundsounds/backgroundsound_5.mp3";
     
-    // 設定循環播放 - 當媒體結束時重新播放 (Qt6 使用 playbackStateChanged)
-    connect(m_bgmPlayer, &QMediaPlayer::playbackStateChanged, this, [this](QMediaPlayer::PlaybackState state) {
+    // 設定循環播放 - 當媒體結束時重新播放 (Qt5 使用 stateChanged)
+    connect(m_bgmPlayer, &QMediaPlayer::stateChanged, this, [this](QMediaPlayer::State state) {
         if (state == QMediaPlayer::StoppedState && m_bgmEnabled && m_gameStarted) {
             // 媒體播放完畢，重新開始（只在遊戲進行中才循環播放）
             m_bgmPlayer->setPosition(0);
@@ -4552,8 +4574,8 @@ void Qt_Chess::startBackgroundMusic() {
     m_lastBgmIndex = newIndex;
     QString bgmPath = m_bgmList[newIndex];
     
-    // 設定並播放背景音樂 (Qt6 使用 setSource)
-    m_bgmPlayer->setSource(QUrl(bgmPath));
+    // 設定並播放背景音樂 (Qt5 使用 setMedia)
+    m_bgmPlayer->setMedia(QUrl(bgmPath));
     m_bgmPlayer->play();
 }
 
@@ -4577,9 +4599,63 @@ void Qt_Chess::onToggleBackgroundMusicClicked() {
     toggleBackgroundMusic();
 }
 
+void Qt_Chess::onCheckForUpdatesClicked() {
+    // 顯示檢查中的訊息
+    QMessageBox* checkingBox = new QMessageBox(this);
+    checkingBox->setWindowTitle("檢查更新");
+    checkingBox->setText("正在檢查更新...");
+    checkingBox->setStandardButtons(QMessageBox::NoButton);
+    checkingBox->setModal(true);
+    checkingBox->show();
+    
+    // 檢查更新
+    m_updateChecker->checkForUpdates();
+    
+    // 當檢查完成後關閉訊息框
+    connect(m_updateChecker, &UpdateChecker::updateAvailable, checkingBox, &QMessageBox::close);
+    connect(m_updateChecker, &UpdateChecker::noUpdateAvailable, checkingBox, &QMessageBox::close);
+    connect(m_updateChecker, &UpdateChecker::checkFailed, checkingBox, &QMessageBox::close);
+}
+
+void Qt_Chess::onUpdateAvailable(const QString& version, const QString& downloadUrl, const QString& releaseNotes) {
+    QString message = QString("發現新版本: %1\n\n").arg(version);
+    
+    if (!releaseNotes.isEmpty()) {
+        message += "更新說明:\n" + releaseNotes.left(300);
+        if (releaseNotes.length() > 300) {
+            message += "...";
+        }
+        message += "\n\n";
+    }
+    
+    message += "是否要前往下載頁面？";
+    
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle("更新可用");
+    msgBox.setText(message);
+    msgBox.setIcon(QMessageBox::Information);
+    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    msgBox.setDefaultButton(QMessageBox::Yes);
+    
+    if (msgBox.exec() == QMessageBox::Yes) {
+        // 在瀏覽器中打開下載連結
+        QDesktopServices::openUrl(QUrl(downloadUrl));
+    }
+}
+
+void Qt_Chess::onNoUpdateAvailable() {
+    // 僅在手動檢查時顯示「已是最新版本」訊息
+    // 自動檢查時不顯示
+}
+
+void Qt_Chess::onUpdateCheckFailed(const QString& error) {
+    // 僅記錄錯誤，不打擾使用者
+    qDebug() << "Update check failed:" << error;
+}
+
 void Qt_Chess::setBackgroundMusicVolume(int volume) {
     m_bgmVolume = qBound(0, volume, 100);
-    if (m_audioOutput) {
-        m_audioOutput->setVolume(m_bgmVolume / 100.0);
+    if (m_bgmPlayer) {
+        m_bgmPlayer->setVolume(m_bgmVolume);
     }
 }

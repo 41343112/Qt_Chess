@@ -12,7 +12,6 @@
 #include <QMap>
 #include <QSoundEffect>
 #include <QMediaPlayer>
-#include <QAudioOutput>
 #include <QMenuBar>
 #include <QMenu>
 #include <QAction>
@@ -33,6 +32,7 @@
 #include "soundsettingsdialog.h"
 #include "pieceiconsettingsdialog.h"
 #include "boardcolorsettingsdialog.h"
+#include "updatechecker.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -69,6 +69,10 @@ private slots:
     void onExportPGNClicked();
     void onCopyPGNClicked();
     void onToggleBackgroundMusicClicked();
+    void onCheckForUpdatesClicked();
+    void onUpdateAvailable(const QString& version, const QString& downloadUrl, const QString& releaseNotes);
+    void onNoUpdateAvailable();
+    void onUpdateCheckFailed(const QString& error);
 
 private:
     Ui::Qt_Chess *ui;
@@ -100,7 +104,6 @@ private:
     
     // 背景音樂
     QMediaPlayer* m_bgmPlayer;
-    QAudioOutput* m_audioOutput;  // Qt6 音量控制
     bool m_bgmEnabled;
     int m_bgmVolume;  // 0-100
     QStringList m_bgmList;  // 背景音樂列表
@@ -195,6 +198,9 @@ private:
     QLabel* m_difficultyValueLabel;
     QLabel* m_thinkingLabel;  // 顯示「電腦思考中...」
     QStringList m_uciMoveHistory;  // UCI 格式的移動歷史
+    
+    // 更新檢查器
+    UpdateChecker* m_updateChecker;
     
     void setupUI();
     void setupMenuBar();
