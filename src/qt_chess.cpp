@@ -4606,15 +4606,51 @@ void Qt_Chess::onCheckForUpdatesClicked() {
     checkingBox->setText("正在檢查更新...");
     checkingBox->setStandardButtons(QMessageBox::NoButton);
     checkingBox->setModal(true);
+    checkingBox->setAttribute(Qt::WA_DeleteOnClose); // 自動刪除
     checkingBox->show();
+    
+    // 使用 lambda 確保連接只觸發一次
+    QMetaObject::Connection* connUpdate = new QMetaObject::Connection();
+    QMetaObject::Connection* connNoUpdate = new QMetaObject::Connection();
+    QMetaObject::Connection* connFailed = new QMetaObject::Connection();
+    
+    *connUpdate = connect(m_updateChecker, &UpdateChecker::updateAvailable, this, 
+        [checkingBox, connUpdate, connNoUpdate, connFailed](const QString&, const QString&, const QString&) {
+            checkingBox->close();
+            QObject::disconnect(*connUpdate);
+            QObject::disconnect(*connNoUpdate);
+            QObject::disconnect(*connFailed);
+            delete connUpdate;
+            delete connNoUpdate;
+            delete connFailed;
+        });
+    
+    *connNoUpdate = connect(m_updateChecker, &UpdateChecker::noUpdateAvailable, this,
+        [this, checkingBox, connUpdate, connNoUpdate, connFailed]() {
+            checkingBox->close();
+            QMessageBox::information(this, "檢查更新", 
+                QString("目前已是最新版本 %1").arg(m_updateChecker->getCurrentVersion()));
+            QObject::disconnect(*connUpdate);
+            QObject::disconnect(*connNoUpdate);
+            QObject::disconnect(*connFailed);
+            delete connUpdate;
+            delete connNoUpdate;
+            delete connFailed;
+        });
+    
+    *connFailed = connect(m_updateChecker, &UpdateChecker::checkFailed, this,
+        [checkingBox, connUpdate, connNoUpdate, connFailed](const QString&) {
+            checkingBox->close();
+            QObject::disconnect(*connUpdate);
+            QObject::disconnect(*connNoUpdate);
+            QObject::disconnect(*connFailed);
+            delete connUpdate;
+            delete connNoUpdate;
+            delete connFailed;
+        });
     
     // 檢查更新
     m_updateChecker->checkForUpdates();
-    
-    // 當檢查完成後關閉訊息框
-    connect(m_updateChecker, &UpdateChecker::updateAvailable, checkingBox, &QMessageBox::close);
-    connect(m_updateChecker, &UpdateChecker::noUpdateAvailable, checkingBox, &QMessageBox::close);
-    connect(m_updateChecker, &UpdateChecker::checkFailed, checkingBox, &QMessageBox::close);
 }
 
 void Qt_Chess::onUpdateAvailable(const QString& version, const QString& downloadUrl, const QString& releaseNotes) {
@@ -4644,8 +4680,8 @@ void Qt_Chess::onUpdateAvailable(const QString& version, const QString& download
 }
 
 void Qt_Chess::onNoUpdateAvailable() {
-    // 僅在手動檢查時顯示「已是最新版本」訊息
-    // 自動檢查時不顯示
+    // 自動檢查時不顯示訊息，只記錄日誌
+    qDebug() << "No update available. Current version:" << m_updateChecker->getCurrentVersion();
 }
 
 void Qt_Chess::onUpdateCheckFailed(const QString& error) {

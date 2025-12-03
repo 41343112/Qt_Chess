@@ -1,4 +1,5 @@
 #include "updatechecker.h"
+#include "version.h"
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
@@ -8,15 +9,11 @@
 #include <QDebug>
 #include <QRegularExpression>
 
-// 當前版本號 - 需要在每次發布時更新
-const QString CURRENT_VERSION = "1.0.0";
-const QString GITHUB_API_URL = "https://api.github.com/repos/41343112/Qt_Chess/releases/latest";
-
 UpdateChecker::UpdateChecker(QObject *parent)
     : QObject(parent)
     , m_networkManager(new QNetworkAccessManager(this))
     , m_currentReply(nullptr)
-    , m_currentVersion(CURRENT_VERSION)
+    , m_currentVersion(APP_VERSION)
 {
 }
 
@@ -54,8 +51,8 @@ bool UpdateChecker::isUpdateAvailable() const
 void UpdateChecker::checkForUpdates()
 {
     QNetworkRequest request;
-    request.setUrl(QUrl(GITHUB_API_URL));
-    request.setHeader(QNetworkRequest::UserAgentHeader, "Qt_Chess");
+    request.setUrl(QUrl(GITHUB_API_RELEASES_URL));
+    request.setHeader(QNetworkRequest::UserAgentHeader, APP_NAME);
     
     m_currentReply = m_networkManager->get(request);
     connect(m_currentReply, &QNetworkReply::finished, this, &UpdateChecker::onCheckReplyFinished);
@@ -82,7 +79,7 @@ void UpdateChecker::onCheckReplyFinished()
 
     QJsonDocument jsonDoc = QJsonDocument::fromJson(responseData);
     if (jsonDoc.isNull() || !jsonDoc.isObject()) {
-        emit checkFailed("無法解析 GitHub API 回應");
+        emit checkFailed(tr("無法解析 GitHub API 回應"));
         return;
     }
 
@@ -91,7 +88,7 @@ void UpdateChecker::onCheckReplyFinished()
     // 取得版本標籤
     QString tagName = jsonObj["tag_name"].toString();
     if (tagName.isEmpty()) {
-        emit checkFailed("無法取得版本標籤");
+        emit checkFailed(tr("無法取得版本標籤"));
         return;
     }
 
@@ -152,13 +149,13 @@ void UpdateChecker::onCheckReplyFinished()
 void UpdateChecker::startDownload()
 {
     if (m_downloadUrl.isEmpty()) {
-        emit downloadFailed("沒有可用的下載連結");
+        emit downloadFailed(tr("沒有可用的下載連結"));
         return;
     }
 
     QNetworkRequest request;
     request.setUrl(QUrl(m_downloadUrl));
-    request.setHeader(QNetworkRequest::UserAgentHeader, "Qt_Chess");
+    request.setHeader(QNetworkRequest::UserAgentHeader, APP_NAME);
     
     m_currentReply = m_networkManager->get(request);
     connect(m_currentReply, &QNetworkReply::downloadProgress, this, &UpdateChecker::onDownloadProgress);
@@ -193,11 +190,12 @@ void UpdateChecker::onDownloadFinished()
     }
     
     QString downloadPath = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
-    QString filePath = downloadPath + "/" + fileName;
+    QDir downloadDir(downloadPath);
+    QString filePath = downloadDir.absoluteFilePath(fileName);
     
     QFile file(filePath);
     if (!file.open(QIODevice::WriteOnly)) {
-        emit downloadFailed("無法儲存檔案: " + file.errorString());
+        emit downloadFailed(tr("無法儲存檔案: ") + file.errorString());
         m_currentReply->deleteLater();
         m_currentReply = nullptr;
         return;

@@ -28,7 +28,8 @@ HEADERS += \
     src/pieceiconsettingsdialog.h \
     src/boardcolorsettingsdialog.h \
     src/theme.h \
-    src/updatechecker.h
+    src/updatechecker.h \
+    src/version.h
 
 FORMS += \
     src/qt_chess.ui
