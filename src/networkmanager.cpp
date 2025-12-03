@@ -6,6 +6,13 @@
 #include <QNetworkInterface>
 #include <QHostAddress>
 
+// Network constants
+static const int MIN_ROOM_NUMBER = 1000;
+static const int MAX_ROOM_NUMBER = 9999;
+static const int PORT_BASE = 10000;
+static const int MIN_AUTO_PORT = 10000;
+static const int MAX_AUTO_PORT = 20000;
+
 NetworkManager::NetworkManager(QObject *parent)
     : QObject(parent)
     , m_server(nullptr)
@@ -37,7 +44,7 @@ bool NetworkManager::createRoom(quint16 port)
     
     // 如果未指定端口，使用隨機端口
     if (port == 0) {
-        port = QRandomGenerator::global()->bounded(10000, 60000);
+        port = QRandomGenerator::global()->bounded(MIN_AUTO_PORT, MAX_AUTO_PORT);
     }
     
     // 監聽所有網絡接口
@@ -310,8 +317,8 @@ void NetworkManager::processMessage(const QJsonObject& message)
 
 QString NetworkManager::generateRoomNumber() const
 {
-    // 生成4位數字房號
-    int roomNum = QRandomGenerator::global()->bounded(1000, 10000);
+    // 生成4位數字房號 (MIN_ROOM_NUMBER to MAX_ROOM_NUMBER inclusive)
+    int roomNum = QRandomGenerator::global()->bounded(MIN_ROOM_NUMBER, MAX_ROOM_NUMBER + 1);
     return QString::number(roomNum);
 }
 

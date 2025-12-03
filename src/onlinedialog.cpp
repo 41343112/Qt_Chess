@@ -125,7 +125,11 @@ quint16 OnlineDialog::getPort() const
     // 從房號計算端口（10000 + 房號）
     QString roomNumber = m_roomNumberEdit->text().trimmed();
     if (roomNumber.length() == 4) {
-        return 10000 + roomNumber.toInt();
+        bool ok;
+        int roomNum = roomNumber.toInt(&ok);
+        if (ok && roomNum >= 1000 && roomNum <= 9999) {
+            return 10000 + roomNum;
+        }
     }
     return 0;
 }
