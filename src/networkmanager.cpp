@@ -138,10 +138,13 @@ void NetworkManager::sendGameStart(PieceColor playerColor)
     sendMessage(message);
 }
 
-void NetworkManager::sendStartGame()
+void NetworkManager::sendStartGame(int whiteTimeMs, int blackTimeMs, int incrementMs)
 {
     QJsonObject message;
     message["type"] = messageTypeToString(MessageType::StartGame);
+    message["whiteTimeMs"] = whiteTimeMs;
+    message["blackTimeMs"] = blackTimeMs;
+    message["incrementMs"] = incrementMs;
     sendMessage(message);
 }
 
@@ -300,8 +303,13 @@ void NetworkManager::processMessage(const QJsonObject& message)
     }
     
     case MessageType::StartGame:
-        // 收到房主的開始遊戲通知
-        emit startGameReceived();
+        // 收到房主的開始遊戲通知（包含時間設定）
+        {
+            int whiteTimeMs = message["whiteTimeMs"].toInt();
+            int blackTimeMs = message["blackTimeMs"].toInt();
+            int incrementMs = message["incrementMs"].toInt();
+            emit startGameReceived(whiteTimeMs, blackTimeMs, incrementMs);
+        }
         break;
     
     case MessageType::Surrender:

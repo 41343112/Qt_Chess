@@ -1107,9 +1107,24 @@ void Qt_Chess::onStartButtonClicked() {
         return;
     }
     
-    // 在線上模式下，通知對手開始遊戲
+    // 在線上模式下，通知對手開始遊戲（包含時間設定）
     if (m_isOnlineGame && m_networkManager) {
-        m_networkManager->sendStartGame();
+        // 獲取當前的時間設定
+        int whiteTimeMs = 0;
+        int blackTimeMs = 0;
+        int incrementMs = 0;
+        
+        if (m_whiteTimeLimitSlider) {
+            whiteTimeMs = calculateTimeFromSliderValue(m_whiteTimeLimitSlider->value());
+        }
+        if (m_blackTimeLimitSlider) {
+            blackTimeMs = calculateTimeFromSliderValue(m_blackTimeLimitSlider->value());
+        }
+        if (m_incrementSlider) {
+            incrementMs = m_incrementSlider->value() * 1000;  // 轉換為毫秒
+        }
+        
+        m_networkManager->sendStartGame(whiteTimeMs, blackTimeMs, incrementMs);
     }
     
     // 清空 UCI 移動歷史
@@ -5204,9 +5219,97 @@ void Qt_Chess::onCancelRoomClicked() {
     }
 }
 
-void Qt_Chess::onStartGameReceived() {
-    // 收到房主的開始遊戲通知，客戶端自動開始遊戲
+void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int incrementMs) {
+    // 收到房主的開始遊戲通知，設定時間後客戶端自動開始遊戲
+    
+    // 設定時間值（房主設定的時間）
+    m_whiteTimeMs = whiteTimeMs;
+    m_blackTimeMs = blackTimeMs;
+    m_whiteInitialTimeMs = whiteTimeMs;
+    m_blackInitialTimeMs = blackTimeMs;
+    
+    // 設定增量值
+    if (m_incrementSlider) {
+        m_incrementSlider->setValue(incrementMs / 1000);  // 轉換為秒
+    }
+    
+    // 檢查是否啟用時間控制
+    m_timeControlEnabled = (whiteTimeMs > 0 || blackTimeMs > 0);
+    
+    // 啟動遊戲（與房主同步）
     onNewGameClicked();
+    
+    // 如果啟用了時間控制，需要啟動計時器並顯示時間
+    if (m_timeControlEnabled) {
+        m_timerStarted = true;
+        m_gameStarted = true;
+        startTimer();
+        
+        // 隱藏時間控制面板
+        if (m_timeControlPanel) {
+            m_timeControlPanel->hide();
+        }
+        
+        // 在棋盤左右兩側顯示時間和進度條
+        if (m_whiteTimeLabel && m_blackTimeLabel) {
+            m_whiteTimeLabel->show();
+            m_blackTimeLabel->show();
+        }
+        if (m_whiteTimeProgressBar && m_blackTimeProgressBar) {
+            m_whiteTimeProgressBar->show();
+            m_blackTimeProgressBar->show();
+        }
+        
+        // 顯示放棄按鈕
+        if (m_giveUpButton) {
+            m_giveUpButton->show();
+        }
+        
+        updateTimeDisplays();
+        
+        if (m_startButton) {
+            m_startButton->setEnabled(false);
+            m_startButton->setText("進行中");
+        }
+        
+        // 更新回放按鈕狀態（遊戲開始時停用）
+        updateReplayButtons();
+        
+        // 當遊戲開始時，將右側伸展設為 1
+        setRightPanelStretch(1);
+        
+        // 播放遊戲開始動畫
+        m_pendingGameStart = isComputerTurn();
+        playGameStartAnimation();
+    } else {
+        // 即使沒有時間控制也允許遊戲開始
+        m_gameStarted = true;
+        
+        // 隱藏時間控制面板
+        if (m_timeControlPanel) {
+            m_timeControlPanel->hide();
+        }
+        
+        // 顯示放棄按鈕
+        if (m_giveUpButton) {
+            m_giveUpButton->show();
+        }
+        
+        if (m_startButton) {
+            m_startButton->setEnabled(false);
+            m_startButton->setText("進行中");
+        }
+        
+        // 更新回放按鈕狀態（遊戲開始時停用）
+        updateReplayButtons();
+        
+        // 當遊戲開始時，將右側伸展設為 1
+        setRightPanelStretch(1);
+        
+        // 播放遊戲開始動畫
+        m_pendingGameStart = isComputerTurn();
+        playGameStartAnimation();
+    }
 }
 
 void Qt_Chess::onSurrenderReceived() {
