@@ -109,7 +109,6 @@ private:
     QPushButton* m_onlineModeButton;     // 線上對戰按鈕
     QLabel* m_connectionStatusLabel;     // 連線狀態標籤
     QLabel* m_roomInfoLabel;             // 房間資訊標籤
-    QPushButton* m_cancelRoomButton;     // 取消房間按鈕
     bool m_isOnlineGame;                 // 是否為線上對戰
     bool m_waitingForOpponent;           // 等待對手
     
@@ -322,6 +321,8 @@ private:
     void onOpponentJoined();             // 對手加入
     void onOpponentMove(const QPoint& from, const QPoint& to, PieceType promotionType);  // 對手移動
     void onGameStartReceived(PieceColor playerColor);  // 遊戲開始
+    void onStartGameReceived();          // 收到開始遊戲通知
+    void onSurrenderReceived();          // 收到投降訊息
     void onOpponentDisconnected();       // 對手斷線
     void onCancelRoomClicked();          // 取消房間
     void updateConnectionStatus();       // 更新連線狀態顯示

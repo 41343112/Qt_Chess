@@ -222,7 +222,6 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_onlineModeButton(nullptr)
     , m_connectionStatusLabel(nullptr)
     , m_roomInfoLabel(nullptr)
-    , m_cancelRoomButton(nullptr)
     , m_isOnlineGame(false)
     , m_waitingForOpponent(false)
     , m_bgmPlayer(nullptr)
@@ -1076,6 +1075,11 @@ void Qt_Chess::onGiveUpClicked() {
         );
 
     if (reply == QMessageBox::Yes) {
+        // 在線上模式下，通知對手投降
+        if (m_isOnlineGame && m_networkManager) {
+            m_networkManager->sendSurrender();
+        }
+        
         // 記錄認輸結果
         PieceColor currentPlayer = m_chessBoard.getCurrentPlayer();
         if (currentPlayer == PieceColor::White) {
@@ -1101,6 +1105,11 @@ void Qt_Chess::onStartButtonClicked() {
     if (m_isOnlineGame && m_waitingForOpponent) {
         QMessageBox::warning(this, "無法開始", "請等待對手連接後再開始遊戲");
         return;
+    }
+    
+    // 在線上模式下，通知對手開始遊戲
+    if (m_isOnlineGame && m_networkManager) {
+        m_networkManager->sendStartGame();
     }
     
     // 清空 UCI 移動歷史
@@ -2466,16 +2475,6 @@ void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
         "padding: 8px; border-radius: 4px; font-weight: bold; }").arg(THEME_ACCENT_PRIMARY));
     m_roomInfoLabel->hide();  // 初始隱藏
     timeControlLayout->addWidget(m_roomInfoLabel);
-    
-    // 取消房間按鈕（等待對手時顯示）
-    m_cancelRoomButton = new QPushButton("✗ 取消等待", this);
-    m_cancelRoomButton->setFont(labelFont);
-    m_cancelRoomButton->setStyleSheet(QString("QPushButton { background-color: #f44336; color: white; "
-        "padding: 8px; border-radius: 4px; font-weight: bold; }"
-        "QPushButton:hover { background-color: #d32f2f; }"));
-    m_cancelRoomButton->hide();  // 初始隱藏
-    connect(m_cancelRoomButton, &QPushButton::clicked, this, &Qt_Chess::onCancelRoomClicked);
-    timeControlLayout->addWidget(m_cancelRoomButton);
     
     // 難度設定
     m_difficultyLabel = new QLabel("🎯 電腦難度:", this);
@@ -4785,6 +4784,8 @@ void Qt_Chess::initializeNetwork() {
     connect(m_networkManager, &NetworkManager::opponentJoined, this, &Qt_Chess::onOpponentJoined);
     connect(m_networkManager, &NetworkManager::opponentMove, this, &Qt_Chess::onOpponentMove);
     connect(m_networkManager, &NetworkManager::gameStartReceived, this, &Qt_Chess::onGameStartReceived);
+    connect(m_networkManager, &NetworkManager::startGameReceived, this, &Qt_Chess::onStartGameReceived);
+    connect(m_networkManager, &NetworkManager::surrenderReceived, this, &Qt_Chess::onSurrenderReceived);
     connect(m_networkManager, &NetworkManager::opponentDisconnected, this, &Qt_Chess::onOpponentDisconnected);
 }
 
@@ -4832,12 +4833,28 @@ void Qt_Chess::onOnlineModeClicked() {
                 m_connectionStatusLabel->setText("🔄 等待對手加入...");
                 m_connectionStatusLabel->show();
                 m_roomInfoLabel->show();
-                m_cancelRoomButton->show();  // 顯示取消按鈕
                 
-                // 修改開始按鈕為取消功能
+                // 修改開始按鈕為取消功能（紅色）
                 if (m_startButton) {
                     m_startButton->setText("✗ 取消等待");
                     m_startButton->setEnabled(true);
+                    m_startButton->setStyleSheet(QString(
+                        "QPushButton { "
+                        "  background-color: #f44336; "
+                        "  color: white; "
+                        "  border: 3px solid #d32f2f; "
+                        "  border-radius: 10px; "
+                        "  padding: 8px; "
+                        "  font-weight: bold; "
+                        "  min-height: 45px; "
+                        "}"
+                        "QPushButton:hover { "
+                        "  background-color: #d32f2f; "
+                        "}"
+                        "QPushButton:pressed { "
+                        "  background-color: #c62828; "
+                        "}"
+                    ));
                     disconnect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onStartButtonClicked);
                     connect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onCancelRoomClicked);
                 }
@@ -4867,10 +4884,27 @@ void Qt_Chess::onOnlineModeClicked() {
                 m_connectionStatusLabel->setText("🔄 正在連接...");
                 m_connectionStatusLabel->show();
                 
-                // 修改開始按鈕為取消功能
+                // 修改開始按鈕為取消功能（紅色）
                 if (m_startButton) {
                     m_startButton->setText("✗ 取消連接");
                     m_startButton->setEnabled(true);
+                    m_startButton->setStyleSheet(QString(
+                        "QPushButton { "
+                        "  background-color: #f44336; "
+                        "  color: white; "
+                        "  border: 3px solid #d32f2f; "
+                        "  border-radius: 10px; "
+                        "  padding: 8px; "
+                        "  font-weight: bold; "
+                        "  min-height: 45px; "
+                        "}"
+                        "QPushButton:hover { "
+                        "  background-color: #d32f2f; "
+                        "}"
+                        "QPushButton:pressed { "
+                        "  background-color: #c62828; "
+                        "}"
+                    ));
                     disconnect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onStartButtonClicked);
                     connect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onCancelRoomClicked);
                 }
@@ -4905,12 +4939,35 @@ void Qt_Chess::onNetworkError(const QString& error) {
     m_isOnlineGame = false;
     m_waitingForOpponent = false;
     
-    // 恢復開始按鈕的原始功能
+    // 恢復開始按鈕的原始功能和樣式
     if (m_startButton) {
         disconnect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onCancelRoomClicked);
         connect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onStartButtonClicked);
         m_startButton->setText("▶ 開始對弈");
         m_startButton->setEnabled(true);
+        m_startButton->setStyleSheet(QString(
+            "QPushButton { "
+            "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+            "    stop:0 %1, stop:0.5 rgba(0, 255, 136, 0.8), stop:1 %1); "
+            "  color: %2; "
+            "  border: 3px solid %1; "
+            "  border-radius: 12px; "
+            "  padding: 10px; "
+            "}"
+            "QPushButton:hover { "
+            "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+            "    stop:0 %1, stop:0.3 rgba(0, 255, 136, 0.9), stop:0.7 rgba(0, 217, 255, 0.9), stop:1 %1); "
+            "  border-color: white; "
+            "}"
+            "QPushButton:pressed { "
+            "  background: %1; "
+            "}"
+            "QPushButton:disabled { "
+            "  background: rgba(50, 50, 70, 0.6); "
+            "  color: #666; "
+            "  border-color: #444; "
+            "}"
+        ).arg(THEME_ACCENT_SUCCESS, THEME_BG_DARK));
     }
     
     // 返回雙人模式
@@ -4927,7 +4984,6 @@ void Qt_Chess::onRoomCreated(const QString& roomNumber, quint16 port) {
 
 void Qt_Chess::onOpponentJoined() {
     m_waitingForOpponent = false;
-    m_cancelRoomButton->hide();  // 隱藏取消按鈕
     m_connectionStatusLabel->setText("✅ 對手已加入，等待連線確認...");
     
     // 房主：等待客戶端確認連線後再開始遊戲
@@ -4965,19 +5021,52 @@ void Qt_Chess::onOpponentMove(const QPoint& from, const QPoint& to, PieceType pr
 }
 
 void Qt_Chess::onGameStartReceived(PieceColor playerColor) {
-    m_cancelRoomButton->hide();  // 隱藏取消按鈕
     m_connectionStatusLabel->setText("✅ 連線成功！遊戲開始");
     
-    // 恢復開始按鈕的原始功能
+    // 恢復開始按鈕的原始功能和樣式
     if (m_startButton) {
         disconnect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onCancelRoomClicked);
         connect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onStartButtonClicked);
         m_startButton->setText("▶ 開始對弈");
         m_startButton->setEnabled(true);
+        m_startButton->setStyleSheet(QString(
+            "QPushButton { "
+            "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+            "    stop:0 %1, stop:0.5 rgba(0, 255, 136, 0.8), stop:1 %1); "
+            "  color: %2; "
+            "  border: 3px solid %1; "
+            "  border-radius: 12px; "
+            "  padding: 10px; "
+            "}"
+            "QPushButton:hover { "
+            "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+            "    stop:0 %1, stop:0.3 rgba(0, 255, 136, 0.9), stop:0.7 rgba(0, 217, 255, 0.9), stop:1 %1); "
+            "  border-color: white; "
+            "}"
+            "QPushButton:pressed { "
+            "  background: %1; "
+            "}"
+            "QPushButton:disabled { "
+            "  background: rgba(50, 50, 70, 0.6); "
+            "  color: #666; "
+            "  border-color: #444; "
+            "}"
+        ).arg(THEME_ACCENT_SUCCESS, THEME_BG_DARK));
+        
+        // 只有房主可以開始遊戲，房客不行
+        if (m_networkManager->getRole() == NetworkRole::Server) {
+            m_startButton->setEnabled(true);
+        } else {
+            m_startButton->setEnabled(false);
+            m_connectionStatusLabel->setText("✅ 連線成功！等待房主開始遊戲...");
+        }
     }
     
     // 顯示遊戲開始訊息
-    QMessageBox::information(this, "連線成功", "已成功連線到對手，遊戲即將開始！");
+    QString roleMsg = (m_networkManager->getRole() == NetworkRole::Server) ? 
+        "已成功連線到對手，點擊「開始對弈」開始遊戲！" : 
+        "已成功連線到對手，等待房主開始遊戲...";
+    QMessageBox::information(this, "連線成功", roleMsg);
     
     // 如果玩家執黑，翻轉棋盤
     if (playerColor == PieceColor::Black && !m_isBoardFlipped) {
@@ -4985,8 +5074,7 @@ void Qt_Chess::onGameStartReceived(PieceColor playerColor) {
         updateBoard();
     }
     
-    // 開始新遊戲
-    onNewGameClicked();
+    // 不再自動開始遊戲，改由房主點擊開始按鈕
 }
 
 void Qt_Chess::onOpponentDisconnected() {
@@ -4994,12 +5082,35 @@ void Qt_Chess::onOpponentDisconnected() {
     m_isOnlineGame = false;
     m_waitingForOpponent = false;
     
-    // 恢復開始按鈕的原始功能
+    // 恢復開始按鈕的原始功能和樣式
     if (m_startButton) {
         disconnect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onCancelRoomClicked);
         connect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onStartButtonClicked);
         m_startButton->setText("▶ 開始對弈");
         m_startButton->setEnabled(true);
+        m_startButton->setStyleSheet(QString(
+            "QPushButton { "
+            "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+            "    stop:0 %1, stop:0.5 rgba(0, 255, 136, 0.8), stop:1 %1); "
+            "  color: %2; "
+            "  border: 3px solid %1; "
+            "  border-radius: 12px; "
+            "  padding: 10px; "
+            "}"
+            "QPushButton:hover { "
+            "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+            "    stop:0 %1, stop:0.3 rgba(0, 255, 136, 0.9), stop:0.7 rgba(0, 217, 255, 0.9), stop:1 %1); "
+            "  border-color: white; "
+            "}"
+            "QPushButton:pressed { "
+            "  background: %1; "
+            "}"
+            "QPushButton:disabled { "
+            "  background: rgba(50, 50, 70, 0.6); "
+            "  color: #666; "
+            "  border-color: #444; "
+            "}"
+        ).arg(THEME_ACCENT_SUCCESS, THEME_BG_DARK));
     }
     
     // 返回雙人模式
@@ -5008,7 +5119,6 @@ void Qt_Chess::onOpponentDisconnected() {
     m_currentGameMode = GameMode::HumanVsHuman;
     m_connectionStatusLabel->hide();
     m_roomInfoLabel->hide();
-    m_cancelRoomButton->hide();
 }
 
 void Qt_Chess::onCancelRoomClicked() {
@@ -5026,12 +5136,35 @@ void Qt_Chess::onCancelRoomClicked() {
         m_isOnlineGame = false;
         m_waitingForOpponent = false;
         
-        // 恢復開始按鈕的原始功能
+        // 恢復開始按鈕的原始功能和樣式
         if (m_startButton) {
             disconnect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onCancelRoomClicked);
             connect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onStartButtonClicked);
             m_startButton->setText("▶ 開始對弈");
             m_startButton->setEnabled(true);
+            m_startButton->setStyleSheet(QString(
+                "QPushButton { "
+                "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+                "    stop:0 %1, stop:0.5 rgba(0, 255, 136, 0.8), stop:1 %1); "
+                "  color: %2; "
+                "  border: 3px solid %1; "
+                "  border-radius: 12px; "
+                "  padding: 10px; "
+                "}"
+                "QPushButton:hover { "
+                "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+                "    stop:0 %1, stop:0.3 rgba(0, 255, 136, 0.9), stop:0.7 rgba(0, 217, 255, 0.9), stop:1 %1); "
+                "  border-color: white; "
+                "}"
+                "QPushButton:pressed { "
+                "  background: %1; "
+                "}"
+                "QPushButton:disabled { "
+                "  background: rgba(50, 50, 70, 0.6); "
+                "  color: #666; "
+                "  border-color: #444; "
+                "}"
+            ).arg(THEME_ACCENT_SUCCESS, THEME_BG_DARK));
         }
         
         // 返回雙人模式
@@ -5040,10 +5173,34 @@ void Qt_Chess::onCancelRoomClicked() {
         m_currentGameMode = GameMode::HumanVsHuman;
         m_connectionStatusLabel->hide();
         m_roomInfoLabel->hide();
-        m_cancelRoomButton->hide();
         
         QMessageBox::information(this, "已取消", "已取消連線，返回雙人模式");
     }
+}
+
+void Qt_Chess::onStartGameReceived() {
+    // 收到房主的開始遊戲通知，客戶端自動開始遊戲
+    onNewGameClicked();
+}
+
+void Qt_Chess::onSurrenderReceived() {
+    // 收到對手投降訊息
+    PieceColor opponentColor = m_networkManager->getOpponentColor();
+    
+    // 設置遊戲結果
+    if (opponentColor == PieceColor::White) {
+        m_chessBoard.setGameResult(GameResult::WhiteResigns);
+    } else {
+        m_chessBoard.setGameResult(GameResult::BlackResigns);
+    }
+    
+    // 處理遊戲結束
+    handleGameEnd();
+    
+    // 顯示訊息
+    QString opponentName = (opponentColor == PieceColor::White) ? "白方" : "黑方";
+    QString winner = (opponentColor == PieceColor::White) ? "黑方" : "白方";
+    QMessageBox::information(this, "對手投降", QString("%1投降！%2獲勝！").arg(opponentName).arg(winner));
 }
 
 void Qt_Chess::updateConnectionStatus() {

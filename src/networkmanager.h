@@ -29,8 +29,10 @@ enum class MessageType {
     JoinAccepted,       // 加入被接受
     JoinRejected,       // 加入被拒絕
     GameStart,          // 遊戲開始
+    StartGame,          // 房主通知開始遊戲
     Move,               // 棋步
     GameOver,           // 遊戲結束
+    Surrender,          // 投降
     Chat,               // 聊天訊息
     PlayerDisconnected, // 玩家斷線
     Ping,               // 心跳包
@@ -58,6 +60,8 @@ public:
     // 遊戲同步
     void sendMove(const QPoint& from, const QPoint& to, PieceType promotionType = PieceType::None);
     void sendGameStart(PieceColor playerColor);
+    void sendStartGame();  // 房主通知開始遊戲
+    void sendSurrender();  // 發送投降訊息
     void sendGameOver(const QString& result);
     void sendChat(const QString& message);
     
@@ -73,6 +77,8 @@ signals:
     void opponentJoined();
     void opponentMove(const QPoint& from, const QPoint& to, PieceType promotionType);
     void gameStartReceived(PieceColor playerColor);
+    void startGameReceived();  // 收到開始遊戲通知
+    void surrenderReceived();  // 收到投降訊息
     void gameOverReceived(const QString& result);
     void chatReceived(const QString& message);
     void opponentDisconnected();

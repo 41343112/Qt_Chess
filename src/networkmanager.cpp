@@ -138,6 +138,20 @@ void NetworkManager::sendGameStart(PieceColor playerColor)
     sendMessage(message);
 }
 
+void NetworkManager::sendStartGame()
+{
+    QJsonObject message;
+    message["type"] = messageTypeToString(MessageType::StartGame);
+    sendMessage(message);
+}
+
+void NetworkManager::sendSurrender()
+{
+    QJsonObject message;
+    message["type"] = messageTypeToString(MessageType::Surrender);
+    sendMessage(message);
+}
+
 void NetworkManager::sendGameOver(const QString& result)
 {
     QJsonObject message;
@@ -284,6 +298,16 @@ void NetworkManager::processMessage(const QJsonObject& message)
         emit gameStartReceived(m_playerColor);
         break;
     }
+    
+    case MessageType::StartGame:
+        // 收到房主的開始遊戲通知
+        emit startGameReceived();
+        break;
+    
+    case MessageType::Surrender:
+        // 收到對手投降訊息
+        emit surrenderReceived();
+        break;
         
     case MessageType::Move: {
         int fromRow = message["fromRow"].toInt();
@@ -335,8 +359,10 @@ MessageType NetworkManager::stringToMessageType(const QString& type) const
         {"JoinAccepted", MessageType::JoinAccepted},
         {"JoinRejected", MessageType::JoinRejected},
         {"GameStart", MessageType::GameStart},
+        {"StartGame", MessageType::StartGame},
         {"Move", MessageType::Move},
         {"GameOver", MessageType::GameOver},
+        {"Surrender", MessageType::Surrender},
         {"Chat", MessageType::Chat},
         {"PlayerDisconnected", MessageType::PlayerDisconnected},
         {"Ping", MessageType::Ping},
@@ -354,8 +380,10 @@ QString NetworkManager::messageTypeToString(MessageType type) const
         {MessageType::JoinAccepted, "JoinAccepted"},
         {MessageType::JoinRejected, "JoinRejected"},
         {MessageType::GameStart, "GameStart"},
+        {MessageType::StartGame, "StartGame"},
         {MessageType::Move, "Move"},
         {MessageType::GameOver, "GameOver"},
+        {MessageType::Surrender, "Surrender"},
         {MessageType::Chat, "Chat"},
         {MessageType::PlayerDisconnected, "PlayerDisconnected"},
         {MessageType::Ping, "Ping"},
