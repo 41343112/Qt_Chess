@@ -4493,13 +4493,13 @@ void Qt_Chess::initializeBackgroundMusic() {
     // 設定音量 (Qt5 使用 0-100 整數)
     m_bgmPlayer->setVolume(m_bgmVolume);
     
-    // 初始化背景音樂列表 - 使用 resources/backgroundsound 中的5首音樂
+    // 初始化背景音樂列表 - 使用 resources/backgroundsounds 中的5首音樂
     m_bgmList.clear();
-    m_bgmList << "qrc:/resources/backgroundsound/bgm1.mp3"
-              << "qrc:/resources/backgroundsound/bgm2.mp3"
-              << "qrc:/resources/backgroundsound/bgm3.mp3"
-              << "qrc:/resources/backgroundsound/bgm4.mp3"
-              << "qrc:/resources/backgroundsound/bgm5.mp3";
+    m_bgmList << "qrc:/resources/backgroundsounds/backgroundsound_1.mp3"
+              << "qrc:/resources/backgroundsounds/backgroundsound_2.mp3"
+              << "qrc:/resources/backgroundsounds/backgroundsound_3.mp3"
+              << "qrc:/resources/backgroundsounds/backgroundsound_4.mp3"
+              << "qrc:/resources/backgroundsounds/backgroundsound_5.mp3";
     
     // 設定循環播放 - 當媒體結束時重新播放
     connect(m_bgmPlayer, &QMediaPlayer::stateChanged, this, [this](QMediaPlayer::State state) {
