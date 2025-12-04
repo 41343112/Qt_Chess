@@ -34,6 +34,8 @@
 #include "pieceiconsettingsdialog.h"
 #include "boardcolorsettingsdialog.h"
 #include "updatechecker.h"
+#include "networkmanager.h"
+#include "onlinedialog.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -101,6 +103,17 @@ private:
     QSoundEffect m_checkSound;
     QSoundEffect m_checkmateSound;
     SoundSettingsDialog::SoundSettings m_soundSettings;
+    
+    // 線上對戰
+    NetworkManager* m_networkManager;    // 網路管理器
+    QPushButton* m_onlineModeButton;     // 線上對戰按鈕
+    QPushButton* m_exitRoomButton;       // 退出房間按鈕
+    QLabel* m_connectionStatusLabel;     // 連線狀態標籤
+    QLabel* m_roomInfoLabel;             // 房間資訊標籤
+    bool m_isOnlineGame;                 // 是否為線上對戰
+    bool m_waitingForOpponent;           // 等待對手
+    PieceColor m_onlineHostSelectedColor;  // 房主選擇的顏色（線上模式）
+    QAction* m_newGameAction;            // 新遊戲動作（用於啟用/停用）
     
     // 背景音樂
     QMediaPlayer* m_bgmPlayer;
@@ -300,6 +313,27 @@ private:
     void saveEngineSettings();
     QString getEnginePath() const;
     void updateGameModeUI();             // 更新遊戲模式 UI 狀態
+    
+    // 線上對戰功能
+    void initializeNetwork();            // 初始化網路管理器
+    void onOnlineModeClicked();          // 線上對戰按鈕點擊
+    void onNetworkConnected();           // 網路連接成功
+    void onNetworkDisconnected();        // 網路斷開連接
+    void onNetworkError(const QString& error);  // 網路錯誤
+    void onRoomCreated(const QString& roomNumber, quint16 port);  // 房間創建
+    void onOpponentJoined();             // 對手加入
+    void onOpponentMove(const QPoint& from, const QPoint& to, PieceType promotionType);  // 對手移動
+    void onGameStartReceived(PieceColor playerColor);  // 遊戲開始
+    void onStartGameReceived(int whiteTimeMs, int blackTimeMs, int incrementMs, PieceColor hostColor);  // 收到開始遊戲通知（包含時間設定和房主顏色）
+    void onTimeSettingsReceived(int whiteTimeMs, int blackTimeMs, int incrementMs);  // 收到時間設定更新
+    void onSurrenderReceived();          // 收到投降訊息
+    void onOpponentDisconnected();       // 對手斷線
+    void onCancelRoomClicked();          // 取消房間
+    void onExitRoomClicked();            // 退出房間
+    void updateConnectionStatus();       // 更新連線狀態顯示
+    bool isOnlineTurn() const;           // 是否輪到線上玩家
+    void showRoomInfoDialog(const QString& roomNumber, quint16 port);  // 顯示房間資訊
+    
     void applyModernStylesheet();        // 應用現代科技風格全局樣式表
     
     // 遊戲開始動畫
