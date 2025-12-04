@@ -92,7 +92,7 @@ void NetworkManager::closeConnection()
     // 發送斷線通知（如果有連接）
     if (m_clientSocket || m_socket) {
         QJsonObject message;
-        message["type"] = messageTypeToString(MessageType::Disconnect);
+        message["type"] = messageTypeToString(MessageType::PlayerDisconnected);
         sendMessage(message);
     }
     
