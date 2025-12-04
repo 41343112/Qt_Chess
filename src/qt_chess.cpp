@@ -3982,6 +3982,11 @@ void Qt_Chess::onComputerModeClicked() {
 void Qt_Chess::onWhiteColorClicked() {
     m_isRandomColorSelected = false;  // 清除隨機選擇標記
     
+    // 使顏色選擇按鈕互斥（一次只能選一個）
+    if (m_whiteButton) m_whiteButton->setChecked(true);
+    if (m_randomButton) m_randomButton->setChecked(false);
+    if (m_blackButton) m_blackButton->setChecked(false);
+    
     // 線上模式：記錄房主選擇的顏色
     if (m_isOnlineGame) {
         m_onlineHostSelectedColor = PieceColor::White;
@@ -4000,6 +4005,11 @@ void Qt_Chess::onWhiteColorClicked() {
 void Qt_Chess::onRandomColorClicked() {
     // 設定隨機選擇標記
     m_isRandomColorSelected = true;
+    
+    // 使顏色選擇按鈕互斥（一次只能選一個）
+    if (m_whiteButton) m_whiteButton->setChecked(false);
+    if (m_randomButton) m_randomButton->setChecked(true);
+    if (m_blackButton) m_blackButton->setChecked(false);
     
     // 線上模式：隨機選擇顏色
     if (m_isOnlineGame) {
@@ -4026,6 +4036,11 @@ void Qt_Chess::onRandomColorClicked() {
 
 void Qt_Chess::onBlackColorClicked() {
     m_isRandomColorSelected = false;  // 清除隨機選擇標記
+    
+    // 使顏色選擇按鈕互斥（一次只能選一個）
+    if (m_whiteButton) m_whiteButton->setChecked(false);
+    if (m_randomButton) m_randomButton->setChecked(false);
+    if (m_blackButton) m_blackButton->setChecked(true);
     
     // 線上模式：記錄房主選擇的顏色
     if (m_isOnlineGame) {
@@ -5501,6 +5516,7 @@ void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int increme
     m_blackTimeMs = blackTimeMs;
     m_whiteInitialTimeMs = whiteTimeMs;
     m_blackInitialTimeMs = blackTimeMs;
+    m_incrementMs = incrementMs;  // 設定增量值
     
     // 設定增量值（僅用於顯示，房客滑桿已停用）
     if (m_incrementSlider) {
