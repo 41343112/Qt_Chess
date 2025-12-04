@@ -5552,7 +5552,7 @@ void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int increme
         m_chessEngine->newGame();
     }
     
-    // 根據房主選擇的顏色決定棋盤翻轉
+    // 根據房主選擇的顏色決定棋盤翻轉和玩家顏色
     // 如果房主選擇黑色，則房主的棋盤翻轉，房客的棋盤不翻轉
     // 如果房主選擇白色，則房主的棋盤不翻轉，房客的棋盤翻轉
     if (m_networkManager && m_networkManager->getRole() == NetworkRole::Client) {
@@ -5563,6 +5563,9 @@ void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int increme
         // 房主根據自己的選擇決定是否翻轉（執黑則翻轉）
         m_isBoardFlipped = (hostColor == PieceColor::Black);
         saveBoardFlipSettings();
+        
+        // 確保房主選擇的顏色與本地記錄一致
+        m_onlineHostSelectedColor = hostColor;
     }
     
     // 將時間和吃子紀錄恢復到右側面板
@@ -5580,81 +5583,58 @@ void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int increme
     m_gameStarted = true;  // 設定為 true，允許走棋
     m_timerStarted = true;
     
-    // 如果啟用了時間控制，啟動計時器並顯示時間
-    if (m_timeControlEnabled) {
-        startTimer();
-        
-        // 在棋盤左右兩側顯示時間和進度條
-        if (m_whiteTimeLabel && m_blackTimeLabel) {
-            m_whiteTimeLabel->show();
-            m_blackTimeLabel->show();
-        }
-        if (m_whiteTimeProgressBar && m_blackTimeProgressBar) {
-            m_whiteTimeProgressBar->show();
-            m_blackTimeProgressBar->show();
-        }
-        
-        // 顯示放棄按鈕和退出房間按鈕
-        if (m_giveUpButton) {
-            m_giveUpButton->show();
-        }
-        if (m_exitRoomButton) {
-            m_exitRoomButton->show();
-        }
-        
-        // 隱藏開始按鈕（房客無開始按鈕）
-        if (m_startButton) {
-            m_startButton->hide();
-        }
-        
-        updateTimeDisplays();
-        
-        // 更新回放按鈕狀態（遊戲開始時停用）
-        updateReplayButtons();
-        
-        // 當遊戲開始時，將右側伸展設為 1
-        setRightPanelStretch(1);
-        
-        // 播放遊戲開始動畫
-        m_pendingGameStart = isComputerTurn();
-        playGameStartAnimation();
-    } else {
-        // 即使沒有時間控制也允許遊戲開始
-        
-        // 隱藏時間標籤和進度條
-        if (m_whiteTimeLabel) m_whiteTimeLabel->hide();
-        if (m_blackTimeLabel) m_blackTimeLabel->hide();
-        if (m_whiteTimeProgressBar) m_whiteTimeProgressBar->hide();
-        if (m_blackTimeProgressBar) m_blackTimeProgressBar->hide();
-        
-        // 顯示放棄按鈕和退出房間按鈕
-        if (m_giveUpButton) {
-            m_giveUpButton->show();
-        }
-        if (m_exitRoomButton) {
-            m_exitRoomButton->show();
-        }
-        
-        // 隱藏開始按鈕（房客無開始按鈕）
-        if (m_startButton) {
-            m_startButton->hide();
-        }
-        
-        // 更新回放按鈕狀態（遊戲開始時停用）
-        updateReplayButtons();
-        
-        // 當遊戲開始時，將右側伸展設為 1
-        setRightPanelStretch(1);
-        
-        // 播放遊戲開始動畫
-        m_pendingGameStart = isComputerTurn();
-        playGameStartAnimation();
+    // 顯示放棄按鈕和退出房間按鈕（無論是否有時間控制）
+    if (m_giveUpButton) {
+        m_giveUpButton->show();
     }
+    if (m_exitRoomButton) {
+        m_exitRoomButton->show();
+    }
+    
+    // 隱藏開始按鈕（房客無開始按鈕）
+    if (m_startButton) {
+        m_startButton->hide();
+    }
+    
+    // 更新回放按鈕狀態（遊戲開始時停用）
+    updateReplayButtons();
+    
+    // 當遊戲開始時，將右側伸展設為 1
+    setRightPanelStretch(1);
     
     // 更新棋盤和狀態
     updateBoard();
     updateStatus();
     updateTimeDisplays();
+    
+    // 如果啟用了時間控制，啟動計時器並顯示時間
+    if (m_timeControlEnabled) {
+        startTimer();
+        
+        // 在棋盤左右兩側顯示時間和進度條（必須在 updateTimeDisplays 之後）
+        if (m_whiteTimeLabel) {
+            m_whiteTimeLabel->show();
+        }
+        if (m_blackTimeLabel) {
+            m_blackTimeLabel->show();
+        }
+        if (m_whiteTimeProgressBar) {
+            m_whiteTimeProgressBar->show();
+        }
+        if (m_blackTimeProgressBar) {
+            m_blackTimeProgressBar->show();
+        }
+    } else {
+        // 隱藏時間標籤和進度條
+        if (m_whiteTimeLabel) m_whiteTimeLabel->hide();
+        if (m_blackTimeLabel) m_blackTimeLabel->hide();
+        if (m_whiteTimeProgressBar) m_whiteTimeProgressBar->hide();
+        if (m_blackTimeProgressBar) m_blackTimeProgressBar->hide();
+    }
+    
+    // 播放遊戲開始動畫
+    m_pendingGameStart = isComputerTurn();
+    playGameStartAnimation();
     
     // 強制更新UI，確保時間標籤和棋盤正確顯示
     if (m_boardWidget) {
