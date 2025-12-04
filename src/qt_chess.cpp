@@ -5119,6 +5119,11 @@ void Qt_Chess::onOpponentMove(const QPoint& from, const QPoint& to, PieceType pr
         updateMoveList();
         updateCapturedPiecesDisplay();
         
+        // 強制更新和重繪UI，確保棋盤變化立即顯示
+        update();
+        repaint();
+        QApplication::processEvents();
+        
         // 播放音效
         bool isCapture = isCaptureMove(from, to);
         bool isCastling = isCastlingMove(from, to);
@@ -5548,6 +5553,29 @@ void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int increme
     updateBoard();
     updateStatus();
     updateTimeDisplays();
+    
+    // 強制更新UI，確保時間標籤正確顯示
+    if (m_timeControlEnabled) {
+        if (m_whiteTimeLabel) {
+            m_whiteTimeLabel->update();
+            m_whiteTimeLabel->repaint();
+        }
+        if (m_blackTimeLabel) {
+            m_blackTimeLabel->update();
+            m_blackTimeLabel->repaint();
+        }
+        if (m_whiteTimeProgressBar) {
+            m_whiteTimeProgressBar->update();
+            m_whiteTimeProgressBar->repaint();
+        }
+        if (m_blackTimeProgressBar) {
+            m_blackTimeProgressBar->update();
+            m_blackTimeProgressBar->repaint();
+        }
+    }
+    
+    // 強制處理所有待處理的UI事件
+    QApplication::processEvents();
     
     // 清除任何殘留的高亮顯示
     clearHighlights();
