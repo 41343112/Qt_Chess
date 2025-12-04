@@ -5100,7 +5100,14 @@ void Qt_Chess::onOpponentJoined() {
 }
 
 void Qt_Chess::onOpponentMove(const QPoint& from, const QPoint& to, PieceType promotionType) {
-    // 對手的移動
+    // 對手的移動 - 需要先切換到對手的回合才能移動
+    PieceColor currentPlayer = m_chessBoard.getCurrentPlayer();
+    PieceColor opponentColor = (currentPlayer == PieceColor::White) ? PieceColor::Black : PieceColor::White;
+    
+    // 暫時切換到對手的回合
+    m_chessBoard.setCurrentPlayer(opponentColor);
+    
+    // 現在可以移動對手的棋子
     if (m_chessBoard.movePiece(from, to)) {
         // 檢查是否需要升變
         if (promotionType != PieceType::None && m_chessBoard.needsPromotion(to)) {
@@ -5126,6 +5133,9 @@ void Qt_Chess::onOpponentMove(const QPoint& from, const QPoint& to, PieceType pr
         if (m_timeControlEnabled && m_timerStarted) {
             applyIncrement();
         }
+    } else {
+        // 如果移動失敗，恢復原來的玩家
+        m_chessBoard.setCurrentPlayer(currentPlayer);
     }
 }
 
