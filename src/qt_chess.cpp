@@ -5120,6 +5120,10 @@ void Qt_Chess::onOpponentMove(const QPoint& from, const QPoint& to, PieceType pr
         updateCapturedPiecesDisplay();
         
         // 強制更新和重繪UI，確保棋盤變化立即顯示
+        if (m_boardWidget) {
+            m_boardWidget->update();
+            m_boardWidget->repaint();
+        }
         update();
         repaint();
         QApplication::processEvents();
@@ -5554,7 +5558,12 @@ void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int increme
     updateStatus();
     updateTimeDisplays();
     
-    // 強制更新UI，確保時間標籤正確顯示
+    // 強制更新UI，確保時間標籤和棋盤正確顯示
+    if (m_boardWidget) {
+        m_boardWidget->update();
+        m_boardWidget->repaint();
+    }
+    
     if (m_timeControlEnabled) {
         if (m_whiteTimeLabel) {
             m_whiteTimeLabel->update();
