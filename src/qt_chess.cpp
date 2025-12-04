@@ -5491,29 +5491,6 @@ void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int increme
     
     QMessageBox::information(this, "遊戲開始", "對手已開始遊戲！");
 }
-        }
-        
-        // 顯示放棄按鈕
-        if (m_giveUpButton) {
-            m_giveUpButton->show();
-        }
-        
-        if (m_startButton) {
-            m_startButton->setEnabled(false);
-            m_startButton->setText("進行中");
-        }
-        
-        // 更新回放按鈕狀態（遊戲開始時停用）
-        updateReplayButtons();
-        
-        // 當遊戲開始時，將右側伸展設為 1
-        setRightPanelStretch(1);
-        
-        // 播放遊戲開始動畫
-        m_pendingGameStart = isComputerTurn();
-        playGameStartAnimation();
-    }
-}
 
 void Qt_Chess::onSurrenderReceived() {
     // 收到對手投降訊息
