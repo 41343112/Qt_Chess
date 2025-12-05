@@ -1297,10 +1297,81 @@ void Qt_Chess::onStartButtonClicked() {
         playGameStartAnimation();
     } else if (m_isOnlineGame) {
         // 線上模式但不符合上述條件時（例如 m_timerStarted 已為 true），
-        // 仍需要延遲啟用走棋以確保對手已準備好接收移動
+        // 需要重置棋盤並延遲啟用走棋以確保對手已準備好接收移動
+        
+        // 重置棋盤到初始狀態
+        resetBoardState();
+        
+        // 清空棋譜列表
+        if (m_moveListWidget) {
+            m_moveListWidget->clear();
+        }
+        
+        // 如果有時間控制，根據滑桿值重置時間
+        if (m_timeControlEnabled) {
+            if (m_whiteTimeLimitSlider) {
+                m_whiteTimeMs = calculateTimeFromSliderValue(m_whiteTimeLimitSlider->value());
+                m_whiteInitialTimeMs = m_whiteTimeMs;
+            }
+            if (m_blackTimeLimitSlider) {
+                m_blackTimeMs = calculateTimeFromSliderValue(m_blackTimeLimitSlider->value());
+                m_blackInitialTimeMs = m_blackTimeMs;
+            }
+            
+            // 啟動計時器
+            startTimer();
+            
+            // 顯示時間和進度條
+            if (m_whiteTimeLabel && m_blackTimeLabel) {
+                m_whiteTimeLabel->show();
+                m_blackTimeLabel->show();
+            }
+            if (m_whiteTimeProgressBar && m_blackTimeProgressBar) {
+                m_whiteTimeProgressBar->show();
+                m_blackTimeProgressBar->show();
+            }
+        } else {
+            // 無時間控制，重置時間值為 0
+            m_whiteTimeMs = 0;
+            m_blackTimeMs = 0;
+        }
+        
+        // 隱藏時間控制面板
+        if (m_timeControlPanel) {
+            m_timeControlPanel->hide();
+        }
+        
+        // 顯示放棄按鈕
+        if (m_giveUpButton) {
+            m_giveUpButton->show();
+        }
+        
+        // 顯示退出房間按鈕
+        if (m_exitRoomButton) {
+            m_exitRoomButton->show();
+        }
+        
+        // 延遲啟用走棋
         QTimer::singleShot(200, this, [this]() {
             m_gameStarted = true;
         });
+        
+        updateTimeDisplays();
+        
+        if (m_startButton) {
+            m_startButton->setEnabled(false);
+            m_startButton->setText("進行中");
+        }
+        
+        // 更新回放按鈕狀態（遊戲開始時停用）
+        updateReplayButtons();
+        
+        // 當遊戲開始時，將右側伸展設為 1
+        setRightPanelStretch(1);
+        
+        // 播放遊戲開始動畫
+        m_pendingGameStart = isComputerTurn();
+        playGameStartAnimation();
     }
 }
 
