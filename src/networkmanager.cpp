@@ -14,17 +14,35 @@ static const int PORT_BASE = 10000;
 static const int MIN_AUTO_PORT = 10000;
 static const int MAX_AUTO_PORT = 20000;
 
+// Default relay server settings (can be configured)
+static const QString DEFAULT_RELAY_SERVER = "relay.qtchess.example.com";
+static const int DEFAULT_RELAY_PORT = 8080;
+
 NetworkManager::NetworkManager(QObject *parent)
     : QObject(parent)
     , m_server(nullptr)
     , m_socket(nullptr)
     , m_clientSocket(nullptr)
+    , m_relayClient(nullptr)
+    , m_relayServerUrl(DEFAULT_RELAY_SERVER)
+    , m_relayServerPort(DEFAULT_RELAY_PORT)
+    , m_connectionMode(ConnectionMode::Relay)  // Default to relay mode
     , m_role(NetworkRole::None)
     , m_status(ConnectionStatus::Disconnected)
     , m_port(0)
     , m_playerColor(PieceColor::None)
     , m_opponentColor(PieceColor::None)
 {
+    // Initialize relay client
+    m_relayClient = new RelayClient(this);
+    connect(m_relayClient, &RelayClient::connected, this, &NetworkManager::onRelayConnected);
+    connect(m_relayClient, &RelayClient::disconnected, this, &NetworkManager::onRelayDisconnected);
+    connect(m_relayClient, &RelayClient::error, this, &NetworkManager::onRelayError);
+    connect(m_relayClient, &RelayClient::roomCreated, this, &NetworkManager::onRelayRoomCreated);
+    connect(m_relayClient, &RelayClient::roomJoined, this, &NetworkManager::onRelayRoomJoined);
+    connect(m_relayClient, &RelayClient::opponentJoined, this, &NetworkManager::onRelayOpponentJoined);
+    connect(m_relayClient, &RelayClient::opponentLeft, this, &NetworkManager::onRelayOpponentLeft);
+    connect(m_relayClient, &RelayClient::gameMessageReceived, this, &NetworkManager::onRelayGameMessageReceived);
 }
 
 NetworkManager::~NetworkManager()
@@ -73,6 +91,8 @@ bool NetworkManager::joinRoom(const QString& hostAddress, quint16 port)
         return false;
     }
     
+    m_connectionMode = ConnectionMode::Direct;
+    
     m_socket = new QTcpSocket(this);
     connect(m_socket, &QTcpSocket::connected, this, &NetworkManager::onConnected);
     connect(m_socket, &QTcpSocket::disconnected, this, &NetworkManager::onDisconnected);
@@ -86,6 +106,68 @@ bool NetworkManager::joinRoom(const QString& hostAddress, quint16 port)
     
     m_socket->connectToHost(hostAddress, port);
     return true;
+}
+
+bool NetworkManager::createRoomViaRelay()
+{
+    if (m_status != ConnectionStatus::Disconnected) {
+        return false;
+    }
+    
+    m_connectionMode = ConnectionMode::Relay;
+    m_role = NetworkRole::Server;
+    m_status = ConnectionStatus::Connecting;
+    m_playerColor = PieceColor::White;  // 房主執白
+    m_opponentColor = PieceColor::Black;
+    
+    // Connect to relay server first
+    if (!m_relayClient->isConnected()) {
+        if (!m_relayClient->connectToRelay(m_relayServerUrl, m_relayServerPort)) {
+            emit connectionError(tr("無法連接到中繼伺服器"));
+            m_status = ConnectionStatus::Disconnected;
+            return false;
+        }
+    } else {
+        // Already connected, create room immediately
+        m_relayClient->createRoom();
+    }
+    
+    return true;
+}
+
+bool NetworkManager::joinRoomViaRelay(const QString& roomCode)
+{
+    if (m_status != ConnectionStatus::Disconnected) {
+        return false;
+    }
+    
+    m_connectionMode = ConnectionMode::Relay;
+    m_role = NetworkRole::Client;
+    m_status = ConnectionStatus::Connecting;
+    m_playerColor = PieceColor::Black;  // 加入者執黑
+    m_opponentColor = PieceColor::White;
+    
+    m_roomNumber = roomCode;
+    
+    // Connect to relay server first
+    if (!m_relayClient->isConnected()) {
+        if (!m_relayClient->connectToRelay(m_relayServerUrl, m_relayServerPort)) {
+            emit connectionError(tr("無法連接到中繼伺服器"));
+            m_status = ConnectionStatus::Disconnected;
+            return false;
+        }
+    } else {
+        // Already connected, join room immediately
+        m_relayClient->joinRoom(roomCode);
+    }
+    
+    return true;
+}
+
+void NetworkManager::setRelayServer(const QString& serverUrl, quint16 port)
+{
+    m_relayServerUrl = serverUrl;
+    m_relayServerPort = port;
 }
 
 void NetworkManager::closeConnection()
@@ -103,6 +185,12 @@ void NetworkManager::closeConnection()
         if (m_socket) {
             m_socket->flush();
         }
+    }
+    
+    // Close relay connection if using relay mode
+    if (m_connectionMode == ConnectionMode::Relay && m_relayClient) {
+        m_relayClient->leaveRoom();
+        m_relayClient->disconnectFromRelay();
     }
     
     // 先關閉並刪除 server，確保不再接受新連接
@@ -298,6 +386,18 @@ void NetworkManager::onServerError(QAbstractSocket::SocketError socketError)
 
 void NetworkManager::sendMessage(const QJsonObject& message)
 {
+    // Use relay if in relay mode
+    if (m_connectionMode == ConnectionMode::Relay) {
+        if (m_relayClient && m_relayClient->isConnected()) {
+            qDebug() << "[NetworkManager::sendMessage] Sending via relay:" << message["type"].toString();
+            m_relayClient->sendGameMessage(message);
+        } else {
+            qDebug() << "[NetworkManager::sendMessage] ERROR: Relay not connected";
+        }
+        return;
+    }
+    
+    // Direct connection mode
     QTcpSocket* socket = getActiveSocket();
     if (!socket || socket->state() != QAbstractSocket::ConnectedState) {
         qDebug() << "[NetworkManager::sendMessage] ERROR: Cannot send message, socket not connected"
@@ -490,4 +590,81 @@ QTcpSocket* NetworkManager::getActiveSocket() const
     } else {
         return m_socket;
     }
+}
+
+// Relay server slot implementations
+
+void NetworkManager::onRelayConnected()
+{
+    qDebug() << "[NetworkManager] Connected to relay server";
+    
+    // If we were trying to create or join a room, do it now
+    if (m_role == NetworkRole::Server) {
+        m_relayClient->createRoom();
+    } else if (m_role == NetworkRole::Client && !m_roomNumber.isEmpty()) {
+        m_relayClient->joinRoom(m_roomNumber);
+    }
+}
+
+void NetworkManager::onRelayDisconnected()
+{
+    qDebug() << "[NetworkManager] Disconnected from relay server";
+    emit disconnected();
+}
+
+void NetworkManager::onRelayError(const QString& error)
+{
+    qDebug() << "[NetworkManager] Relay error:" << error;
+    emit connectionError(error);
+    m_status = ConnectionStatus::Error;
+}
+
+void NetworkManager::onRelayRoomCreated(const QString& roomCode)
+{
+    qDebug() << "[NetworkManager] Room created via relay:" << roomCode;
+    m_roomNumber = roomCode;
+    m_status = ConnectionStatus::Connected;
+    m_port = 0;  // No port for relay mode
+    emit roomCreated(m_roomNumber, m_port);
+}
+
+void NetworkManager::onRelayRoomJoined(const QString& roomCode)
+{
+    qDebug() << "[NetworkManager] Joined room via relay:" << roomCode;
+    m_roomNumber = roomCode;
+    m_status = ConnectionStatus::Connected;
+    emit connected();
+    
+    // Send join request to start game protocol
+    QJsonObject message;
+    message["type"] = messageTypeToString(MessageType::JoinRoom);
+    sendMessage(message);
+}
+
+void NetworkManager::onRelayOpponentJoined(const QString& opponentId)
+{
+    qDebug() << "[NetworkManager] Opponent joined via relay:" << opponentId;
+    emit opponentJoined();
+    
+    // Server sends game start message
+    if (m_role == NetworkRole::Server) {
+        QJsonObject response;
+        response["type"] = messageTypeToString(MessageType::JoinAccepted);
+        sendMessage(response);
+        
+        // Send game start message
+        sendGameStart(m_playerColor);
+    }
+}
+
+void NetworkManager::onRelayOpponentLeft()
+{
+    qDebug() << "[NetworkManager] Opponent left via relay";
+    emit opponentDisconnected();
+}
+
+void NetworkManager::onRelayGameMessageReceived(const QJsonObject& message)
+{
+    qDebug() << "[NetworkManager] Game message received via relay";
+    processMessage(message);
 }

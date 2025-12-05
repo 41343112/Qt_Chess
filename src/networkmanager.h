@@ -9,11 +9,17 @@
 #include <QString>
 #include <QPoint>
 #include "chesspiece.h"
+#include "relayserver.h"
 
 enum class NetworkRole {
     None,
     Server,    // 房主
     Client     // 加入者
+};
+
+enum class ConnectionMode {
+    Direct,    // 直接連接（需要IP地址）
+    Relay      // 中繼伺服器（只需房號）
 };
 
 enum class ConnectionStatus {
@@ -49,9 +55,16 @@ public:
     ~NetworkManager();
 
     // 房間管理
-    bool createRoom(quint16 port = 0);  // 創建房間，返回房號
-    bool joinRoom(const QString& hostAddress, quint16 port);
+    bool createRoom(quint16 port = 0);  // 創建房間，返回房號（直接連接模式）
+    bool createRoomViaRelay();  // 通過中繼伺服器創建房間（只需房號）
+    bool joinRoom(const QString& hostAddress, quint16 port);  // 直接連接模式
+    bool joinRoomViaRelay(const QString& roomCode);  // 通過中繼伺服器加入房間
     void closeConnection();
+    
+    // 中繼伺服器設定
+    void setRelayServer(const QString& serverUrl, quint16 port);
+    QString getRelayServer() const { return m_relayServerUrl; }
+    bool isUsingRelay() const { return m_connectionMode == ConnectionMode::Relay; }
     
     QString getRoomNumber() const { return m_roomNumber; }
     quint16 getPort() const { return m_port; }
@@ -77,7 +90,7 @@ signals:
     void connected();
     void disconnected();
     void connectionError(const QString& error);
-    void roomCreated(const QString& roomNumber, quint16 port);
+    void roomCreated(const QString& roomNumber, quint16 port);  // port will be 0 for relay mode
     void opponentJoined();
     void opponentMove(const QPoint& from, const QPoint& to, PieceType promotionType);
     void gameStartReceived(PieceColor playerColor);
@@ -95,11 +108,27 @@ private slots:
     void onReadyRead();
     void onError(QAbstractSocket::SocketError socketError);
     void onServerError(QAbstractSocket::SocketError socketError);
+    
+    // Relay server slots
+    void onRelayConnected();
+    void onRelayDisconnected();
+    void onRelayError(const QString& error);
+    void onRelayRoomCreated(const QString& roomCode);
+    void onRelayRoomJoined(const QString& roomCode);
+    void onRelayOpponentJoined(const QString& opponentId);
+    void onRelayOpponentLeft();
+    void onRelayGameMessageReceived(const QJsonObject& message);
 
 private:
     QTcpServer* m_server;
     QTcpSocket* m_socket;
     QTcpSocket* m_clientSocket;  // 用於服務器端連接的客戶端套接字
+    
+    // Relay server
+    RelayClient* m_relayClient;
+    QString m_relayServerUrl;
+    quint16 m_relayServerPort;
+    ConnectionMode m_connectionMode;
     
     NetworkRole m_role;
     ConnectionStatus m_status;

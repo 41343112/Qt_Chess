@@ -22,7 +22,8 @@ SOURCES += \
     src/boardcolorsettingsdialog.cpp \
     src/updatechecker.cpp \
     src/networkmanager.cpp \
-    src/onlinedialog.cpp
+    src/onlinedialog.cpp \
+    src/relayserver.cpp
 
 HEADERS += \
     src/qt_chess.h \
@@ -35,7 +36,8 @@ HEADERS += \
     src/theme.h \
     src/updatechecker.h \
     src/networkmanager.h \
-    src/onlinedialog.h
+    src/onlinedialog.h \
+    src/relayserver.h
 
 FORMS += \
     src/qt_chess.ui
