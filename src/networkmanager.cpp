@@ -2,6 +2,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QDateTime>
 #include <QDebug>
 
 // Server configuration
@@ -375,6 +376,10 @@ void NetworkManager::processMessage(const QJsonObject& message)
         PieceColor hostColor = (hostColorStr == "White") ? PieceColor::White : PieceColor::Black;
         qint64 serverTimestamp = message["serverTimestamp"].toVariant().toLongLong();
         
+        // 計算伺服器時間偏移（伺服器時間 - 本地時間）
+        qint64 localTimestamp = QDateTime::currentMSecsSinceEpoch();
+        qint64 serverTimeOffset = serverTimestamp - localTimestamp;
+        
         // 根據房主的顏色選擇更新玩家顏色
         if (m_role == NetworkRole::Host) {
             m_playerColor = hostColor;
@@ -385,11 +390,13 @@ void NetworkManager::processMessage(const QJsonObject& message)
         }
         
         qDebug() << "[NetworkManager] Game starting with server timestamp:" << serverTimestamp
+                 << "| Local timestamp:" << localTimestamp
+                 << "| Server time offset:" << serverTimeOffset << "ms"
                  << "| Host color:" << hostColorStr
                  << "| My role:" << (m_role == NetworkRole::Host ? "Host" : "Guest")
                  << "| My color:" << (m_playerColor == PieceColor::White ? "White" : "Black");
         
-        emit startGameReceived(whiteTimeMs, blackTimeMs, incrementMs, hostColor);
+        emit startGameReceived(whiteTimeMs, blackTimeMs, incrementMs, hostColor, serverTimeOffset);
     }
     else if (actionStr == "error") {
         // 伺服器錯誤

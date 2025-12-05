@@ -82,7 +82,7 @@ signals:
     void playerLeft();  // 對手在遊戲開始前離開房間
     void opponentMove(const QPoint& from, const QPoint& to, PieceType promotionType);
     void gameStartReceived(PieceColor playerColor);
-    void startGameReceived(int whiteTimeMs, int blackTimeMs, int incrementMs, PieceColor hostColor);  // 收到開始遊戲通知（包含時間設定和房主顏色）
+    void startGameReceived(int whiteTimeMs, int blackTimeMs, int incrementMs, PieceColor hostColor, qint64 serverTimeOffset);  // 收到開始遊戲通知（包含時間設定、房主顏色和伺服器時間偏移）
     void timeSettingsReceived(int whiteTimeMs, int blackTimeMs, int incrementMs);  // 收到時間設定更新
     void surrenderReceived();  // 收到投降訊息
     void gameOverReceived(const QString& result);

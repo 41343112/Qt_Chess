@@ -181,6 +181,8 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_incrementMs(0)
     , m_timeControlEnabled(false)
     , m_timerStarted(false)
+    , m_serverTimeOffset(0)
+    , m_gameStartLocalTime(0)
     , m_boardContainer(nullptr)
     , m_timeControlPanel(nullptr)
     , m_contentLayout(nullptr)
@@ -5683,11 +5685,16 @@ void Qt_Chess::onExitRoomClicked() {
     // } // 移除 if (response == QMessageBox::Yes) 的結束括號
 }
 
-void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int incrementMs, PieceColor hostColor) {
+void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int incrementMs, PieceColor hostColor, qint64 serverTimeOffset) {
     qDebug() << "[Qt_Chess::onStartGameReceived] Client received StartGame"
              << "| Host color:" << (hostColor == PieceColor::White ? "White" : "Black")
              << "| whiteTimeMs:" << whiteTimeMs
-             << "| blackTimeMs:" << blackTimeMs;
+             << "| blackTimeMs:" << blackTimeMs
+             << "| serverTimeOffset:" << serverTimeOffset << "ms";
+    
+    // 儲存伺服器時間偏移和遊戲開始時間，用於線上模式的時間同步
+    m_serverTimeOffset = serverTimeOffset;
+    m_gameStartLocalTime = QDateTime::currentMSecsSinceEpoch();
     
     // 收到房主的開始遊戲通知，設定時間後客戶端自動開始遊戲
     

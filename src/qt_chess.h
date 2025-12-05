@@ -160,6 +160,8 @@ private:
     int m_incrementMs;  // 每步的增量（毫秒）
     bool m_timeControlEnabled;
     bool m_timerStarted;  // 追蹤計時器是否已手動啟動
+    qint64 m_serverTimeOffset;  // 伺服器時間偏移（ms）：serverTime - localTime，用於線上模式同步計時器顯示
+    qint64 m_gameStartLocalTime;  // 遊戲開始時的本地時間戳（ms），用於計算經過時間
     QWidget* m_boardContainer;  // 帶有疊加時間顯示的棋盤容器
     QWidget* m_timeControlPanel;  // 時間控制設定面板
     QHBoxLayout* m_contentLayout;  // 主內容佈局，用於調整伸展因子
@@ -325,7 +327,7 @@ private:
     void onPlayerLeft();                 // 對手離開（遊戲開始前）
     void onOpponentMove(const QPoint& from, const QPoint& to, PieceType promotionType);  // 對手移動
     void onGameStartReceived(PieceColor playerColor);  // 遊戲開始
-    void onStartGameReceived(int whiteTimeMs, int blackTimeMs, int incrementMs, PieceColor hostColor);  // 收到開始遊戲通知（包含時間設定和房主顏色）
+    void onStartGameReceived(int whiteTimeMs, int blackTimeMs, int incrementMs, PieceColor hostColor, qint64 serverTimeOffset);  // 收到開始遊戲通知（包含時間設定、房主顏色和伺服器時間偏移）
     void onTimeSettingsReceived(int whiteTimeMs, int blackTimeMs, int incrementMs);  // 收到時間設定更新
     void onSurrenderReceived();          // 收到投降訊息
     void onOpponentDisconnected();       // 對手斷線
