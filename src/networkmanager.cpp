@@ -15,9 +15,9 @@ static const int MIN_AUTO_PORT = 10000;
 static const int MAX_AUTO_PORT = 20000;
 
 // Default relay server settings (can be configured)
-// For local testing, use "localhost" or "127.0.0.1"
-// For production, change to your actual relay server address
-static const QString DEFAULT_RELAY_SERVER = "localhost";
+// Using deployed relay server on Render
+// For local testing, change to "localhost" or "127.0.0.1"
+static const QString DEFAULT_RELAY_SERVER = "chess-server-mjg6.onrender.com";
 static const int DEFAULT_RELAY_PORT = 8080;
 
 NetworkManager::NetworkManager(QObject *parent)
