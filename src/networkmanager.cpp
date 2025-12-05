@@ -104,6 +104,11 @@ void NetworkManager::sendMove(const QPoint& from, const QPoint& to, PieceType pr
              << "| Role:" << (m_role == NetworkRole::Host ? "Host" : "Guest")
              << "| Socket connected:" << (m_webSocket && m_webSocket->state() == QAbstractSocket::ConnectedState);
     
+    if (m_roomNumber.isEmpty()) {
+        qDebug() << "[NetworkManager::sendMove] ERROR: Room number is empty, cannot send move";
+        return;
+    }
+    
     QJsonObject message;
     message["type"] = messageTypeToString(MessageType::Move);
     message["roomNumber"] = m_roomNumber;
@@ -123,6 +128,11 @@ void NetworkManager::sendMove(const QPoint& from, const QPoint& to, PieceType pr
 
 void NetworkManager::sendGameStart(PieceColor playerColor)
 {
+    if (m_roomNumber.isEmpty()) {
+        qDebug() << "[NetworkManager::sendGameStart] ERROR: Room number is empty";
+        return;
+    }
+    
     QJsonObject message;
     message["type"] = messageTypeToString(MessageType::GameStart);
     message["roomNumber"] = m_roomNumber;
@@ -133,6 +143,11 @@ void NetworkManager::sendGameStart(PieceColor playerColor)
 
 void NetworkManager::sendStartGame(int whiteTimeMs, int blackTimeMs, int incrementMs, PieceColor hostColor)
 {
+    if (m_roomNumber.isEmpty()) {
+        qDebug() << "[NetworkManager::sendStartGame] ERROR: Room number is empty";
+        return;
+    }
+    
     QJsonObject message;
     message["type"] = messageTypeToString(MessageType::StartGame);
     message["roomNumber"] = m_roomNumber;
@@ -145,6 +160,11 @@ void NetworkManager::sendStartGame(int whiteTimeMs, int blackTimeMs, int increme
 
 void NetworkManager::sendTimeSettings(int whiteTimeMs, int blackTimeMs, int incrementMs)
 {
+    if (m_roomNumber.isEmpty()) {
+        qDebug() << "[NetworkManager::sendTimeSettings] ERROR: Room number is empty";
+        return;
+    }
+    
     QJsonObject message;
     message["type"] = messageTypeToString(MessageType::TimeSettings);
     message["roomNumber"] = m_roomNumber;
@@ -156,6 +176,11 @@ void NetworkManager::sendTimeSettings(int whiteTimeMs, int blackTimeMs, int incr
 
 void NetworkManager::sendSurrender()
 {
+    if (m_roomNumber.isEmpty()) {
+        qDebug() << "[NetworkManager::sendSurrender] ERROR: Room number is empty";
+        return;
+    }
+    
     QJsonObject message;
     message["type"] = messageTypeToString(MessageType::Surrender);
     message["roomNumber"] = m_roomNumber;
@@ -171,6 +196,11 @@ void NetworkManager::setPlayerColors(PieceColor playerColor)
 
 void NetworkManager::sendGameOver(const QString& result)
 {
+    if (m_roomNumber.isEmpty()) {
+        qDebug() << "[NetworkManager::sendGameOver] ERROR: Room number is empty";
+        return;
+    }
+    
     QJsonObject message;
     message["type"] = messageTypeToString(MessageType::GameOver);
     message["roomNumber"] = m_roomNumber;
@@ -181,6 +211,11 @@ void NetworkManager::sendGameOver(const QString& result)
 
 void NetworkManager::sendChat(const QString& chatMessage)
 {
+    if (m_roomNumber.isEmpty()) {
+        qDebug() << "[NetworkManager::sendChat] ERROR: Room number is empty";
+        return;
+    }
+    
     QJsonObject message;
     message["type"] = messageTypeToString(MessageType::Chat);
     message["roomNumber"] = m_roomNumber;
