@@ -5289,6 +5289,7 @@ void Qt_Chess::onOpponentJoined() {
             m_startButton->setText("▶ 開始");
             m_startButton->setEnabled(true);
             m_startButton->setStyleSheet("");  // 恢復預設樣式
+            m_startButton->show();  // 確保按鈕顯示
             
             // 重新連接到開始遊戲功能
             disconnect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onCancelRoomClicked);
