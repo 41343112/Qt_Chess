@@ -1295,6 +1295,12 @@ void Qt_Chess::onStartButtonClicked() {
         // 播放遊戲開始動畫
         m_pendingGameStart = isComputerTurn();  // 標記是否需要在動畫後請求引擎走棋
         playGameStartAnimation();
+    } else if (m_isOnlineGame) {
+        // 線上模式但不符合上述條件時（例如 m_timerStarted 已為 true），
+        // 仍需要延遲啟用走棋以確保對手已準備好接收移動
+        QTimer::singleShot(200, this, [this]() {
+            m_gameStarted = true;
+        });
     }
 }
 
