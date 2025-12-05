@@ -5277,19 +5277,15 @@ void Qt_Chess::onOpponentJoined() {
 void Qt_Chess::onOpponentMove(const QPoint& from, const QPoint& to, PieceType promotionType) {
     qDebug() << "[Qt_Chess::onOpponentMove] Received opponent move: from" << from << "to" << to;
     
-    // 對手的移動 - 需要先切換到對手的回合才能移動
+    // 對手的移動 - 直接執行移動，movePiece 會自動切換回合
     PieceColor currentPlayer = m_chessBoard.getCurrentPlayer();
-    PieceColor opponentColor = (currentPlayer == PieceColor::White) ? PieceColor::Black : PieceColor::White;
     
-    qDebug() << "[Qt_Chess::onOpponentMove] Current player:" << (int)currentPlayer 
-             << "Opponent color:" << (int)opponentColor;
+    qDebug() << "[Qt_Chess::onOpponentMove] Current player before move:" << (int)currentPlayer;
     
-    // 暫時切換到對手的回合
-    m_chessBoard.setCurrentPlayer(opponentColor);
-    
-    // 現在可以移動對手的棋子
+    // 直接移動對手的棋子，movePiece 會驗證並自動切換回合
     if (m_chessBoard.movePiece(from, to)) {
-        qDebug() << "[Qt_Chess::onOpponentMove] Move successful, updating board";
+        qDebug() << "[Qt_Chess::onOpponentMove] Move successful, current player after move:" << (int)m_chessBoard.getCurrentPlayer();
+        
         // 檢查是否需要升變
         if (promotionType != PieceType::None && m_chessBoard.needsPromotion(to)) {
             m_chessBoard.promotePawn(to, promotionType);
@@ -5324,8 +5320,7 @@ void Qt_Chess::onOpponentMove(const QPoint& from, const QPoint& to, PieceType pr
             applyIncrement();
         }
     } else {
-        // 如果移動失敗，恢復原來的玩家
-        m_chessBoard.setCurrentPlayer(currentPlayer);
+        qDebug() << "[Qt_Chess::onOpponentMove] Move failed!";
     }
 }
 
