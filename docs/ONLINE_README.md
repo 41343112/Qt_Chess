@@ -231,8 +231,7 @@ A: 不一定！支援兩種連線方式：
 1. **本地網絡問題**：先看 [簡易使用指南 - 常見問題](ONLINE_BEGINNER_GUIDE.md#常見問題)
 2. **跨網域連線問題**：參閱 [跨網域連線指南 - 常見問題](CROSS_DOMAIN_CONNECTION_GUIDE.md#常見問題)
 3. **技術細節**：再看 [完整功能文檔 - 常見問題](ONLINE_MODE_FEATURE.md#常見問題)
-2. 再看 [完整功能文檔 - 常見問題](ONLINE_MODE_FEATURE.md#常見問題)
-3. 檢查 [UI改進說明 - 錯誤處理](ONLINE_UI_IMPROVEMENTS.md#錯誤處理改進)
+4. **UI相關**：檢查 [UI改進說明 - 錯誤處理](ONLINE_UI_IMPROVEMENTS.md#錯誤處理改進)
 
 ### 教別人使用
 
