@@ -5273,7 +5273,18 @@ void Qt_Chess::onRoomCreated(const QString& roomNumber) {
 
 void Qt_Chess::onOpponentJoined() {
     m_waitingForOpponent = false;
-    m_connectionStatusLabel->setText("✅ 對手已加入，等待連線確認...");
+    m_connectionStatusLabel->setText("✅ 對手已加入，準備開始遊戲");
+    
+    // 更新開始按鈕：對手已加入，可以開始遊戲
+    if (m_startButton) {
+        m_startButton->setText("▶ 開始");
+        m_startButton->setEnabled(true);
+        m_startButton->setStyleSheet("");  // 恢復預設樣式
+        
+        // 重新連接到開始遊戲功能
+        disconnect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onCancelRoomClicked);
+        connect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onStartButtonClicked);
+    }
     
     // 房主：等待客戶端確認連線後再開始遊戲
     // 遊戲將在收到 gameStartReceived 信號時開始
