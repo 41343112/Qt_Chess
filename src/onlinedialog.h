@@ -26,8 +26,7 @@ public:
     ~OnlineDialog();
 
     Mode getMode() const { return m_mode; }
-    QString getHostAddress() const;
-    quint16 getPort() const;
+    QString getRoomNumber() const;
 
 private slots:
     void onCreateRoomClicked();
@@ -44,7 +43,6 @@ private:
     QRadioButton* m_joinRoomRadio;
     
     QWidget* m_joinRoomWidget;
-    QLineEdit* m_hostAddressEdit;
     QLineEdit* m_roomNumberEdit;
     QTextEdit* m_connectionInfoEdit;
     QPushButton* m_pasteButton;

@@ -181,6 +181,9 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_incrementMs(0)
     , m_timeControlEnabled(false)
     , m_timerStarted(false)
+    , m_serverTimeOffset(0)
+    , m_gameStartLocalTime(0)
+    , m_currentTurnStartTime(0)
     , m_boardContainer(nullptr)
     , m_timeControlPanel(nullptr)
     , m_contentLayout(nullptr)
@@ -1139,20 +1142,29 @@ void Qt_Chess::onStartButtonClicked() {
         
         // 房主需要在發送開始遊戲訊息前設定自己的玩家顏色
         // 這樣 isPlayerPiece() 才能正確判斷哪些棋子可以移動
-        if (m_networkManager->getRole() == NetworkRole::Server) {
+        if (m_networkManager->getRole() == NetworkRole::Host) {
             m_networkManager->setPlayerColors(m_onlineHostSelectedColor);
         }
         
         m_networkManager->sendStartGame(whiteTimeMs, blackTimeMs, incrementMs, m_onlineHostSelectedColor);
         
-        qDebug() << "[Qt_Chess::onStartButtonClicked] Host sending StartGame"
+        qDebug() << "[Qt_Chess::onStartButtonClicked] Host sending StartGame to server"
                  << "| Host color:" << (m_onlineHostSelectedColor == PieceColor::White ? "White" : "Black")
-                 << "| m_timeControlEnabled:" << m_timeControlEnabled
-                 << "| m_timerStarted:" << m_timerStarted;
+                 << "| Waiting for server gameStart broadcast...";
         
-        // 暫時設定 m_gameStarted 為 false，等待對手處理 StartGame 訊息
-        // 延遲 200ms 後才允許房主走棋，確保對手已準備好接收移動
+        // 房主也等待伺服器廣播的 gameStart 訊息，確保與房客同步開始
+        // 不再在這裡直接啟動遊戲，而是等待 onStartGameReceived() 被觸發
         m_gameStarted = false;
+        m_timerStarted = false;
+        
+        // 隱藏開始按鈕，顯示等待訊息
+        if (m_startButton) {
+            m_startButton->setEnabled(false);
+            m_startButton->setText("等待同步開始...");
+        }
+        
+        // 不繼續執行下面的初始化，等待伺服器回應
+        return;
     }
     
     // 清空 UCI 移動歷史
@@ -1168,7 +1180,7 @@ void Qt_Chess::onStartButtonClicked() {
     GameMode mode = getCurrentGameMode();
     bool shouldFlip = (mode == GameMode::ComputerVsHuman) || 
                       (mode == GameMode::OnlineGame && 
-                       m_networkManager && m_networkManager->getRole() == NetworkRole::Server &&
+                       m_networkManager && m_networkManager->getRole() == NetworkRole::Host &&
                        m_onlineHostSelectedColor == PieceColor::Black);
     if (m_isBoardFlipped != shouldFlip) {
         m_isBoardFlipped = shouldFlip;
@@ -1204,17 +1216,7 @@ void Qt_Chess::onStartButtonClicked() {
         }
 
         m_timerStarted = true;
-        
-        // 在線上模式下，延遲啟動遊戲以確保對手已準備好
-        if (m_isOnlineGame) {
-            // 200ms 後啟用走棋（給對手時間接收和處理訊息）
-            QTimer::singleShot(200, this, [this]() {
-                m_gameStarted = true;
-                qDebug() << "[Qt_Chess] Host: m_gameStarted set to true (timer path 1)";
-            });
-        } else {
-            m_gameStarted = true;  // 非線上模式立即啟動
-        }
+        m_gameStarted = true;  // 非線上模式立即啟動（線上模式不會執行到這裡）
         
         startTimer();
 
@@ -1272,17 +1274,7 @@ void Qt_Chess::onStartButtonClicked() {
         m_whiteTimeMs = 0;
         m_blackTimeMs = 0;
 
-        // 即使沒有時間控制也允許遊戲開始
-        // 在線上模式下，延遲啟動遊戲以確保對手已準備好
-        if (m_isOnlineGame) {
-            // 200ms 後啟用走棋
-            QTimer::singleShot(200, this, [this]() {
-                m_gameStarted = true;
-                qDebug() << "[Qt_Chess] Host: m_gameStarted set to true (timer path 2)";
-            });
-        } else {
-            m_gameStarted = true;  // 非線上模式立即啟動
-        }
+        m_gameStarted = true;  // 非線上模式立即啟動（線上模式不會執行到這裡）
 
         // 隱藏時間控制面板
         if (m_timeControlPanel) {
@@ -2809,7 +2801,7 @@ void Qt_Chess::onWhiteTimeLimitChanged(int value) {
     
     // 如果是線上模式且是房主，並且對手已加入，發送時間設定更新
     if (m_isOnlineGame && m_networkManager && 
-        m_networkManager->getRole() == NetworkRole::Server && 
+        m_networkManager->getRole() == NetworkRole::Host && 
         m_networkManager->getStatus() == ConnectionStatus::Connected) {
         m_networkManager->sendTimeSettings(m_whiteTimeMs, m_blackTimeMs, m_incrementMs);
     }
@@ -2836,7 +2828,7 @@ void Qt_Chess::onBlackTimeLimitChanged(int value) {
     
     // 如果是線上模式且是房主，並且對手已加入，發送時間設定更新
     if (m_isOnlineGame && m_networkManager && 
-        m_networkManager->getRole() == NetworkRole::Server && 
+        m_networkManager->getRole() == NetworkRole::Host && 
         m_networkManager->getStatus() == ConnectionStatus::Connected) {
         m_networkManager->sendTimeSettings(m_whiteTimeMs, m_blackTimeMs, m_incrementMs);
     }
@@ -2948,7 +2940,7 @@ void Qt_Chess::onIncrementChanged(int value) {
     
     // 如果是線上模式且是房主，並且對手已加入，發送時間設定更新
     if (m_isOnlineGame && m_networkManager && 
-        m_networkManager->getRole() == NetworkRole::Server && 
+        m_networkManager->getRole() == NetworkRole::Host && 
         m_networkManager->getStatus() == ConnectionStatus::Connected) {
         m_networkManager->sendTimeSettings(m_whiteTimeMs, m_blackTimeMs, m_incrementMs);
     }
@@ -2957,36 +2949,90 @@ void Qt_Chess::onIncrementChanged(int value) {
 void Qt_Chess::onGameTimerTick() {
     if (!m_timeControlEnabled) return;
 
-    // 減少當前玩家的時間
-    // 在回放模式中，使用進入回放時儲存的玩家，而不是棋盤上的當前玩家
-    // 這樣可以確保在回放過程中時間只從同一個玩家倒數，不會隨著棋步切換
-    PieceColor currentPlayer = m_isReplayMode ? m_savedCurrentPlayer : m_chessBoard.getCurrentPlayer();
-    if (currentPlayer == PieceColor::White) {
-        // 僅當白方有時間限制（非無限制）時才減少時間
-        if (m_whiteTimeMs > 0) {
-            m_whiteTimeMs -= 100; // 減少 100ms（計時器每 100ms 觸發一次）
-            if (m_whiteTimeMs <= 0) {
-                m_whiteTimeMs = 0;
-                updateTimeDisplays();
-                stopTimer();
-                m_timerStarted = false;  // 重置計時器狀態
-                showTimeControlAfterTimeout();
-                QMessageBox::information(this, "時間到", "白方超時！黑方獲勝！");
-                return;
+    // 在線上模式中，使用伺服器同步的時間計算
+    // 這確保兩位玩家看到相同的經過時間，即使他們的本地時鐘不同步
+    if (m_isOnlineGame && m_gameStartLocalTime > 0) {
+        // 獲取當前同步時間（使用伺服器時間偏移）
+        qint64 currentSyncTime = QDateTime::currentMSecsSinceEpoch() + m_serverTimeOffset;
+        qint64 gameStartSyncTime = m_gameStartLocalTime + m_serverTimeOffset;
+        
+        // 如果這是當前回合的第一個 tick，記錄回合開始時間
+        if (m_currentTurnStartTime == 0) {
+            m_currentTurnStartTime = currentSyncTime;
+        }
+        
+        // 計算當前玩家在這個回合已用的時間
+        qint64 turnElapsedMs = currentSyncTime - m_currentTurnStartTime;
+        
+        // 更新當前玩家的剩餘時間
+        PieceColor currentPlayer = m_isReplayMode ? m_savedCurrentPlayer : m_chessBoard.getCurrentPlayer();
+        if (currentPlayer == PieceColor::White) {
+            if (m_whiteTimeMs > 0) {
+                // 基於實際經過時間更新，而不是固定減少100ms
+                int newWhiteTime = m_whiteInitialTimeMs - static_cast<int>(turnElapsedMs);
+                
+                // 防止時間跳躍（如果計算出的時間比當前剩餘時間多，保持當前時間）
+                if (newWhiteTime < m_whiteTimeMs) {
+                    m_whiteTimeMs = newWhiteTime;
+                }
+                
+                if (m_whiteTimeMs <= 0) {
+                    m_whiteTimeMs = 0;
+                    updateTimeDisplays();
+                    stopTimer();
+                    m_timerStarted = false;
+                    showTimeControlAfterTimeout();
+                    QMessageBox::information(this, "時間到", "白方超時！黑方獲勝！");
+                    return;
+                }
+            }
+        } else {
+            if (m_blackTimeMs > 0) {
+                int newBlackTime = m_blackInitialTimeMs - static_cast<int>(turnElapsedMs);
+                
+                if (newBlackTime < m_blackTimeMs) {
+                    m_blackTimeMs = newBlackTime;
+                }
+                
+                if (m_blackTimeMs <= 0) {
+                    m_blackTimeMs = 0;
+                    updateTimeDisplays();
+                    stopTimer();
+                    m_timerStarted = false;
+                    showTimeControlAfterTimeout();
+                    QMessageBox::information(this, "時間到", "黑方超時！白方獲勝！");
+                    return;
+                }
             }
         }
     } else {
-        // 僅當黑方有時間限制（非無限制）時才減少時間
-        if (m_blackTimeMs > 0) {
-            m_blackTimeMs -= 100;
-            if (m_blackTimeMs <= 0) {
-                m_blackTimeMs = 0;
-                updateTimeDisplays();
-                stopTimer();
-                m_timerStarted = false;  // 重置計時器狀態
-                showTimeControlAfterTimeout();
-                QMessageBox::information(this, "時間到", "黑方超時！白方獲勝！");
-                return;
+        // 非線上模式：使用原本的遞減邏輯
+        PieceColor currentPlayer = m_isReplayMode ? m_savedCurrentPlayer : m_chessBoard.getCurrentPlayer();
+        if (currentPlayer == PieceColor::White) {
+            if (m_whiteTimeMs > 0) {
+                m_whiteTimeMs -= 100;
+                if (m_whiteTimeMs <= 0) {
+                    m_whiteTimeMs = 0;
+                    updateTimeDisplays();
+                    stopTimer();
+                    m_timerStarted = false;
+                    showTimeControlAfterTimeout();
+                    QMessageBox::information(this, "時間到", "白方超時！黑方獲勝！");
+                    return;
+                }
+            }
+        } else {
+            if (m_blackTimeMs > 0) {
+                m_blackTimeMs -= 100;
+                if (m_blackTimeMs <= 0) {
+                    m_blackTimeMs = 0;
+                    updateTimeDisplays();
+                    stopTimer();
+                    m_timerStarted = false;
+                    showTimeControlAfterTimeout();
+                    QMessageBox::information(this, "時間到", "黑方超時！白方獲勝！");
+                    return;
+                }
             }
         }
     }
@@ -3018,6 +3064,18 @@ void Qt_Chess::applyIncrement() {
         m_whiteTimeMs += m_incrementMs;
     } else {
         m_blackTimeMs += m_incrementMs;
+    }
+    
+    // 在線上模式中，重置回合計時器，因為現在輪到新玩家了
+    if (m_isOnlineGame && m_gameStartLocalTime > 0) {
+        m_currentTurnStartTime = QDateTime::currentMSecsSinceEpoch() + m_serverTimeOffset;
+        // 更新當前回合的初始時間（用於計算經過時間）
+        PieceColor currentPlayer = m_chessBoard.getCurrentPlayer();
+        if (currentPlayer == PieceColor::White) {
+            m_whiteInitialTimeMs = m_whiteTimeMs;
+        } else {
+            m_blackInitialTimeMs = m_blackTimeMs;
+        }
     }
 }
 
@@ -5030,6 +5088,7 @@ void Qt_Chess::initializeNetwork() {
     connect(m_networkManager, &NetworkManager::connectionError, this, &Qt_Chess::onNetworkError);
     connect(m_networkManager, &NetworkManager::roomCreated, this, &Qt_Chess::onRoomCreated);
     connect(m_networkManager, &NetworkManager::opponentJoined, this, &Qt_Chess::onOpponentJoined);
+    connect(m_networkManager, &NetworkManager::playerLeft, this, &Qt_Chess::onPlayerLeft);
     connect(m_networkManager, &NetworkManager::opponentMove, this, &Qt_Chess::onOpponentMove);
     connect(m_networkManager, &NetworkManager::gameStartReceived, this, &Qt_Chess::onGameStartReceived);
     connect(m_networkManager, &NetworkManager::startGameReceived, this, &Qt_Chess::onStartGameReceived);
@@ -5125,17 +5184,16 @@ void Qt_Chess::onOnlineModeClicked() {
             }
         } else if (mode == OnlineDialog::Mode::JoinRoom) {
             // 加入房間
-            QString hostAddress = dialog.getHostAddress();
-            quint16 port = dialog.getPort();
+            QString roomNumber = dialog.getRoomNumber();
             
-            if (hostAddress.isEmpty() || port == 0) {
-                QMessageBox::warning(this, "輸入錯誤", "請輸入有效的IP地址和房間號碼");
+            if (roomNumber.isEmpty()) {
+                QMessageBox::warning(this, "輸入錯誤", "請輸入有效的房間號碼");
                 m_onlineModeButton->setChecked(false);
                 m_humanModeButton->setChecked(true);
                 return;
             }
             
-            if (m_networkManager->joinRoom(hostAddress, port)) {
+            if (m_networkManager->joinRoom(roomNumber)) {
                 m_currentGameMode = GameMode::OnlineGame;
                 m_isOnlineGame = true;
                 
@@ -5268,16 +5326,89 @@ void Qt_Chess::onNetworkError(const QString& error) {
     m_roomInfoLabel->hide();
 }
 
-void Qt_Chess::onRoomCreated(const QString& roomNumber, quint16 port) {
-    showRoomInfoDialog(roomNumber, port);
+void Qt_Chess::onRoomCreated(const QString& roomNumber) {
+    showRoomInfoDialog(roomNumber);
+    
+    // 房間創建成功後，立即顯示退出房間按鈕和等待狀態
+    m_waitingForOpponent = true;
+    
+    // 更新狀態標籤
+    m_connectionStatusLabel->setText("⏳ 等待對手加入...");
+    
+    // 顯示退出房間按鈕（而非開始按鈕）
+    if (m_startButton) {
+        m_startButton->hide();
+    }
+    if (m_exitRoomButton) {
+        m_exitRoomButton->show();
+    }
 }
 
 void Qt_Chess::onOpponentJoined() {
     m_waitingForOpponent = false;
-    m_connectionStatusLabel->setText("✅ 對手已加入，等待連線確認...");
+    
+    // 檢查角色：只有房主有開始按鈕，房客等待房主開始
+    bool isHost = (m_networkManager->getRole() == NetworkRole::Host);
+    
+    if (isHost) {
+        // 房主：對手已加入，可以開始遊戲
+        m_connectionStatusLabel->setText("✅ 對手已加入，請按開始鍵開始遊戲");
+        
+        if (m_startButton) {
+            m_startButton->setText("▶ 開始");
+            m_startButton->setEnabled(true);
+            m_startButton->setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold;");  // 綠色開始按鈕
+            m_startButton->show();  // 確保按鈕顯示
+            
+            // 重新連接到開始遊戲功能
+            disconnect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onCancelRoomClicked);
+            connect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onStartButtonClicked);
+        }
+        
+        // 房主顯示退出房間按鈕
+        if (m_exitRoomButton) {
+            m_exitRoomButton->show();
+        }
+    } else {
+        // 房客：成功加入房間，等待房主開始
+        m_connectionStatusLabel->setText("✅ 已加入房間，等待房主開始遊戲...");
+        
+        // 房客隱藏開始按鈕，只顯示退出按鈕
+        if (m_startButton) {
+            m_startButton->hide();
+        }
+        
+        // 房客顯示退出房間按鈕
+        if (m_exitRoomButton) {
+            m_exitRoomButton->show();
+        }
+    }
     
     // 房主：等待客戶端確認連線後再開始遊戲
     // 遊戲將在收到 gameStartReceived 信號時開始
+}
+
+void Qt_Chess::onPlayerLeft() {
+    // 對手在遊戲開始前離開房間
+    qDebug() << "[Qt_Chess::onPlayerLeft] Opponent left the room before game started";
+    
+    // 只有房主會收到這個通知（因為只有房主在等待對手）
+    if (m_networkManager->getRole() == NetworkRole::Host) {
+        m_waitingForOpponent = true;
+        
+        // 更新狀態標籤
+        m_connectionStatusLabel->setText("⏳ 對手已離開，等待新對手加入...");
+        
+        // 隱藏開始按鈕
+        if (m_startButton) {
+            m_startButton->hide();
+        }
+        
+        // 保持退出房間按鈕可見
+        if (m_exitRoomButton) {
+            m_exitRoomButton->show();
+        }
+    }
 }
 
 void Qt_Chess::onOpponentMove(const QPoint& from, const QPoint& to, PieceType promotionType) {
@@ -5364,7 +5495,7 @@ void Qt_Chess::onGameStartReceived(PieceColor playerColor) {
         ).arg(THEME_ACCENT_SUCCESS, THEME_BG_DARK));
         
         // 房主和房客的UI狀態
-        if (m_networkManager->getRole() == NetworkRole::Server) {
+        if (m_networkManager->getRole() == NetworkRole::Host) {
             // 房主：啟用開始按鈕和時間控制
             m_startButton->setEnabled(true);
             if (m_whiteTimeLimitSlider) m_whiteTimeLimitSlider->setEnabled(true);
@@ -5381,7 +5512,7 @@ void Qt_Chess::onGameStartReceived(PieceColor playerColor) {
     }
     
     // 顯示遊戲開始訊息
-    QString roleMsg = (m_networkManager->getRole() == NetworkRole::Server) ? 
+    QString roleMsg = (m_networkManager->getRole() == NetworkRole::Host) ? 
         "已成功連線到對手，點擊「開始對弈」開始遊戲！" : 
         "已成功連線到對手，等待房主開始遊戲...";
     QMessageBox::information(this, "連線成功", roleMsg);
@@ -5459,8 +5590,8 @@ void Qt_Chess::onCancelRoomClicked() {
         QMessageBox::Yes | QMessageBox::No);
     
     if (response == QMessageBox::Yes) {
-        // 關閉網路連線
-        m_networkManager->closeConnection();
+        // 使用 leaveRoom 明確通知對手
+        m_networkManager->leaveRoom();
         
         m_isOnlineGame = false;
         m_waitingForOpponent = false;
@@ -5524,12 +5655,12 @@ void Qt_Chess::onCancelRoomClicked() {
 }
 
 void Qt_Chess::onExitRoomClicked() {
-    // 在遊戲進行中退出房間
-    int response = QMessageBox::question(this, "退出房間", 
-        "確定要退出線上對戰嗎？這將結束當前遊戲。", 
-        QMessageBox::Yes | QMessageBox::No);
+    // 在遊戲進行中退出房間 - 移除確認對話框以減少延遲
+    // int response = QMessageBox::question(this, "退出房間", 
+    //     "確定要退出線上對戰嗎？這將結束當前遊戲。", 
+    //     QMessageBox::Yes | QMessageBox::No);
     
-    if (response == QMessageBox::Yes) {
+    // if (response == QMessageBox::Yes) {
         // 首先停止計時器，避免計時器在清理過程中觸發
         stopTimer();
         m_timerStarted = false;
@@ -5604,7 +5735,7 @@ void Qt_Chess::onExitRoomClicked() {
         
         // 關閉網路連線（在重置遊戲狀態之前關閉，確保訊息處理完成）
         if (m_networkManager) {
-            m_networkManager->closeConnection();
+            m_networkManager->leaveRoom();  // 使用 leaveRoom 明確通知對手
         }
         
         // 重置線上模式標記（在關閉連接後）
@@ -5616,15 +5747,22 @@ void Qt_Chess::onExitRoomClicked() {
             onNewGameClicked();
         }
         
-        QMessageBox::information(this, "已退出", "已退出線上對戰，返回雙人模式");
-    }
+        // 移除對話框以減少延遲
+        // QMessageBox::information(this, "已退出", "已退出線上對戰，返回雙人模式");
+    // } // 移除 if (response == QMessageBox::Yes) 的結束括號
 }
 
-void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int incrementMs, PieceColor hostColor) {
+void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int incrementMs, PieceColor hostColor, qint64 serverTimeOffset) {
     qDebug() << "[Qt_Chess::onStartGameReceived] Client received StartGame"
              << "| Host color:" << (hostColor == PieceColor::White ? "White" : "Black")
              << "| whiteTimeMs:" << whiteTimeMs
-             << "| blackTimeMs:" << blackTimeMs;
+             << "| blackTimeMs:" << blackTimeMs
+             << "| serverTimeOffset:" << serverTimeOffset << "ms";
+    
+    // 儲存伺服器時間偏移和遊戲開始時間，用於線上模式的時間同步
+    m_serverTimeOffset = serverTimeOffset;
+    m_gameStartLocalTime = QDateTime::currentMSecsSinceEpoch();
+    m_currentTurnStartTime = m_gameStartLocalTime + m_serverTimeOffset;  // 初始化當前回合開始時間（使用同步時間）
     
     // 收到房主的開始遊戲通知，設定時間後客戶端自動開始遊戲
     
@@ -5674,11 +5812,11 @@ void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int increme
     // 根據房主選擇的顏色決定棋盤翻轉和玩家顏色
     // 如果房主選擇黑色，則房主的棋盤翻轉，房客的棋盤不翻轉
     // 如果房主選擇白色，則房主的棋盤不翻轉，房客的棋盤翻轉
-    if (m_networkManager && m_networkManager->getRole() == NetworkRole::Client) {
+    if (m_networkManager && m_networkManager->getRole() == NetworkRole::Guest) {
         // 房客的棋盤翻轉與房主相反
         m_isBoardFlipped = (hostColor == PieceColor::White);
         saveBoardFlipSettings();
-    } else if (m_networkManager && m_networkManager->getRole() == NetworkRole::Server) {
+    } else if (m_networkManager && m_networkManager->getRole() == NetworkRole::Host) {
         // 房主根據自己的選擇決定是否翻轉（執黑則翻轉）
         m_isBoardFlipped = (hostColor == PieceColor::Black);
         saveBoardFlipSettings();
@@ -5707,7 +5845,8 @@ void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int increme
     m_gameStarted = true;  // 設定為 true，允許走棋
     m_timerStarted = true;
     
-    qDebug() << "[Qt_Chess::onStartGameReceived] Client: m_gameStarted set to true"
+    qDebug() << "[Qt_Chess::onStartGameReceived] Game starting synchronously for both players"
+             << "| My role:" << (m_networkManager->getRole() == NetworkRole::Host ? "Host" : "Guest")
              << "| Player color:" << (m_networkManager ? (int)m_networkManager->getPlayerColor() : -1);
     
     // 顯示放棄按鈕和退出房間按鈕（無論是否有時間控制）
@@ -5718,9 +5857,17 @@ void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int increme
         m_exitRoomButton->show();
     }
     
-    // 隱藏開始按鈕（房客無開始按鈕）
+    // 更新開始按鈕
     if (m_startButton) {
-        m_startButton->hide();
+        if (m_networkManager->getRole() == NetworkRole::Host) {
+            // 房主顯示「進行中」
+            m_startButton->setText("進行中");
+            m_startButton->setEnabled(false);
+            m_startButton->show();
+        } else {
+            // 房客隱藏開始按鈕
+            m_startButton->hide();
+        }
     }
     
     // 更新回放按鈕狀態（遊戲開始時停用）
@@ -5794,13 +5941,14 @@ void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int increme
     // 清除任何殘留的高亮顯示
     clearHighlights();
     
-    QMessageBox::information(this, "遊戲開始", "對手已開始遊戲！");
+    // 移除對話框以減少延遲
+    // QMessageBox::information(this, "遊戲開始", "對手已開始遊戲！");
 }
 
 void Qt_Chess::onTimeSettingsReceived(int whiteTimeMs, int blackTimeMs, int incrementMs) {
     // 房客收到房主的時間設定更新
     // 只有房客才需要更新（房主自己已經設定好了）
-    if (m_networkManager && m_networkManager->getRole() == NetworkRole::Client) {
+    if (m_networkManager && m_networkManager->getRole() == NetworkRole::Guest) {
         // 更新時間變數
         m_whiteTimeMs = whiteTimeMs;
         m_blackTimeMs = blackTimeMs;
@@ -5889,22 +6037,7 @@ bool Qt_Chess::isOnlineTurn() const {
     return m_chessBoard.getCurrentPlayer() == playerColor;
 }
 
-void Qt_Chess::showRoomInfoDialog(const QString& roomNumber, quint16 port) {
-    // 獲取本機IP地址
-    QString ipAddress = "未知";
-    QList<QHostAddress> ipAddressesList = QNetworkInterface::allAddresses();
-    for (const QHostAddress &entry : ipAddressesList) {
-        if (entry != QHostAddress::LocalHost && 
-            entry.toIPv4Address() && 
-            !entry.toString().startsWith("169.254")) {  // 排除自動配置的IP
-            ipAddress = entry.toString();
-            break;
-        }
-    }
-    
-    // 建立連線碼（簡化格式）
-    QString connectionCode = QString("%1:%2").arg(ipAddress, roomNumber);
-    
+void Qt_Chess::showRoomInfoDialog(const QString& roomNumber) {
     // 創建自訂對話框
     QDialog dialog(this);
     dialog.setWindowTitle(tr("🎉 房間已創建！"));
@@ -5920,14 +6053,14 @@ void Qt_Chess::showRoomInfoDialog(const QString& roomNumber, quint16 port) {
     
     // 說明文字
     QLabel* instructionLabel = new QLabel(
-        tr("<p><b>📱 請將以下連線碼傳給您的朋友：</b></p>"), &dialog);
+        tr("<p><b>📱 請將以下房號傳給您的朋友：</b></p>"), &dialog);
     instructionLabel->setWordWrap(true);
     instructionLabel->setStyleSheet("QLabel { font-size: 11pt; padding: 5px; }");
     layout->addWidget(instructionLabel);
     
-    // 連線碼顯示（大字體，可選取）
+    // 房號顯示（大字體，可選取）
     QTextEdit* codeEdit = new QTextEdit(&dialog);
-    codeEdit->setPlainText(connectionCode);
+    codeEdit->setPlainText(roomNumber);
     codeEdit->setReadOnly(true);
     codeEdit->setMaximumHeight(60);
     codeEdit->setAlignment(Qt::AlignCenter);
@@ -5939,25 +6072,27 @@ void Qt_Chess::showRoomInfoDialog(const QString& roomNumber, quint16 port) {
     layout->addWidget(codeEdit);
     
     // 複製按鈕
-    QPushButton* copyButton = new QPushButton(tr("📋 複製連線碼"), &dialog);
+    QPushButton* copyButton = new QPushButton(tr("📋 複製房號"), &dialog);
     copyButton->setStyleSheet("QPushButton { background-color: #4CAF50; color: white; padding: 10px; font-size: 12pt; font-weight: bold; border-radius: 5px; }");
-    connect(copyButton, &QPushButton::clicked, [connectionCode]() {
+    connect(copyButton, &QPushButton::clicked, [roomNumber]() {
         QClipboard* clipboard = QApplication::clipboard();
-        clipboard->setText(connectionCode);
-        QMessageBox::information(nullptr, tr("已複製"), 
-            tr("連線碼已複製到剪貼簿！\n\n請用通訊軟體（如LINE、WeChat）傳給朋友"));
+        clipboard->setText(roomNumber);
+        // 移除對話框以減少延遲，直接複製
+        // QMessageBox::information(nullptr, tr("已複製"), 
+        //     tr("房號已複製到剪貼簿！\n\n請用通訊軟體（如LINE、WeChat）傳給朋友"));
     });
     layout->addWidget(copyButton);
     
     layout->addSpacing(10);
     
-    // 詳細資訊（可摺疊）
+    // 詳細資訊
     QLabel* detailLabel = new QLabel(
-        tr("<p><b>詳細資訊：</b><br>"
+        tr("<p><b>房間資訊：</b><br>"
            "房間號碼：<span style='color: #2196F3; font-weight: bold;'>%1</span><br>"
-           "您的IP地址：<span style='color: #2196F3; font-weight: bold;'>%2</span></p>"
+           "伺服器：<span style='color: #2196F3; font-weight: bold;'>chess-server-mjg6.onrender.com</span></p>"
            "<p style='color: #666; font-size: 9pt;'>"
-           "💡 朋友收到連線碼後，選擇「加入房間」並貼上即可</p>").arg(roomNumber, ipAddress), &dialog);
+           "💡 朋友收到房號後，選擇「加入房間」並貼上即可<br>"
+           "🌐 使用中央伺服器，無需設定網路或防火牆</p>").arg(roomNumber), &dialog);
     detailLabel->setWordWrap(true);
     detailLabel->setStyleSheet("QLabel { padding: 10px; background-color: #f5f5f5; border-radius: 5px; }");
     layout->addWidget(detailLabel);
@@ -5971,7 +6106,7 @@ void Qt_Chess::showRoomInfoDialog(const QString& roomNumber, quint16 port) {
     layout->addWidget(closeButton);
     
     // 更新房間資訊標籤
-    m_roomInfoLabel->setText(QString("🎮 房號: %1 | IP: %2").arg(roomNumber, ipAddress));
+    m_roomInfoLabel->setText(QString("🎮 房號: %1 | 伺服器: chess-server-mjg6.onrender.com").arg(roomNumber));
     
     dialog.exec();
 }

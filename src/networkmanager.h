@@ -2,8 +2,7 @@
 #define NETWORKMANAGER_H
 
 #include <QObject>
-#include <QTcpSocket>
-#include <QTcpServer>
+#include <QWebSocket>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QString>
@@ -12,8 +11,8 @@
 
 enum class NetworkRole {
     None,
-    Server,    // 房主
-    Client     // 加入者
+    Host,      // 房主
+    Guest      // 加入者
 };
 
 enum class ConnectionStatus {
@@ -24,6 +23,7 @@ enum class ConnectionStatus {
 };
 
 enum class MessageType {
+    CreateRoom,         // 創建房間
     RoomCreated,        // 房間已創建
     JoinRoom,           // 加入房間
     JoinAccepted,       // 加入被接受
@@ -49,12 +49,12 @@ public:
     ~NetworkManager();
 
     // 房間管理
-    bool createRoom(quint16 port = 0);  // 創建房間，返回房號
-    bool joinRoom(const QString& hostAddress, quint16 port);
+    bool createRoom();  // 創建房間，通過服務器生成房號
+    bool joinRoom(const QString& roomNumber);  // 通過房號加入房間
+    void leaveRoom();  // 明確離開房間（通知伺服器和對手）
     void closeConnection();
     
     QString getRoomNumber() const { return m_roomNumber; }
-    quint16 getPort() const { return m_port; }
     NetworkRole getRole() const { return m_role; }
     ConnectionStatus getStatus() const { return m_status; }
     
@@ -77,11 +77,12 @@ signals:
     void connected();
     void disconnected();
     void connectionError(const QString& error);
-    void roomCreated(const QString& roomNumber, quint16 port);
+    void roomCreated(const QString& roomNumber);
     void opponentJoined();
+    void playerLeft();  // 對手在遊戲開始前離開房間
     void opponentMove(const QPoint& from, const QPoint& to, PieceType promotionType);
     void gameStartReceived(PieceColor playerColor);
-    void startGameReceived(int whiteTimeMs, int blackTimeMs, int incrementMs, PieceColor hostColor);  // 收到開始遊戲通知（包含時間設定和房主顏色）
+    void startGameReceived(int whiteTimeMs, int blackTimeMs, int incrementMs, PieceColor hostColor, qint64 serverTimeOffset);  // 收到開始遊戲通知（包含時間設定、房主顏色和伺服器時間偏移）
     void timeSettingsReceived(int whiteTimeMs, int blackTimeMs, int incrementMs);  // 收到時間設定更新
     void surrenderReceived();  // 收到投降訊息
     void gameOverReceived(const QString& result);
@@ -89,34 +90,26 @@ signals:
     void opponentDisconnected();
 
 private slots:
-    void onNewConnection();
     void onConnected();
     void onDisconnected();
-    void onReadyRead();
+    void onTextMessageReceived(const QString& message);
     void onError(QAbstractSocket::SocketError socketError);
-    void onServerError(QAbstractSocket::SocketError socketError);
 
 private:
-    QTcpServer* m_server;
-    QTcpSocket* m_socket;
-    QTcpSocket* m_clientSocket;  // 用於服務器端連接的客戶端套接字
+    QWebSocket* m_webSocket;
     
     NetworkRole m_role;
     ConnectionStatus m_status;
     QString m_roomNumber;
-    quint16 m_port;
+    QString m_serverUrl;
     
     PieceColor m_playerColor;
     PieceColor m_opponentColor;
     
-    QByteArray m_receiveBuffer;
-    
     void sendMessage(const QJsonObject& message);
     void processMessage(const QJsonObject& message);
-    QString generateRoomNumber() const;
     MessageType stringToMessageType(const QString& type) const;
     QString messageTypeToString(MessageType type) const;
-    QTcpSocket* getActiveSocket() const;
 };
 
 #endif // NETWORKMANAGER_H
