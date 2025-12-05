@@ -5586,12 +5586,12 @@ void Qt_Chess::onCancelRoomClicked() {
 }
 
 void Qt_Chess::onExitRoomClicked() {
-    // 在遊戲進行中退出房間
-    int response = QMessageBox::question(this, "退出房間", 
-        "確定要退出線上對戰嗎？這將結束當前遊戲。", 
-        QMessageBox::Yes | QMessageBox::No);
+    // 在遊戲進行中退出房間 - 移除確認對話框以減少延遲
+    // int response = QMessageBox::question(this, "退出房間", 
+    //     "確定要退出線上對戰嗎？這將結束當前遊戲。", 
+    //     QMessageBox::Yes | QMessageBox::No);
     
-    if (response == QMessageBox::Yes) {
+    // if (response == QMessageBox::Yes) {
         // 首先停止計時器，避免計時器在清理過程中觸發
         stopTimer();
         m_timerStarted = false;
@@ -5678,8 +5678,9 @@ void Qt_Chess::onExitRoomClicked() {
             onNewGameClicked();
         }
         
-        QMessageBox::information(this, "已退出", "已退出線上對戰，返回雙人模式");
-    }
+        // 移除對話框以減少延遲
+        // QMessageBox::information(this, "已退出", "已退出線上對戰，返回雙人模式");
+    // } // 移除 if (response == QMessageBox::Yes) 的結束括號
 }
 
 void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int incrementMs, PieceColor hostColor) {
@@ -5865,7 +5866,8 @@ void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int increme
     // 清除任何殘留的高亮顯示
     clearHighlights();
     
-    QMessageBox::information(this, "遊戲開始", "對手已開始遊戲！");
+    // 移除對話框以減少延遲
+    // QMessageBox::information(this, "遊戲開始", "對手已開始遊戲！");
 }
 
 void Qt_Chess::onTimeSettingsReceived(int whiteTimeMs, int blackTimeMs, int incrementMs) {
@@ -6000,8 +6002,9 @@ void Qt_Chess::showRoomInfoDialog(const QString& roomNumber) {
     connect(copyButton, &QPushButton::clicked, [roomNumber]() {
         QClipboard* clipboard = QApplication::clipboard();
         clipboard->setText(roomNumber);
-        QMessageBox::information(nullptr, tr("已複製"), 
-            tr("房號已複製到剪貼簿！\n\n請用通訊軟體（如LINE、WeChat）傳給朋友"));
+        // 移除對話框以減少延遲，直接複製
+        // QMessageBox::information(nullptr, tr("已複製"), 
+        //     tr("房號已複製到剪貼簿！\n\n請用通訊軟體（如LINE、WeChat）傳給朋友"));
     });
     layout->addWidget(copyButton);
     
