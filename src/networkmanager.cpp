@@ -190,8 +190,8 @@ void NetworkManager::sendSurrender()
     }
     
     QJsonObject message;
-    message["type"] = messageTypeToString(MessageType::Surrender);
-    message["roomNumber"] = m_roomNumber;
+    message["action"] = "surrender";  // Use server protocol
+    message["room"] = m_roomNumber;   // Use "room" instead of "roomNumber"
     sendMessage(message);
 }
 
@@ -401,6 +401,11 @@ void NetworkManager::processMessage(const QJsonObject& message)
         
         qDebug() << "[NetworkManager::processMessage] Emitting opponentMove signal";
         emit opponentMove(from, to, promotionType);
+    }
+    else if (actionStr == "surrender") {
+        // 收到對手投降訊息（新格式）
+        qDebug() << "[NetworkManager] Opponent surrendered";
+        emit surrenderReceived();
     }
     else {
         // 處理舊格式訊息（type 欄位）

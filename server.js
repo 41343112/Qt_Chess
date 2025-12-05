@@ -78,6 +78,18 @@ wss.on('connection', ws => {
                 });
             }
         }
+
+        // 廣播投降訊息
+        else if(msg.action === "surrender"){
+            const roomId = msg.room;
+            if(rooms[roomId]){
+                rooms[roomId].forEach(client => {
+                    if(client !== ws && client.readyState === WebSocket.OPEN){
+                        client.send(JSON.stringify(msg));
+                    }
+                });
+            }
+        }
     });
 
     // 玩家斷線
