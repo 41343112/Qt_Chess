@@ -876,18 +876,25 @@ void Qt_Chess::highlightValidMoves() {
 }
 
 void Qt_Chess::onSquareClicked(int displayRow, int displayCol) {
+    qDebug() << "[Qt_Chess::onSquareClicked] Square clicked at display position (" << displayRow << "," << displayCol << ")"
+             << "| m_gameStarted:" << m_gameStarted
+             << "| m_isOnlineGame:" << m_isOnlineGame;
+    
     // 如果在回放模式中，不允許移動
     if (m_isReplayMode) {
+        qDebug() << "[Qt_Chess::onSquareClicked] In replay mode, ignoring click";
         return;
     }
 
     // 如果遊戲尚未開始，不允許移動
     if (!m_gameStarted) {
+        qDebug() << "[Qt_Chess::onSquareClicked] Game not started, ignoring click";
         return;
     }
 
     // 如果是電腦的回合，玩家不能移動
     if (isComputerTurn()) {
+        qDebug() << "[Qt_Chess::onSquareClicked] Computer's turn, ignoring click";
         return;
     }
     
