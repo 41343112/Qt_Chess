@@ -22,6 +22,14 @@
 
 ### 💼 推薦給技術使用者
 
+**[跨網域連線指南](CROSS_DOMAIN_CONNECTION_GUIDE.md)** - 跨網域設置 🆕
+- ✅ 本地網絡 vs 跨網域比較
+- ✅ 端口轉發設置教學
+- ✅ 公網IP/域名設置
+- ✅ 防火牆設置說明
+- ✅ 詳細故障排除
+- 📄 12KB，閱讀時間：20分鐘
+
 **[UI改進說明](ONLINE_UI_IMPROVEMENTS.md)** - 改進對比
 - ✅ 改進前後對比
 - ✅ 操作流程對比
@@ -144,7 +152,7 @@ A: 每次創建房間都會生成新的連線碼
 **Q: 為什麼連不上？**
 A: 最常見原因：
 1. 連線碼輸入錯誤
-2. 不在同一個WiFi
+2. 不在同一個WiFi（如需跨網域連線請參閱[跨網域連線指南](CROSS_DOMAIN_CONNECTION_GUIDE.md)）
 3. 防火牆阻擋
 
 詳細解答請看：[簡易使用指南 - 常見問題](ONLINE_BEGINNER_GUIDE.md#常見問題)
@@ -158,9 +166,11 @@ A: 房主（創建房間的人）執白棋先走
 A: 可以，但遊戲會結束
 
 **Q: 需要在同個地方嗎？**
-A: 同個WiFi最簡單，不同地方需要進階設定
+A: 不一定！支援兩種連線方式：
+- **同一WiFi**：最簡單，無需設定
+- **不同網路**：需要設定端口轉發，請參閱[跨網域連線指南](CROSS_DOMAIN_CONNECTION_GUIDE.md)
 
-詳細說明請看：[簡易使用指南](ONLINE_BEGINNER_GUIDE.md)
+詳細說明請看：[簡易使用指南](ONLINE_BEGINNER_GUIDE.md) 或 [跨網域連線指南](CROSS_DOMAIN_CONNECTION_GUIDE.md)
 
 ---
 
@@ -198,11 +208,12 @@ A: 同個WiFi最簡單，不同地方需要進階設定
 |------|----------|----------|------|----------|
 | [簡易使用指南](ONLINE_BEGINNER_GUIDE.md) | 初學者 | 最簡單的教學 | 2.6KB | 5分鐘 |
 | [視覺化操作指南](ONLINE_VISUAL_GUIDE.md) | 所有人 | 圖文並茂 | 10.8KB | 10分鐘 |
+| [跨網域連線指南](CROSS_DOMAIN_CONNECTION_GUIDE.md) | 技術使用者 | 跨網域設置 | 12KB | 20分鐘 |
 | [UI改進說明](ONLINE_UI_IMPROVEMENTS.md) | 技術使用者 | 改進對比 | 6.5KB | 8分鐘 |
 | [完整功能文檔](ONLINE_MODE_FEATURE.md) | 開發者 | 技術規格 | 8.2KB | 15分鐘 |
 
-**總文檔大小：** 約28KB  
-**總閱讀時間：** 約38分鐘（建議閱讀1-2份即可）
+**總文檔大小：** 約40KB  
+**總閱讀時間：** 約58分鐘（建議閱讀1-2份即可）
 
 ---
 
@@ -210,13 +221,16 @@ A: 同個WiFi最簡單，不同地方需要進階設定
 
 ### 第一次使用
 
-1. **初學者**：先看 [簡易使用指南](ONLINE_BEGINNER_GUIDE.md)
+1. **初學者（本地網絡）**：先看 [簡易使用指南](ONLINE_BEGINNER_GUIDE.md)
 2. **視覺學習者**：直接看 [視覺化操作指南](ONLINE_VISUAL_GUIDE.md)
-3. **快速學習**：只看本文檔的「快速開始」章節
+3. **需要跨網域連線**：參閱 [跨網域連線指南](CROSS_DOMAIN_CONNECTION_GUIDE.md)
+4. **快速學習**：只看本文檔的「快速開始」章節
 
 ### 遇到問題
 
-1. 先看 [簡易使用指南 - 常見問題](ONLINE_BEGINNER_GUIDE.md#常見問題)
+1. **本地網絡問題**：先看 [簡易使用指南 - 常見問題](ONLINE_BEGINNER_GUIDE.md#常見問題)
+2. **跨網域連線問題**：參閱 [跨網域連線指南 - 常見問題](CROSS_DOMAIN_CONNECTION_GUIDE.md#常見問題)
+3. **技術細節**：再看 [完整功能文檔 - 常見問題](ONLINE_MODE_FEATURE.md#常見問題)
 2. 再看 [完整功能文檔 - 常見問題](ONLINE_MODE_FEATURE.md#常見問題)
 3. 檢查 [UI改進說明 - 錯誤處理](ONLINE_UI_IMPROVEMENTS.md#錯誤處理改進)
 
