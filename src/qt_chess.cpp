@@ -1139,7 +1139,7 @@ void Qt_Chess::onStartButtonClicked() {
         
         // 房主需要在發送開始遊戲訊息前設定自己的玩家顏色
         // 這樣 isPlayerPiece() 才能正確判斷哪些棋子可以移動
-        if (m_networkManager->getRole() == NetworkRole::Server) {
+        if (m_networkManager->getRole() == NetworkRole::Host) {
             m_networkManager->setPlayerColors(m_onlineHostSelectedColor);
         }
         
@@ -1168,7 +1168,7 @@ void Qt_Chess::onStartButtonClicked() {
     GameMode mode = getCurrentGameMode();
     bool shouldFlip = (mode == GameMode::ComputerVsHuman) || 
                       (mode == GameMode::OnlineGame && 
-                       m_networkManager && m_networkManager->getRole() == NetworkRole::Server &&
+                       m_networkManager && m_networkManager->getRole() == NetworkRole::Host &&
                        m_onlineHostSelectedColor == PieceColor::Black);
     if (m_isBoardFlipped != shouldFlip) {
         m_isBoardFlipped = shouldFlip;
@@ -2809,7 +2809,7 @@ void Qt_Chess::onWhiteTimeLimitChanged(int value) {
     
     // 如果是線上模式且是房主，並且對手已加入，發送時間設定更新
     if (m_isOnlineGame && m_networkManager && 
-        m_networkManager->getRole() == NetworkRole::Server && 
+        m_networkManager->getRole() == NetworkRole::Host && 
         m_networkManager->getStatus() == ConnectionStatus::Connected) {
         m_networkManager->sendTimeSettings(m_whiteTimeMs, m_blackTimeMs, m_incrementMs);
     }
@@ -2836,7 +2836,7 @@ void Qt_Chess::onBlackTimeLimitChanged(int value) {
     
     // 如果是線上模式且是房主，並且對手已加入，發送時間設定更新
     if (m_isOnlineGame && m_networkManager && 
-        m_networkManager->getRole() == NetworkRole::Server && 
+        m_networkManager->getRole() == NetworkRole::Host && 
         m_networkManager->getStatus() == ConnectionStatus::Connected) {
         m_networkManager->sendTimeSettings(m_whiteTimeMs, m_blackTimeMs, m_incrementMs);
     }
@@ -2948,7 +2948,7 @@ void Qt_Chess::onIncrementChanged(int value) {
     
     // 如果是線上模式且是房主，並且對手已加入，發送時間設定更新
     if (m_isOnlineGame && m_networkManager && 
-        m_networkManager->getRole() == NetworkRole::Server && 
+        m_networkManager->getRole() == NetworkRole::Host && 
         m_networkManager->getStatus() == ConnectionStatus::Connected) {
         m_networkManager->sendTimeSettings(m_whiteTimeMs, m_blackTimeMs, m_incrementMs);
     }
@@ -5363,7 +5363,7 @@ void Qt_Chess::onGameStartReceived(PieceColor playerColor) {
         ).arg(THEME_ACCENT_SUCCESS, THEME_BG_DARK));
         
         // 房主和房客的UI狀態
-        if (m_networkManager->getRole() == NetworkRole::Server) {
+        if (m_networkManager->getRole() == NetworkRole::Host) {
             // 房主：啟用開始按鈕和時間控制
             m_startButton->setEnabled(true);
             if (m_whiteTimeLimitSlider) m_whiteTimeLimitSlider->setEnabled(true);
@@ -5380,7 +5380,7 @@ void Qt_Chess::onGameStartReceived(PieceColor playerColor) {
     }
     
     // 顯示遊戲開始訊息
-    QString roleMsg = (m_networkManager->getRole() == NetworkRole::Server) ? 
+    QString roleMsg = (m_networkManager->getRole() == NetworkRole::Host) ? 
         "已成功連線到對手，點擊「開始對弈」開始遊戲！" : 
         "已成功連線到對手，等待房主開始遊戲...";
     QMessageBox::information(this, "連線成功", roleMsg);
@@ -5673,11 +5673,11 @@ void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int increme
     // 根據房主選擇的顏色決定棋盤翻轉和玩家顏色
     // 如果房主選擇黑色，則房主的棋盤翻轉，房客的棋盤不翻轉
     // 如果房主選擇白色，則房主的棋盤不翻轉，房客的棋盤翻轉
-    if (m_networkManager && m_networkManager->getRole() == NetworkRole::Client) {
+    if (m_networkManager && m_networkManager->getRole() == NetworkRole::Guest) {
         // 房客的棋盤翻轉與房主相反
         m_isBoardFlipped = (hostColor == PieceColor::White);
         saveBoardFlipSettings();
-    } else if (m_networkManager && m_networkManager->getRole() == NetworkRole::Server) {
+    } else if (m_networkManager && m_networkManager->getRole() == NetworkRole::Host) {
         // 房主根據自己的選擇決定是否翻轉（執黑則翻轉）
         m_isBoardFlipped = (hostColor == PieceColor::Black);
         saveBoardFlipSettings();
@@ -5799,7 +5799,7 @@ void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int increme
 void Qt_Chess::onTimeSettingsReceived(int whiteTimeMs, int blackTimeMs, int incrementMs) {
     // 房客收到房主的時間設定更新
     // 只有房客才需要更新（房主自己已經設定好了）
-    if (m_networkManager && m_networkManager->getRole() == NetworkRole::Client) {
+    if (m_networkManager && m_networkManager->getRole() == NetworkRole::Guest) {
         // 更新時間變數
         m_whiteTimeMs = whiteTimeMs;
         m_blackTimeMs = blackTimeMs;
