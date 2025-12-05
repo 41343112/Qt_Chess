@@ -70,7 +70,7 @@ void OnlineDialog::setupUI()
     easyLayout->addWidget(easyLabel);
     
     m_connectionInfoEdit = new QTextEdit(this);
-    m_connectionInfoEdit->setPlaceholderText(tr("在此貼上朋友給您的連線碼\n格式如：192.168.1.100:1234"));
+    m_connectionInfoEdit->setPlaceholderText(tr("在此貼上朋友給您的連線碼\n格式如：192.168.1.100:1234 或 example.com:1234"));
     m_connectionInfoEdit->setMaximumHeight(60);
     easyLayout->addWidget(m_connectionInfoEdit);
     
@@ -87,7 +87,7 @@ void OnlineDialog::setupUI()
     QFormLayout* manualLayout = new QFormLayout(manualGroup);
     
     m_hostAddressEdit = new QLineEdit(this);
-    m_hostAddressEdit->setPlaceholderText(tr("例如: 192.168.1.100"));
+    m_hostAddressEdit->setPlaceholderText(tr("例如: 192.168.1.100 或 example.com"));
     
     m_roomNumberEdit = new QLineEdit(this);
     m_roomNumberEdit->setPlaceholderText(tr("4位數字"));
@@ -95,7 +95,7 @@ void OnlineDialog::setupUI()
     QIntValidator* validator = new QIntValidator(1000, 9999, this);
     m_roomNumberEdit->setValidator(validator);
     
-    manualLayout->addRow(tr("IP地址:"), m_hostAddressEdit);
+    manualLayout->addRow(tr("IP地址/域名:"), m_hostAddressEdit);
     manualLayout->addRow(tr("房號:"), m_roomNumberEdit);
     
     joinMainLayout->addWidget(manualGroup);
@@ -214,7 +214,7 @@ void OnlineDialog::parseConnectionInfo(const QString& info)
     }
     
     QMessageBox::warning(this, tr("格式錯誤"), 
-        tr("無法識別連線碼格式\n\n正確格式範例：\n192.168.1.100:1234\n或\n192.168.1.100 1234"));
+        tr("無法識別連線碼格式\n\n正確格式範例：\n192.168.1.100:1234\nexample.com:1234\n或\n192.168.1.100 1234"));
 }
 
 QString OnlineDialog::getHostAddress() const

@@ -38,6 +38,7 @@
 #include <QDesktopServices>
 #include <QUrl>
 #include <QTextEdit>
+#include <QTabWidget>
 #include <algorithm>
 
 namespace {
@@ -5891,24 +5892,21 @@ bool Qt_Chess::isOnlineTurn() const {
 
 void Qt_Chess::showRoomInfoDialog(const QString& roomNumber, quint16 port) {
     // 獲取本機IP地址
-    QString ipAddress = "未知";
+    QString localIP = "未知";
     QList<QHostAddress> ipAddressesList = QNetworkInterface::allAddresses();
     for (const QHostAddress &entry : ipAddressesList) {
         if (entry != QHostAddress::LocalHost && 
             entry.toIPv4Address() && 
             !entry.toString().startsWith("169.254")) {  // 排除自動配置的IP
-            ipAddress = entry.toString();
+            localIP = entry.toString();
             break;
         }
     }
     
-    // 建立連線碼（簡化格式）
-    QString connectionCode = QString("%1:%2").arg(ipAddress, roomNumber);
-    
     // 創建自訂對話框
     QDialog dialog(this);
     dialog.setWindowTitle(tr("🎉 房間已創建！"));
-    dialog.setMinimumWidth(450);
+    dialog.setMinimumWidth(500);
     
     QVBoxLayout* layout = new QVBoxLayout(&dialog);
     
@@ -5918,46 +5916,139 @@ void Qt_Chess::showRoomInfoDialog(const QString& roomNumber, quint16 port) {
     titleLabel->setStyleSheet("QLabel { color: #4CAF50; padding: 10px; }");
     layout->addWidget(titleLabel);
     
-    // 說明文字
-    QLabel* instructionLabel = new QLabel(
-        tr("<p><b>📱 請將以下連線碼傳給您的朋友：</b></p>"), &dialog);
-    instructionLabel->setWordWrap(true);
-    instructionLabel->setStyleSheet("QLabel { font-size: 11pt; padding: 5px; }");
-    layout->addWidget(instructionLabel);
+    // 網絡類型選擇（Tab式）
+    QTabWidget* tabWidget = new QTabWidget(&dialog);
+    tabWidget->setStyleSheet("QTabWidget::pane { border: 1px solid #ccc; }");
     
-    // 連線碼顯示（大字體，可選取）
-    QTextEdit* codeEdit = new QTextEdit(&dialog);
-    codeEdit->setPlainText(connectionCode);
-    codeEdit->setReadOnly(true);
-    codeEdit->setMaximumHeight(60);
-    codeEdit->setAlignment(Qt::AlignCenter);
-    QFont codeFont = codeEdit->font();
+    // === 本地網絡連線頁面 ===
+    QWidget* localTab = new QWidget();
+    QVBoxLayout* localLayout = new QVBoxLayout(localTab);
+    
+    QLabel* localInstructionLabel = new QLabel(
+        tr("<p><b>📱 適用於同一WiFi/區域網路</b></p>"
+           "<p>請將以下連線碼傳給您的朋友：</p>"), localTab);
+    localInstructionLabel->setWordWrap(true);
+    localLayout->addWidget(localInstructionLabel);
+    
+    // 本地連線碼顯示
+    QString localConnectionCode = QString("%1:%2").arg(localIP, roomNumber);
+    QTextEdit* localCodeEdit = new QTextEdit(localTab);
+    localCodeEdit->setPlainText(localConnectionCode);
+    localCodeEdit->setReadOnly(true);
+    localCodeEdit->setMaximumHeight(60);
+    localCodeEdit->setAlignment(Qt::AlignCenter);
+    QFont codeFont = localCodeEdit->font();
     codeFont.setPointSize(16);
     codeFont.setBold(true);
-    codeEdit->setFont(codeFont);
-    codeEdit->setStyleSheet("QTextEdit { background-color: #E3F2FD; border: 2px solid #2196F3; border-radius: 5px; padding: 10px; }");
-    layout->addWidget(codeEdit);
+    localCodeEdit->setFont(codeFont);
+    localCodeEdit->setStyleSheet("QTextEdit { background-color: #E3F2FD; border: 2px solid #2196F3; border-radius: 5px; padding: 10px; }");
+    localLayout->addWidget(localCodeEdit);
     
-    // 複製按鈕
-    QPushButton* copyButton = new QPushButton(tr("📋 複製連線碼"), &dialog);
-    copyButton->setStyleSheet("QPushButton { background-color: #4CAF50; color: white; padding: 10px; font-size: 12pt; font-weight: bold; border-radius: 5px; }");
-    connect(copyButton, &QPushButton::clicked, [connectionCode]() {
+    QPushButton* copyLocalButton = new QPushButton(tr("📋 複製連線碼"), localTab);
+    copyLocalButton->setStyleSheet("QPushButton { background-color: #4CAF50; color: white; padding: 10px; font-weight: bold; border-radius: 5px; }");
+    connect(copyLocalButton, &QPushButton::clicked, [localConnectionCode]() {
         QClipboard* clipboard = QApplication::clipboard();
-        clipboard->setText(connectionCode);
+        clipboard->setText(localConnectionCode);
         QMessageBox::information(nullptr, tr("已複製"), 
             tr("連線碼已複製到剪貼簿！\n\n請用通訊軟體（如LINE、WeChat）傳給朋友"));
     });
-    layout->addWidget(copyButton);
+    localLayout->addWidget(copyLocalButton);
+    
+    QLabel* localTipLabel = new QLabel(
+        tr("<p style='color: #666; font-size: 9pt;'>"
+           "💡 <b>注意：</b>此連線碼僅適用於同一WiFi/區域網路的朋友<br>"
+           "如果朋友在不同網路（如其他地方），請使用「跨網域連線」頁面</p>"), localTab);
+    localTipLabel->setWordWrap(true);
+    localTipLabel->setStyleSheet("QLabel { padding: 10px; background-color: #fff3cd; border-radius: 5px; }");
+    localLayout->addWidget(localTipLabel);
+    
+    localLayout->addStretch();
+    tabWidget->addTab(localTab, tr("📶 本地網絡"));
+    
+    // === 跨網域連線頁面 ===
+    QWidget* crossDomainTab = new QWidget();
+    QVBoxLayout* crossDomainLayout = new QVBoxLayout(crossDomainTab);
+    
+    QLabel* crossDomainInstructionLabel = new QLabel(
+        tr("<p><b>🌐 適用於不同網路/跨網域連線</b></p>"
+           "<p>請輸入您的公網IP地址或域名：</p>"), crossDomainTab);
+    crossDomainInstructionLabel->setWordWrap(true);
+    crossDomainLayout->addWidget(crossDomainInstructionLabel);
+    
+    // 公網IP/域名輸入
+    QLineEdit* publicAddressEdit = new QLineEdit(crossDomainTab);
+    publicAddressEdit->setPlaceholderText(tr("例如: 203.0.113.1 或 myserver.example.com"));
+    publicAddressEdit->setStyleSheet("QLineEdit { padding: 8px; font-size: 11pt; }");
+    crossDomainLayout->addWidget(publicAddressEdit);
+    
+    // 生成跨網域連線碼按鈕
+    QPushButton* generateCrossDomainButton = new QPushButton(tr("🔗 生成跨網域連線碼"), crossDomainTab);
+    generateCrossDomainButton->setStyleSheet("QPushButton { background-color: #2196F3; color: white; padding: 8px; font-weight: bold; border-radius: 5px; }");
+    crossDomainLayout->addWidget(generateCrossDomainButton);
+    
+    // 跨網域連線碼顯示
+    QTextEdit* crossDomainCodeEdit = new QTextEdit(crossDomainTab);
+    crossDomainCodeEdit->setPlaceholderText(tr("輸入公網IP/域名後點擊上方按鈕生成"));
+    crossDomainCodeEdit->setReadOnly(true);
+    crossDomainCodeEdit->setMaximumHeight(60);
+    crossDomainCodeEdit->setAlignment(Qt::AlignCenter);
+    crossDomainCodeEdit->setFont(codeFont);
+    crossDomainCodeEdit->setStyleSheet("QTextEdit { background-color: #E8F5E9; border: 2px solid #4CAF50; border-radius: 5px; padding: 10px; }");
+    crossDomainLayout->addWidget(crossDomainCodeEdit);
+    
+    QPushButton* copyCrossDomainButton = new QPushButton(tr("📋 複製跨網域連線碼"), crossDomainTab);
+    copyCrossDomainButton->setStyleSheet("QPushButton { background-color: #4CAF50; color: white; padding: 10px; font-weight: bold; border-radius: 5px; }");
+    copyCrossDomainButton->setEnabled(false);
+    crossDomainLayout->addWidget(copyCrossDomainButton);
+    
+    // 生成跨網域連線碼邏輯
+    connect(generateCrossDomainButton, &QPushButton::clicked, [publicAddressEdit, crossDomainCodeEdit, copyCrossDomainButton, roomNumber]() {
+        QString publicAddress = publicAddressEdit->text().trimmed();
+        if (publicAddress.isEmpty()) {
+            QMessageBox::warning(nullptr, tr("輸入錯誤"), tr("請輸入您的公網IP地址或域名"));
+            return;
+        }
+        QString crossDomainCode = QString("%1:%2").arg(publicAddress, roomNumber);
+        crossDomainCodeEdit->setPlainText(crossDomainCode);
+        copyCrossDomainButton->setEnabled(true);
+    });
+    
+    connect(copyCrossDomainButton, &QPushButton::clicked, [crossDomainCodeEdit]() {
+        QString code = crossDomainCodeEdit->toPlainText();
+        if (!code.isEmpty()) {
+            QClipboard* clipboard = QApplication::clipboard();
+            clipboard->setText(code);
+            QMessageBox::information(nullptr, tr("已複製"), 
+                tr("跨網域連線碼已複製到剪貼簿！\n\n請用通訊軟體傳給朋友"));
+        }
+    });
+    
+    QLabel* crossDomainTipLabel = new QLabel(
+        tr("<p style='color: #666; font-size: 9pt;'>"
+           "💡 <b>使用說明：</b><br>"
+           "1. 確認您的路由器已設定端口轉發（Port Forwarding）<br>"
+           "2. 將端口 <b>%1</b> 轉發到本機<br>"
+           "3. 查詢您的公網IP（可搜尋「查詢IP」）或使用您的域名<br>"
+           "4. 輸入後點擊「生成跨網域連線碼」<br>"
+           "5. 將生成的連線碼傳給朋友<br><br>"
+           "⚠️ <b>注意：</b>跨網域連線需要一定的網路知識，如不熟悉建議與朋友使用同一WiFi</p>").arg(port), crossDomainTab);
+    crossDomainTipLabel->setWordWrap(true);
+    crossDomainTipLabel->setStyleSheet("QLabel { padding: 10px; background-color: #f5f5f5; border-radius: 5px; }");
+    crossDomainLayout->addWidget(crossDomainTipLabel);
+    
+    crossDomainLayout->addStretch();
+    tabWidget->addTab(crossDomainTab, tr("🌐 跨網域連線"));
+    
+    layout->addWidget(tabWidget);
     
     layout->addSpacing(10);
     
-    // 詳細資訊（可摺疊）
+    // 詳細資訊
     QLabel* detailLabel = new QLabel(
         tr("<p><b>詳細資訊：</b><br>"
            "房間號碼：<span style='color: #2196F3; font-weight: bold;'>%1</span><br>"
-           "您的IP地址：<span style='color: #2196F3; font-weight: bold;'>%2</span></p>"
-           "<p style='color: #666; font-size: 9pt;'>"
-           "💡 朋友收到連線碼後，選擇「加入房間」並貼上即可</p>").arg(roomNumber, ipAddress), &dialog);
+           "本機IP地址：<span style='color: #2196F3; font-weight: bold;'>%2</span><br>"
+           "端口：<span style='color: #2196F3; font-weight: bold;'>%3</span></p>").arg(roomNumber, localIP).arg(port), &dialog);
     detailLabel->setWordWrap(true);
     detailLabel->setStyleSheet("QLabel { padding: 10px; background-color: #f5f5f5; border-radius: 5px; }");
     layout->addWidget(detailLabel);
@@ -5971,7 +6062,7 @@ void Qt_Chess::showRoomInfoDialog(const QString& roomNumber, quint16 port) {
     layout->addWidget(closeButton);
     
     // 更新房間資訊標籤
-    m_roomInfoLabel->setText(QString("🎮 房號: %1 | IP: %2").arg(roomNumber, ipAddress));
+    m_roomInfoLabel->setText(QString("🎮 房號: %1 | IP: %2").arg(roomNumber, localIP));
     
     dialog.exec();
 }
