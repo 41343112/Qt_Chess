@@ -2,26 +2,17 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
-#include <QRandomGenerator>
-#include <QNetworkInterface>
-#include <QHostAddress>
 #include <QDebug>
 
-// Network constants
-static const int MIN_ROOM_NUMBER = 1000;
-static const int MAX_ROOM_NUMBER = 9999;
-static const int PORT_BASE = 10000;
-static const int MIN_AUTO_PORT = 10000;
-static const int MAX_AUTO_PORT = 20000;
+// Server configuration
+static const QString SERVER_URL = "wss://chess-server-mjg6.onrender.com";
 
 NetworkManager::NetworkManager(QObject *parent)
     : QObject(parent)
-    , m_server(nullptr)
-    , m_socket(nullptr)
-    , m_clientSocket(nullptr)
+    , m_webSocket(nullptr)
     , m_role(NetworkRole::None)
     , m_status(ConnectionStatus::Disconnected)
-    , m_port(0)
+    , m_serverUrl(SERVER_URL)
     , m_playerColor(PieceColor::None)
     , m_opponentColor(PieceColor::None)
 {
@@ -32,115 +23,90 @@ NetworkManager::~NetworkManager()
     closeConnection();
 }
 
-bool NetworkManager::createRoom(quint16 port)
+bool NetworkManager::createRoom()
 {
     if (m_status != ConnectionStatus::Disconnected) {
         return false;
     }
     
-    // 創建服務器
-    m_server = new QTcpServer(this);
-    connect(m_server, &QTcpServer::newConnection, this, &NetworkManager::onNewConnection);
-    connect(m_server, &QTcpServer::acceptError, this, &NetworkManager::onServerError);
+    // 創建 WebSocket 連接
+    m_webSocket = new QWebSocket();
+    connect(m_webSocket, &QWebSocket::connected, this, &NetworkManager::onConnected);
+    connect(m_webSocket, &QWebSocket::disconnected, this, &NetworkManager::onDisconnected);
+    connect(m_webSocket, &QWebSocket::textMessageReceived, this, &NetworkManager::onTextMessageReceived);
+    connect(m_webSocket, QOverload<QAbstractSocket::SocketError>::of(&QWebSocket::error), 
+            this, &NetworkManager::onError);
     
-    // 生成房號
-    m_roomNumber = generateRoomNumber();
-    
-    // 根據房號計算端口（PORT_BASE + 房號）
-    port = PORT_BASE + m_roomNumber.toInt();
-    
-    // 監聽所有網絡接口
-    if (!m_server->listen(QHostAddress::Any, port)) {
-        emit connectionError(tr("無法創建房間: ") + m_server->errorString());
-        delete m_server;
-        m_server = nullptr;
-        return false;
-    }
-    
-    m_port = m_server->serverPort();
-    m_role = NetworkRole::Server;
-    m_status = ConnectionStatus::Connected;
+    m_role = NetworkRole::Host;
+    m_status = ConnectionStatus::Connecting;
     m_playerColor = PieceColor::White;  // 房主執白
     m_opponentColor = PieceColor::Black;
     
-    emit roomCreated(m_roomNumber, m_port);
+    qDebug() << "[NetworkManager] Connecting to server:" << m_serverUrl;
+    m_webSocket->open(QUrl(m_serverUrl));
     return true;
 }
 
-bool NetworkManager::joinRoom(const QString& hostAddress, quint16 port)
+bool NetworkManager::joinRoom(const QString& roomNumber)
 {
     if (m_status != ConnectionStatus::Disconnected) {
         return false;
     }
     
-    m_socket = new QTcpSocket(this);
-    connect(m_socket, &QTcpSocket::connected, this, &NetworkManager::onConnected);
-    connect(m_socket, &QTcpSocket::disconnected, this, &NetworkManager::onDisconnected);
-    connect(m_socket, &QTcpSocket::readyRead, this, &NetworkManager::onReadyRead);
-    connect(m_socket, &QTcpSocket::errorOccurred, this, &NetworkManager::onError);
+    // 創建 WebSocket 連接
+    m_webSocket = new QWebSocket();
+    connect(m_webSocket, &QWebSocket::connected, this, &NetworkManager::onConnected);
+    connect(m_webSocket, &QWebSocket::disconnected, this, &NetworkManager::onDisconnected);
+    connect(m_webSocket, &QWebSocket::textMessageReceived, this, &NetworkManager::onTextMessageReceived);
+    connect(m_webSocket, QOverload<QAbstractSocket::SocketError>::of(&QWebSocket::error), 
+            this, &NetworkManager::onError);
     
-    m_role = NetworkRole::Client;
+    m_role = NetworkRole::Guest;
     m_status = ConnectionStatus::Connecting;
+    m_roomNumber = roomNumber;
     m_playerColor = PieceColor::Black;  // 加入者執黑
     m_opponentColor = PieceColor::White;
     
-    m_socket->connectToHost(hostAddress, port);
+    qDebug() << "[NetworkManager] Connecting to server:" << m_serverUrl << "to join room:" << roomNumber;
+    m_webSocket->open(QUrl(m_serverUrl));
     return true;
 }
 
 void NetworkManager::closeConnection()
 {
     // 發送斷線通知（如果有連接）
-    if (m_clientSocket || m_socket) {
+    if (m_webSocket && m_webSocket->state() == QAbstractSocket::ConnectedState) {
         QJsonObject message;
         message["type"] = messageTypeToString(MessageType::PlayerDisconnected);
         sendMessage(message);
         
         // 確保訊息發送完成
-        if (m_clientSocket) {
-            m_clientSocket->flush();
-        }
-        if (m_socket) {
-            m_socket->flush();
-        }
+        m_webSocket->flush();
     }
     
-    // 先關閉並刪除 server，確保不再接受新連接
-    if (m_server) {
-        m_server->close();
-        m_server->deleteLater();  // 使用 deleteLater 確保安全刪除
-        m_server = nullptr;
-    }
-    
-    if (m_clientSocket) {
-        m_clientSocket->disconnectFromHost();
-        m_clientSocket->deleteLater();
-        m_clientSocket = nullptr;
-    }
-    
-    if (m_socket) {
-        m_socket->disconnectFromHost();
-        m_socket->deleteLater();
-        m_socket = nullptr;
+    if (m_webSocket) {
+        m_webSocket->close();
+        m_webSocket->deleteLater();
+        m_webSocket = nullptr;
     }
     
     // 完整重置所有狀態
     m_role = NetworkRole::None;
     m_status = ConnectionStatus::Disconnected;
     m_roomNumber.clear();
-    m_port = 0;
-    m_playerColor = PieceColor::None;      // 重置玩家顏色
-    m_opponentColor = PieceColor::None;    // 重置對手顏色
+    m_playerColor = PieceColor::None;
+    m_opponentColor = PieceColor::None;
 }
 
 void NetworkManager::sendMove(const QPoint& from, const QPoint& to, PieceType promotionType)
 {
     qDebug() << "[NetworkManager::sendMove] Sending move from" << from << "to" << to 
-             << "| Role:" << (m_role == NetworkRole::Server ? "Server" : "Client")
-             << "| Socket connected:" << (getActiveSocket() && getActiveSocket()->state() == QAbstractSocket::ConnectedState);
+             << "| Role:" << (m_role == NetworkRole::Host ? "Host" : "Guest")
+             << "| Socket connected:" << (m_webSocket && m_webSocket->state() == QAbstractSocket::ConnectedState);
     
     QJsonObject message;
     message["type"] = messageTypeToString(MessageType::Move);
+    message["roomNumber"] = m_roomNumber;
     message["fromRow"] = from.y();
     message["fromCol"] = from.x();
     message["toRow"] = to.y();
@@ -159,6 +125,7 @@ void NetworkManager::sendGameStart(PieceColor playerColor)
 {
     QJsonObject message;
     message["type"] = messageTypeToString(MessageType::GameStart);
+    message["roomNumber"] = m_roomNumber;
     message["playerColor"] = static_cast<int>(playerColor);
     
     sendMessage(message);
@@ -168,6 +135,7 @@ void NetworkManager::sendStartGame(int whiteTimeMs, int blackTimeMs, int increme
 {
     QJsonObject message;
     message["type"] = messageTypeToString(MessageType::StartGame);
+    message["roomNumber"] = m_roomNumber;
     message["whiteTimeMs"] = whiteTimeMs;
     message["blackTimeMs"] = blackTimeMs;
     message["incrementMs"] = incrementMs;
@@ -179,6 +147,7 @@ void NetworkManager::sendTimeSettings(int whiteTimeMs, int blackTimeMs, int incr
 {
     QJsonObject message;
     message["type"] = messageTypeToString(MessageType::TimeSettings);
+    message["roomNumber"] = m_roomNumber;
     message["whiteTimeMs"] = whiteTimeMs;
     message["blackTimeMs"] = blackTimeMs;
     message["incrementMs"] = incrementMs;
@@ -189,6 +158,7 @@ void NetworkManager::sendSurrender()
 {
     QJsonObject message;
     message["type"] = messageTypeToString(MessageType::Surrender);
+    message["roomNumber"] = m_roomNumber;
     sendMessage(message);
 }
 
@@ -203,117 +173,96 @@ void NetworkManager::sendGameOver(const QString& result)
 {
     QJsonObject message;
     message["type"] = messageTypeToString(MessageType::GameOver);
+    message["roomNumber"] = m_roomNumber;
     message["result"] = result;
     
     sendMessage(message);
 }
 
-void NetworkManager::sendChat(const QString& message)
+void NetworkManager::sendChat(const QString& chatMessage)
 {
-    QJsonObject jsonMessage;
-    jsonMessage["type"] = messageTypeToString(MessageType::Chat);
-    jsonMessage["message"] = message;
+    QJsonObject message;
+    message["type"] = messageTypeToString(MessageType::Chat);
+    message["roomNumber"] = m_roomNumber;
+    message["message"] = chatMessage;
     
-    sendMessage(jsonMessage);
-}
-
-void NetworkManager::onNewConnection()
-{
-    if (!m_server || m_clientSocket) {
-        return;  // 已經有連接
-    }
-    
-    m_clientSocket = m_server->nextPendingConnection();
-    connect(m_clientSocket, &QTcpSocket::disconnected, this, &NetworkManager::onDisconnected);
-    connect(m_clientSocket, &QTcpSocket::readyRead, this, &NetworkManager::onReadyRead);
-    connect(m_clientSocket, &QTcpSocket::errorOccurred, this, &NetworkManager::onError);
-    
-    emit opponentJoined();
-    
-    // 等待客戶端發送 JoinRoom 消息，然後在 processMessage 中處理
+    sendMessage(message);
 }
 
 void NetworkManager::onConnected()
 {
+    qDebug() << "[NetworkManager] Connected to server";
     m_status = ConnectionStatus::Connected;
     emit connected();
     
-    // 客戶端發送加入房間請求
-    QJsonObject message;
-    message["type"] = messageTypeToString(MessageType::JoinRoom);
-    sendMessage(message);
+    // 根據角色發送相應的請求
+    if (m_role == NetworkRole::Host) {
+        // 房主請求創建房間
+        QJsonObject message;
+        message["type"] = messageTypeToString(MessageType::CreateRoom);
+        sendMessage(message);
+        qDebug() << "[NetworkManager] Sent CreateRoom request";
+    } else if (m_role == NetworkRole::Guest) {
+        // 加入者請求加入房間
+        QJsonObject message;
+        message["type"] = messageTypeToString(MessageType::JoinRoom);
+        message["roomNumber"] = m_roomNumber;
+        sendMessage(message);
+        qDebug() << "[NetworkManager] Sent JoinRoom request for room:" << m_roomNumber;
+    }
 }
 
 void NetworkManager::onDisconnected()
 {
+    qDebug() << "[NetworkManager] Disconnected from server";
     emit disconnected();
     emit opponentDisconnected();
     
-    if (m_role == NetworkRole::Client) {
-        m_status = ConnectionStatus::Disconnected;
-    }
+    m_status = ConnectionStatus::Disconnected;
 }
 
-void NetworkManager::onReadyRead()
+void NetworkManager::onTextMessageReceived(const QString& message)
 {
-    QTcpSocket* socket = getActiveSocket();
-    if (!socket) {
-        return;
-    }
+    qDebug() << "[NetworkManager] Received message:" << message;
     
-    m_receiveBuffer.append(socket->readAll());
-    
-    // 處理所有完整的消息
-    while (true) {
-        int messageEnd = m_receiveBuffer.indexOf('\n');
-        if (messageEnd == -1) {
-            break;  // 沒有完整的消息
-        }
-        
-        QByteArray messageData = m_receiveBuffer.left(messageEnd);
-        m_receiveBuffer.remove(0, messageEnd + 1);
-        
-        QJsonDocument doc = QJsonDocument::fromJson(messageData);
-        if (!doc.isNull() && doc.isObject()) {
-            processMessage(doc.object());
-        }
+    QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8());
+    if (!doc.isNull() && doc.isObject()) {
+        processMessage(doc.object());
+    } else {
+        qDebug() << "[NetworkManager] Failed to parse message as JSON";
     }
 }
 
 void NetworkManager::onError(QAbstractSocket::SocketError socketError)
 {
-    QTcpSocket* socket = qobject_cast<QTcpSocket*>(sender());
-    if (socket) {
-        emit connectionError(socket->errorString());
+    QString errorString;
+    if (m_webSocket) {
+        errorString = m_webSocket->errorString();
+    } else {
+        errorString = tr("WebSocket error: %1").arg(socketError);
     }
+    
+    qDebug() << "[NetworkManager] Socket error:" << errorString;
+    emit connectionError(errorString);
     m_status = ConnectionStatus::Error;
-}
-
-void NetworkManager::onServerError(QAbstractSocket::SocketError socketError)
-{
-    if (m_server) {
-        emit connectionError(m_server->errorString());
-    }
 }
 
 void NetworkManager::sendMessage(const QJsonObject& message)
 {
-    QTcpSocket* socket = getActiveSocket();
-    if (!socket || socket->state() != QAbstractSocket::ConnectedState) {
+    if (!m_webSocket || m_webSocket->state() != QAbstractSocket::ConnectedState) {
         qDebug() << "[NetworkManager::sendMessage] ERROR: Cannot send message, socket not connected"
-                 << "| Socket:" << socket 
-                 << "| State:" << (socket ? socket->state() : -1);
+                 << "| Socket:" << m_webSocket 
+                 << "| State:" << (m_webSocket ? m_webSocket->state() : -1);
         return;
     }
     
     QJsonDocument doc(message);
-    QByteArray data = doc.toJson(QJsonDocument::Compact);
-    data.append('\n');
+    QString jsonString = QString::fromUtf8(doc.toJson(QJsonDocument::Compact));
     
     qDebug() << "[NetworkManager::sendMessage] Sending message:" << message["type"].toString();
     
-    socket->write(data);
-    socket->flush();
+    m_webSocket->sendTextMessage(jsonString);
+    m_webSocket->flush();
 }
 
 void NetworkManager::processMessage(const QJsonObject& message)
@@ -322,32 +271,39 @@ void NetworkManager::processMessage(const QJsonObject& message)
     MessageType type = stringToMessageType(typeStr);
     
     qDebug() << "[NetworkManager::processMessage] Received message:" << typeStr 
-             << "| Role:" << (m_role == NetworkRole::Server ? "Server" : "Client");
+             << "| Role:" << (m_role == NetworkRole::Host ? "Host" : "Guest");
     
     switch (type) {
-    case MessageType::JoinRoom:
-        // 服務器收到加入請求
-        if (m_role == NetworkRole::Server) {
-            QJsonObject response;
-            response["type"] = messageTypeToString(MessageType::JoinAccepted);
-            sendMessage(response);
-            
-            // 發送遊戲開始消息給客戶端
-            sendGameStart(m_playerColor);
+    case MessageType::RoomCreated:
+        // 服務器返回創建的房間號
+        if (m_role == NetworkRole::Host) {
+            m_roomNumber = message["roomNumber"].toString();
+            qDebug() << "[NetworkManager] Room created with number:" << m_roomNumber;
+            emit roomCreated(m_roomNumber);
         }
         break;
         
     case MessageType::JoinAccepted:
-        // 客戶端收到加入接受
+        // 加入房間成功
+        qDebug() << "[NetworkManager] Join accepted";
         emit opponentJoined();
         
-        // 客戶端也發送遊戲開始確認給服務器
+        // 發送遊戲開始確認
         sendGameStart(m_playerColor);
         break;
         
+    case MessageType::JoinRejected:
+        // 加入房間失敗
+        {
+            QString reason = message["reason"].toString();
+            qDebug() << "[NetworkManager] Join rejected:" << reason;
+            emit connectionError(tr("無法加入房間: ") + reason);
+            closeConnection();
+        }
+        break;
+    
     case MessageType::GameStart: {
         PieceColor opponentColor = static_cast<PieceColor>(message["playerColor"].toInt());
-        // 對手的顏色就是我們的對手顏色
         m_opponentColor = opponentColor;
         m_playerColor = (opponentColor == PieceColor::White) ? PieceColor::Black : PieceColor::White;
         emit gameStartReceived(m_playerColor);
@@ -364,12 +320,10 @@ void NetworkManager::processMessage(const QJsonObject& message)
             PieceColor hostColor = (hostColorStr == "White") ? PieceColor::White : PieceColor::Black;
             
             // 根據房主的顏色選擇更新玩家顏色
-            if (m_role == NetworkRole::Server) {
-                // 房主：使用自己選擇的顏色
+            if (m_role == NetworkRole::Host) {
                 m_playerColor = hostColor;
                 m_opponentColor = (hostColor == PieceColor::White) ? PieceColor::Black : PieceColor::White;
-            } else if (m_role == NetworkRole::Client) {
-                // 房客：使用與房主相反的顏色
+            } else if (m_role == NetworkRole::Guest) {
                 m_playerColor = (hostColor == PieceColor::White) ? PieceColor::Black : PieceColor::White;
                 m_opponentColor = hostColor;
             }
@@ -426,22 +380,23 @@ void NetworkManager::processMessage(const QJsonObject& message)
         emit chatReceived(chatMessage);
         break;
     }
+    
+    case MessageType::PlayerDisconnected:
+        // 對手斷線
+        qDebug() << "[NetworkManager] Opponent disconnected";
+        emit opponentDisconnected();
+        break;
         
     default:
+        qDebug() << "[NetworkManager] Unknown message type:" << typeStr;
         break;
     }
-}
-
-QString NetworkManager::generateRoomNumber() const
-{
-    // 生成4位數字房號 (MIN_ROOM_NUMBER to MAX_ROOM_NUMBER inclusive)
-    int roomNum = QRandomGenerator::global()->bounded(MIN_ROOM_NUMBER, MAX_ROOM_NUMBER + 1);
-    return QString::number(roomNum);
 }
 
 MessageType NetworkManager::stringToMessageType(const QString& type) const
 {
     static QMap<QString, MessageType> typeMap = {
+        {"CreateRoom", MessageType::CreateRoom},
         {"RoomCreated", MessageType::RoomCreated},
         {"JoinRoom", MessageType::JoinRoom},
         {"JoinAccepted", MessageType::JoinAccepted},
@@ -464,6 +419,7 @@ MessageType NetworkManager::stringToMessageType(const QString& type) const
 QString NetworkManager::messageTypeToString(MessageType type) const
 {
     static QMap<MessageType, QString> stringMap = {
+        {MessageType::CreateRoom, "CreateRoom"},
         {MessageType::RoomCreated, "RoomCreated"},
         {MessageType::JoinRoom, "JoinRoom"},
         {MessageType::JoinAccepted, "JoinAccepted"},
@@ -481,13 +437,4 @@ QString NetworkManager::messageTypeToString(MessageType type) const
     };
     
     return stringMap.value(type, "Unknown");
-}
-
-QTcpSocket* NetworkManager::getActiveSocket() const
-{
-    if (m_role == NetworkRole::Server) {
-        return m_clientSocket;
-    } else {
-        return m_socket;
-    }
 }

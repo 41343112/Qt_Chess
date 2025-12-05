@@ -5125,17 +5125,16 @@ void Qt_Chess::onOnlineModeClicked() {
             }
         } else if (mode == OnlineDialog::Mode::JoinRoom) {
             // 加入房間
-            QString hostAddress = dialog.getHostAddress();
-            quint16 port = dialog.getPort();
+            QString roomNumber = dialog.getRoomNumber();
             
-            if (hostAddress.isEmpty() || port == 0) {
-                QMessageBox::warning(this, "輸入錯誤", "請輸入有效的IP地址和房間號碼");
+            if (roomNumber.isEmpty()) {
+                QMessageBox::warning(this, "輸入錯誤", "請輸入有效的房間號碼");
                 m_onlineModeButton->setChecked(false);
                 m_humanModeButton->setChecked(true);
                 return;
             }
             
-            if (m_networkManager->joinRoom(hostAddress, port)) {
+            if (m_networkManager->joinRoom(roomNumber)) {
                 m_currentGameMode = GameMode::OnlineGame;
                 m_isOnlineGame = true;
                 
@@ -5268,8 +5267,8 @@ void Qt_Chess::onNetworkError(const QString& error) {
     m_roomInfoLabel->hide();
 }
 
-void Qt_Chess::onRoomCreated(const QString& roomNumber, quint16 port) {
-    showRoomInfoDialog(roomNumber, port);
+void Qt_Chess::onRoomCreated(const QString& roomNumber) {
+    showRoomInfoDialog(roomNumber);
 }
 
 void Qt_Chess::onOpponentJoined() {
@@ -5889,22 +5888,7 @@ bool Qt_Chess::isOnlineTurn() const {
     return m_chessBoard.getCurrentPlayer() == playerColor;
 }
 
-void Qt_Chess::showRoomInfoDialog(const QString& roomNumber, quint16 port) {
-    // 獲取本機IP地址
-    QString ipAddress = "未知";
-    QList<QHostAddress> ipAddressesList = QNetworkInterface::allAddresses();
-    for (const QHostAddress &entry : ipAddressesList) {
-        if (entry != QHostAddress::LocalHost && 
-            entry.toIPv4Address() && 
-            !entry.toString().startsWith("169.254")) {  // 排除自動配置的IP
-            ipAddress = entry.toString();
-            break;
-        }
-    }
-    
-    // 建立連線碼（簡化格式）
-    QString connectionCode = QString("%1:%2").arg(ipAddress, roomNumber);
-    
+void Qt_Chess::showRoomInfoDialog(const QString& roomNumber) {
     // 創建自訂對話框
     QDialog dialog(this);
     dialog.setWindowTitle(tr("🎉 房間已創建！"));
@@ -5920,14 +5904,14 @@ void Qt_Chess::showRoomInfoDialog(const QString& roomNumber, quint16 port) {
     
     // 說明文字
     QLabel* instructionLabel = new QLabel(
-        tr("<p><b>📱 請將以下連線碼傳給您的朋友：</b></p>"), &dialog);
+        tr("<p><b>📱 請將以下房號傳給您的朋友：</b></p>"), &dialog);
     instructionLabel->setWordWrap(true);
     instructionLabel->setStyleSheet("QLabel { font-size: 11pt; padding: 5px; }");
     layout->addWidget(instructionLabel);
     
-    // 連線碼顯示（大字體，可選取）
+    // 房號顯示（大字體，可選取）
     QTextEdit* codeEdit = new QTextEdit(&dialog);
-    codeEdit->setPlainText(connectionCode);
+    codeEdit->setPlainText(roomNumber);
     codeEdit->setReadOnly(true);
     codeEdit->setMaximumHeight(60);
     codeEdit->setAlignment(Qt::AlignCenter);
@@ -5939,25 +5923,26 @@ void Qt_Chess::showRoomInfoDialog(const QString& roomNumber, quint16 port) {
     layout->addWidget(codeEdit);
     
     // 複製按鈕
-    QPushButton* copyButton = new QPushButton(tr("📋 複製連線碼"), &dialog);
+    QPushButton* copyButton = new QPushButton(tr("📋 複製房號"), &dialog);
     copyButton->setStyleSheet("QPushButton { background-color: #4CAF50; color: white; padding: 10px; font-size: 12pt; font-weight: bold; border-radius: 5px; }");
-    connect(copyButton, &QPushButton::clicked, [connectionCode]() {
+    connect(copyButton, &QPushButton::clicked, [roomNumber]() {
         QClipboard* clipboard = QApplication::clipboard();
-        clipboard->setText(connectionCode);
+        clipboard->setText(roomNumber);
         QMessageBox::information(nullptr, tr("已複製"), 
-            tr("連線碼已複製到剪貼簿！\n\n請用通訊軟體（如LINE、WeChat）傳給朋友"));
+            tr("房號已複製到剪貼簿！\n\n請用通訊軟體（如LINE、WeChat）傳給朋友"));
     });
     layout->addWidget(copyButton);
     
     layout->addSpacing(10);
     
-    // 詳細資訊（可摺疊）
+    // 詳細資訊
     QLabel* detailLabel = new QLabel(
-        tr("<p><b>詳細資訊：</b><br>"
+        tr("<p><b>房間資訊：</b><br>"
            "房間號碼：<span style='color: #2196F3; font-weight: bold;'>%1</span><br>"
-           "您的IP地址：<span style='color: #2196F3; font-weight: bold;'>%2</span></p>"
+           "伺服器：<span style='color: #2196F3; font-weight: bold;'>chess-server-mjg6.onrender.com</span></p>"
            "<p style='color: #666; font-size: 9pt;'>"
-           "💡 朋友收到連線碼後，選擇「加入房間」並貼上即可</p>").arg(roomNumber, ipAddress), &dialog);
+           "💡 朋友收到房號後，選擇「加入房間」並貼上即可<br>"
+           "🌐 使用中央伺服器，無需設定網路或防火牆</p>").arg(roomNumber), &dialog);
     detailLabel->setWordWrap(true);
     detailLabel->setStyleSheet("QLabel { padding: 10px; background-color: #f5f5f5; border-radius: 5px; }");
     layout->addWidget(detailLabel);
@@ -5971,7 +5956,7 @@ void Qt_Chess::showRoomInfoDialog(const QString& roomNumber, quint16 port) {
     layout->addWidget(closeButton);
     
     // 更新房間資訊標籤
-    m_roomInfoLabel->setText(QString("🎮 房號: %1 | IP: %2").arg(roomNumber, ipAddress));
+    m_roomInfoLabel->setText(QString("🎮 房號: %1 | 伺服器: chess-server-mjg6.onrender.com").arg(roomNumber));
     
     dialog.exec();
 }

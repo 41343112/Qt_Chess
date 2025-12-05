@@ -320,7 +320,7 @@ private:
     void onNetworkConnected();           // 網路連接成功
     void onNetworkDisconnected();        // 網路斷開連接
     void onNetworkError(const QString& error);  // 網路錯誤
-    void onRoomCreated(const QString& roomNumber, quint16 port);  // 房間創建
+    void onRoomCreated(const QString& roomNumber);  // 房間創建
     void onOpponentJoined();             // 對手加入
     void onOpponentMove(const QPoint& from, const QPoint& to, PieceType promotionType);  // 對手移動
     void onGameStartReceived(PieceColor playerColor);  // 遊戲開始
@@ -332,7 +332,7 @@ private:
     void onExitRoomClicked();            // 退出房間
     void updateConnectionStatus();       // 更新連線狀態顯示
     bool isOnlineTurn() const;           // 是否輪到線上玩家
-    void showRoomInfoDialog(const QString& roomNumber, quint16 port);  // 顯示房間資訊
+    void showRoomInfoDialog(const QString& roomNumber);  // 顯示房間資訊
     
     void applyModernStylesheet();        // 應用現代科技風格全局樣式表
     
