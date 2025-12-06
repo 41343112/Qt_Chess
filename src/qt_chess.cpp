@@ -5548,6 +5548,7 @@ void Qt_Chess::onPromotedToHost() {
     
     // 獲取房號用於顯示
     QString roomInfo = getRoomInfoString();
+    QString roomNumber = m_networkManager ? m_networkManager->getRoomNumber() : QString();
     
     // 通知玩家角色變更
     QMessageBox::information(this, tr("角色變更"), tr("原房主已離開，您已成為新房主。%1\n\n等待新對手加入房間...").arg(roomInfo));
@@ -5557,6 +5558,12 @@ void Qt_Chess::onPromotedToHost() {
     
     // 更新狀態標籤
     m_connectionStatusLabel->setText(tr("⏳ 您已成為房主，等待對手加入..."));
+    
+    // 更新房間資訊標籤顯示房號（與初始創建房間時一致）
+    if (m_roomInfoLabel && !roomNumber.isEmpty()) {
+        m_roomInfoLabel->setText(QString("🎮 房號: %1").arg(roomNumber));
+        m_roomInfoLabel->show();
+    }
     
     // 隱藏開始按鈕（因為還沒有對手）
     if (m_startButton) {
