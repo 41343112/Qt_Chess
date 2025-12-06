@@ -161,6 +161,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_wasSelectedBeforeDrag(false)
     , m_resignButton(nullptr)
     , m_requestDrawButton(nullptr)
+    , m_exitButton(nullptr)
     , m_boardButtonPanel(nullptr)
     , m_boardWidget(nullptr)
     , m_menuBar(nullptr)
@@ -607,6 +608,36 @@ void Qt_Chess::setupUI() {
     m_requestDrawButton->hide();  // 初始隱藏
     connect(m_requestDrawButton, &QPushButton::clicked, this, &Qt_Chess::onRequestDrawClicked);
     boardButtonLayout->addWidget(m_requestDrawButton);
+    
+    // 退出按鈕 - 現代科技風格橙色警告效果（本地遊戲）
+    m_exitButton = new QPushButton("🚪 退出", m_boardButtonPanel);
+    m_exitButton->setMinimumHeight(45);
+    m_exitButton->setMinimumWidth(100);
+    QFont exitButtonFont;
+    exitButtonFont.setPointSize(12);
+    exitButtonFont.setBold(true);
+    m_exitButton->setFont(exitButtonFont);
+    m_exitButton->setStyleSheet(QString(
+        "QPushButton { "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "    stop:0 %1, stop:0.5 rgba(255, 140, 0, 0.7), stop:1 %1); "
+        "  color: %2; "
+        "  border: 3px solid %3; "
+        "  border-radius: 10px; "
+        "  padding: 8px; "
+        "}"
+        "QPushButton:hover { "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "    stop:0 %3, stop:0.5 rgba(255, 160, 50, 0.9), stop:1 %3); "
+        "  border-color: #FFA500; "
+        "}"
+        "QPushButton:pressed { "
+        "  background: %3; "
+        "}"
+    ).arg(THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_ACCENT_WARNING));
+    m_exitButton->hide();  // 初始隱藏
+    connect(m_exitButton, &QPushButton::clicked, this, &Qt_Chess::onNewGameClicked);
+    boardButtonLayout->addWidget(m_exitButton);
     
     boardContainerVLayout->addWidget(m_boardButtonPanel, 0);
 
@@ -1146,6 +1177,7 @@ void Qt_Chess::onNewGameClicked() {
     // 隱藏認輸和請求和棋按鈕
     if (m_resignButton) m_resignButton->hide();
     if (m_requestDrawButton) m_requestDrawButton->hide();
+    if (m_exitButton) m_exitButton->hide();
 
     // 隱藏匯出 PGN 按鈕和複製棋譜按鈕
     if (m_exportPGNButton) m_exportPGNButton->hide();
@@ -1373,6 +1405,11 @@ void Qt_Chess::onStartButtonClicked() {
             if (m_requestDrawButton) {
                 m_requestDrawButton->show();
             }
+        } else {
+            // 本地遊戲顯示退出按鈕
+            if (m_exitButton) {
+                m_exitButton->show();
+            }
         }
         
         // 在線上模式下顯示退出房間按鈕
@@ -1423,6 +1460,11 @@ void Qt_Chess::onStartButtonClicked() {
             }
             if (m_requestDrawButton) {
                 m_requestDrawButton->show();
+            }
+        } else {
+            // 本地遊戲顯示退出按鈕
+            if (m_exitButton) {
+                m_exitButton->show();
             }
         }
         
@@ -1498,6 +1540,11 @@ void Qt_Chess::onStartButtonClicked() {
             }
             if (m_requestDrawButton) {
                 m_requestDrawButton->show();
+            }
+        } else {
+            // 本地遊戲顯示退出按鈕
+            if (m_exitButton) {
+                m_exitButton->show();
             }
         }
         
@@ -2156,6 +2203,7 @@ void Qt_Chess::updateTimeControlSizes() {
     if (m_startButton) m_startButton->setFont(buttonFont);
     if (m_resignButton) m_resignButton->setFont(buttonFont);
     if (m_requestDrawButton) m_requestDrawButton->setFont(buttonFont);
+    if (m_exitButton) m_exitButton->setFont(buttonFont);
 }
 
 void Qt_Chess::initializeSounds() {
@@ -3336,6 +3384,9 @@ void Qt_Chess::handleGameEnd() {
     if (m_requestDrawButton) {
         m_requestDrawButton->hide();
     }
+    if (m_exitButton) {
+        m_exitButton->hide();
+    }
 
     // 顯示時間控制面板
     if (m_timeControlPanel) {
@@ -3650,6 +3701,9 @@ void Qt_Chess::showTimeControlAfterTimeout() {
     }
     if (m_requestDrawButton) {
         m_requestDrawButton->hide();
+    }
+    if (m_exitButton) {
+        m_exitButton->hide();
     }
 
     // 重新啟用開始按鈕
