@@ -159,6 +159,9 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_dragStartSquare(-1, -1)
     , m_dragLabel(nullptr)
     , m_wasSelectedBeforeDrag(false)
+    , m_resignButton(nullptr)
+    , m_requestDrawButton(nullptr)
+    , m_boardButtonPanel(nullptr)
     , m_boardWidget(nullptr)
     , m_menuBar(nullptr)
     , m_gameStarted(false)
@@ -240,7 +243,6 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_isOnlineGame(false)
     , m_waitingForOpponent(false)
     , m_onlineHostSelectedColor(PieceColor::White)
-    , m_newGameAction(nullptr)
     , m_bgmPlayer(nullptr)
     , m_bgmEnabled(true)
     , m_bgmVolume(30)
@@ -537,6 +539,77 @@ void Qt_Chess::setupUI() {
     boardHLayout->addWidget(m_boardWidget, 1, Qt::AlignCenter);
     boardContainerVLayout->addLayout(boardHLayout, 1);
 
+    // 棋盤下方的按鈕面板（認輸和請求和棋按鈕）
+    m_boardButtonPanel = new QWidget(m_boardContainer);
+    m_boardButtonPanel->setMaximumHeight(60);  // 容納按鈕的高度
+    m_boardButtonPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
+    QHBoxLayout* boardButtonLayout = new QHBoxLayout(m_boardButtonPanel);
+    boardButtonLayout->setContentsMargins(5, 5, 5, 5);
+    boardButtonLayout->setSpacing(10);
+    boardButtonLayout->setAlignment(Qt::AlignRight);  // 靠右對齊
+    
+    // 認輸按鈕 - 現代科技風格紅色警告效果
+    m_resignButton = new QPushButton("🏳 認輸", m_boardButtonPanel);
+    m_resignButton->setMinimumHeight(45);
+    m_resignButton->setMinimumWidth(100);
+    QFont resignButtonFont;
+    resignButtonFont.setPointSize(12);
+    resignButtonFont.setBold(true);
+    m_resignButton->setFont(resignButtonFont);
+    m_resignButton->setStyleSheet(QString(
+        "QPushButton { "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "    stop:0 %1, stop:0.5 rgba(233, 69, 96, 0.7), stop:1 %1); "
+        "  color: %2; "
+        "  border: 3px solid %3; "
+        "  border-radius: 10px; "
+        "  padding: 8px; "
+        "}"
+        "QPushButton:hover { "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "    stop:0 %3, stop:0.5 rgba(255, 100, 120, 0.9), stop:1 %3); "
+        "  border-color: #FF6B6B; "
+        "}"
+        "QPushButton:pressed { "
+        "  background: %3; "
+        "}"
+    ).arg(THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_ACCENT_SECONDARY));
+    m_resignButton->hide();  // 初始隱藏
+    connect(m_resignButton, &QPushButton::clicked, this, &Qt_Chess::onResignClicked);
+    boardButtonLayout->addWidget(m_resignButton);
+    
+    // 請求和棋按鈕 - 現代科技風格藍色效果
+    m_requestDrawButton = new QPushButton("🤝 請求和棋", m_boardButtonPanel);
+    m_requestDrawButton->setMinimumHeight(45);
+    m_requestDrawButton->setMinimumWidth(120);
+    QFont drawButtonFont;
+    drawButtonFont.setPointSize(12);
+    drawButtonFont.setBold(true);
+    m_requestDrawButton->setFont(drawButtonFont);
+    m_requestDrawButton->setStyleSheet(QString(
+        "QPushButton { "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "    stop:0 %1, stop:0.5 rgba(0, 217, 255, 0.7), stop:1 %1); "
+        "  color: %2; "
+        "  border: 3px solid %3; "
+        "  border-radius: 10px; "
+        "  padding: 8px; "
+        "}"
+        "QPushButton:hover { "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "    stop:0 %3, stop:0.5 rgba(100, 230, 255, 0.9), stop:1 %3); "
+        "  border-color: #6BDBFF; "
+        "}"
+        "QPushButton:pressed { "
+        "  background: %3; "
+        "}"
+    ).arg(THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_ACCENT_PRIMARY));
+    m_requestDrawButton->hide();  // 初始隱藏
+    connect(m_requestDrawButton, &QPushButton::clicked, this, &Qt_Chess::onRequestDrawClicked);
+    boardButtonLayout->addWidget(m_requestDrawButton);
+    
+    boardContainerVLayout->addWidget(m_boardButtonPanel, 0);
+
     // 遊戲結束時我方的時間和吃子紀錄面板（棋盤下方，初始隱藏）
     m_bottomEndGamePanel = new QWidget(m_boardContainer);
     m_bottomEndGamePanel->setMaximumHeight(50);  // 最大高度，容納時間標籤（40px）加上邊距
@@ -673,16 +746,9 @@ void Qt_Chess::setupMenuBar() {
     // 遊戲選單
     QMenu* gameMenu = m_menuBar->addMenu("🎮 遊戲");
 
-    // 新遊戲動作
-    m_newGameAction = new QAction("🔄 新遊戲", this);
-    connect(m_newGameAction, &QAction::triggered, this, &Qt_Chess::onNewGameClicked);
-    gameMenu->addAction(m_newGameAction);
-
-    gameMenu->addSeparator();
-
     // 放棄動作
     QAction* giveUpAction = new QAction("🏳 放棄", this);
-    connect(giveUpAction, &QAction::triggered, this, &Qt_Chess::onGiveUpClicked);
+    connect(giveUpAction, &QAction::triggered, this, &Qt_Chess::onResignClicked);
     gameMenu->addAction(giveUpAction);
 
     // 設定選單
@@ -1082,8 +1148,9 @@ void Qt_Chess::onNewGameClicked() {
     if (m_whiteTimeProgressBar) m_whiteTimeProgressBar->hide();
     if (m_blackTimeProgressBar) m_blackTimeProgressBar->hide();
 
-    // 隱藏放棄按鈕
-    if (m_giveUpButton) m_giveUpButton->hide();
+    // 隱藏認輸和請求和棋按鈕
+    if (m_resignButton) m_resignButton->hide();
+    if (m_requestDrawButton) m_requestDrawButton->hide();
 
     // 隱藏匯出 PGN 按鈕和複製棋譜按鈕
     if (m_exportPGNButton) m_exportPGNButton->hide();
@@ -1124,12 +1191,12 @@ void Qt_Chess::onNewGameClicked() {
     clearHighlights();
 }
 
-void Qt_Chess::onGiveUpClicked() {
+void Qt_Chess::onResignClicked() {
     // 顯示確認對話框
     QMessageBox::StandardButton reply = QMessageBox::question(
         this,
-        "確認放棄",
-        "你確定要放棄這局遊戲嗎？",
+        "確認認輸",
+        "你確定要認輸這局遊戲嗎？",
         QMessageBox::Yes | QMessageBox::No
         );
 
@@ -1153,9 +1220,33 @@ void Qt_Chess::onGiveUpClicked() {
         // 顯示放棄者的訊息
         QString playerName = (currentPlayer == PieceColor::White) ? "白方" : "黑方";
         QString winner = (currentPlayer == PieceColor::White) ? "黑方" : "白方";
-        QMessageBox::information(this, "遊戲結束", QString("%1放棄！%2獲勝！").arg(playerName).arg(winner));
+        QMessageBox::information(this, "遊戲結束", QString("%1認輸！%2獲勝！").arg(playerName).arg(winner));
 
         // 不再自動進入回放模式，用戶可以根據需要點擊回放按鈕
+    }
+}
+
+void Qt_Chess::onRequestDrawClicked() {
+    // 顯示確認對話框
+    QMessageBox::StandardButton reply = QMessageBox::question(
+        this,
+        "請求和棋",
+        "你確定要提出和棋請求嗎？",
+        QMessageBox::Yes | QMessageBox::No
+        );
+
+    if (reply == QMessageBox::Yes) {
+        // 在線上模式下，可以通知對手和棋請求（需要擴展網路協議）
+        // 目前先簡單處理為直接和棋
+        
+        // 記錄和棋結果
+        m_chessBoard.setGameResult(GameResult::Draw);
+
+        // 處理遊戲結束的通用邏輯
+        handleGameEnd();
+
+        // 顯示和棋訊息
+        QMessageBox::information(this, "遊戲結束", "雙方同意和棋！");
     }
 }
 
@@ -1279,9 +1370,12 @@ void Qt_Chess::onStartButtonClicked() {
             m_blackTimeProgressBar->show();
         }
 
-        // 顯示放棄按鈕
-        if (m_giveUpButton) {
-            m_giveUpButton->show();
+        // 顯示認輸和請求和棋按鈕
+        if (m_resignButton) {
+            m_resignButton->show();
+        }
+        if (m_requestDrawButton) {
+            m_requestDrawButton->show();
         }
         
         // 在線上模式下顯示退出房間按鈕
@@ -1325,9 +1419,12 @@ void Qt_Chess::onStartButtonClicked() {
             m_timeControlPanel->hide();
         }
 
-        // 顯示放棄按鈕
-        if (m_giveUpButton) {
-            m_giveUpButton->show();
+        // 顯示認輸和請求和棋按鈕
+        if (m_resignButton) {
+            m_resignButton->show();
+        }
+        if (m_requestDrawButton) {
+            m_requestDrawButton->show();
         }
         
         // 在線上模式下顯示退出房間按鈕
@@ -1395,9 +1492,12 @@ void Qt_Chess::onStartButtonClicked() {
             m_timeControlPanel->hide();
         }
         
-        // 顯示放棄按鈕
-        if (m_giveUpButton) {
-            m_giveUpButton->show();
+        // 顯示認輸和請求和棋按鈕
+        if (m_resignButton) {
+            m_resignButton->show();
+        }
+        if (m_requestDrawButton) {
+            m_requestDrawButton->show();
         }
         
         // 顯示退出房間按鈕
@@ -2053,7 +2153,8 @@ void Qt_Chess::updateTimeControlSizes() {
     buttonFont.setBold(true);
 
     if (m_startButton) m_startButton->setFont(buttonFont);
-    if (m_giveUpButton) m_giveUpButton->setFont(buttonFont);
+    if (m_resignButton) m_resignButton->setFont(buttonFont);
+    if (m_requestDrawButton) m_requestDrawButton->setFont(buttonFont);
 }
 
 void Qt_Chess::initializeSounds() {
@@ -2773,35 +2874,6 @@ void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
     connect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onStartButtonClicked);
     timeControlPanelLayout->addWidget(m_startButton, 0);  // 伸展因子 0 以保持按鈕高度
 
-    // 放棄按鈕 - 現代科技風格紅色警告效果
-    m_giveUpButton = new QPushButton("🏳 放棄認輸", this);
-    m_giveUpButton->setMinimumHeight(45);
-    QFont giveUpButtonFont;
-    giveUpButtonFont.setPointSize(12);
-    giveUpButtonFont.setBold(true);
-    m_giveUpButton->setFont(giveUpButtonFont);
-    m_giveUpButton->setStyleSheet(QString(
-        "QPushButton { "
-        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
-        "    stop:0 %1, stop:0.5 rgba(233, 69, 96, 0.7), stop:1 %1); "
-        "  color: %2; "
-        "  border: 3px solid %3; "
-        "  border-radius: 10px; "
-        "  padding: 8px; "
-        "}"
-        "QPushButton:hover { "
-        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
-        "    stop:0 %3, stop:0.5 rgba(255, 100, 120, 0.9), stop:1 %3); "
-        "  border-color: #FF6B6B; "
-        "}"
-        "QPushButton:pressed { "
-        "  background: %3; "
-        "}"
-    ).arg(THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_ACCENT_SECONDARY));
-    m_giveUpButton->hide();  // 初始隱藏
-    connect(m_giveUpButton, &QPushButton::clicked, this, &Qt_Chess::onGiveUpClicked);
-    timeControlPanelLayout->addWidget(m_giveUpButton, 0);  // 伸展因子 0 以保持按鈕高度
-
     // 退出房間按鈕 - 現代科技風格橙色警告效果
     m_exitRoomButton = new QPushButton("🚪 退出房間", this);
     m_exitRoomButton->setMinimumHeight(45);
@@ -3256,9 +3328,12 @@ void Qt_Chess::handleGameEnd() {
     // 停止背景音樂（遊戲已結束）
     stopBackgroundMusic();
 
-    // 隱藏放棄按鈕
-    if (m_giveUpButton) {
-        m_giveUpButton->hide();
+    // 隱藏認輸和請求和棋按鈕
+    if (m_resignButton) {
+        m_resignButton->hide();
+    }
+    if (m_requestDrawButton) {
+        m_requestDrawButton->hide();
     }
 
     // 顯示時間控制面板
@@ -3568,9 +3643,12 @@ void Qt_Chess::showTimeControlAfterTimeout() {
         m_timeControlPanel->show();
     }
 
-    // 隱藏放棄按鈕
-    if (m_giveUpButton) {
-        m_giveUpButton->hide();
+    // 隱藏認輸和請求和棋按鈕
+    if (m_resignButton) {
+        m_resignButton->hide();
+    }
+    if (m_requestDrawButton) {
+        m_requestDrawButton->hide();
     }
 
     // 重新啟用開始按鈕
@@ -5330,11 +5408,6 @@ void Qt_Chess::onOnlineModeClicked() {
                     m_colorSelectionWidget->show();
                 }
                 
-                // 停用新遊戲功能
-                if (m_newGameAction) {
-                    m_newGameAction->setEnabled(false);
-                }
-                
                 // 停用雙人和電腦模式按鈕（連線上後不能切換模式）
                 if (m_humanModeButton) m_humanModeButton->setEnabled(false);
                 if (m_computerModeButton) m_computerModeButton->setEnabled(false);
@@ -5399,9 +5472,6 @@ void Qt_Chess::onOnlineModeClicked() {
                 if (m_incrementSlider) m_incrementSlider->setEnabled(false);
                 
                 // 停用新遊戲功能
-                if (m_newGameAction) {
-                    m_newGameAction->setEnabled(false);
-                }
                 
                 // 停用雙人和電腦模式按鈕（連線上後不能切換模式）
                 if (m_humanModeButton) m_humanModeButton->setEnabled(false);
@@ -5453,11 +5523,6 @@ void Qt_Chess::onNetworkDisconnected() {
     m_connectionStatusLabel->setText("❌ 已斷線");
     m_isOnlineGame = false;
     m_waitingForOpponent = false;
-    
-    // 恢復新遊戲功能
-    if (m_newGameAction) {
-        m_newGameAction->setEnabled(true);
-    }
     
     // 隱藏顏色選擇widget
     if (m_colorSelectionWidget) {
@@ -5903,11 +5968,6 @@ void Qt_Chess::onCancelRoomClicked() {
         if (m_humanModeButton) m_humanModeButton->setEnabled(true);
         if (m_computerModeButton) m_computerModeButton->setEnabled(true);
         
-        // 恢復新遊戲功能
-        if (m_newGameAction) {
-            m_newGameAction->setEnabled(true);
-        }
-        
         // 隱藏顏色選擇widget
         if (m_colorSelectionWidget) {
             m_colorSelectionWidget->hide();
@@ -5991,11 +6051,6 @@ void Qt_Chess::onExitRoomClicked() {
         // 恢復模式選擇按鈕
         if (m_humanModeButton) m_humanModeButton->setEnabled(true);
         if (m_computerModeButton) m_computerModeButton->setEnabled(true);
-        
-        // 恢復新遊戲功能
-        if (m_newGameAction) {
-            m_newGameAction->setEnabled(true);
-        }
         
         // 隱藏顏色選擇widget
         if (m_colorSelectionWidget) {
@@ -6123,9 +6178,12 @@ void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int increme
              << "| My role:" << (m_networkManager->getRole() == NetworkRole::Host ? "Host" : "Guest")
              << "| Player color:" << (m_networkManager ? (int)m_networkManager->getPlayerColor() : -1);
     
-    // 顯示放棄按鈕和退出房間按鈕（無論是否有時間控制）
-    if (m_giveUpButton) {
-        m_giveUpButton->show();
+    // 顯示認輸和請求和棋按鈕，以及退出房間按鈕（無論是否有時間控制）
+    if (m_resignButton) {
+        m_resignButton->show();
+    }
+    if (m_requestDrawButton) {
+        m_requestDrawButton->show();
     }
     if (m_exitRoomButton) {
         m_exitRoomButton->show();

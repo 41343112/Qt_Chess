@@ -62,7 +62,8 @@ protected:
 private slots:
     void onSquareClicked(int row, int col);
     void onNewGameClicked();
-    void onGiveUpClicked();
+    void onResignClicked();       // 認輸按鈕點擊
+    void onRequestDrawClicked();  // 請求和棋按鈕點擊
     void onSoundSettingsClicked();
     void onPieceIconSettingsClicked();
     void onBoardColorSettingsClicked();
@@ -91,7 +92,9 @@ private:
     bool m_wasSelectedBeforeDrag;
     
     QPushButton* m_newGameButton;
-    QPushButton* m_giveUpButton;
+    QPushButton* m_resignButton;      // 認輸按鈕
+    QPushButton* m_requestDrawButton; // 請求和棋按鈕
+    QWidget* m_boardButtonPanel;      // 棋盤下方按鈕面板
     QWidget* m_boardWidget;
     QMenuBar* m_menuBar;
     bool m_gameStarted;  // 追蹤遊戲是否已開始
@@ -113,7 +116,6 @@ private:
     bool m_isOnlineGame;                 // 是否為線上對戰
     bool m_waitingForOpponent;           // 等待對手
     PieceColor m_onlineHostSelectedColor;  // 房主選擇的顏色（線上模式）
-    QAction* m_newGameAction;            // 新遊戲動作（用於啟用/停用）
     
     // 背景音樂
     QMediaPlayer* m_bgmPlayer;
