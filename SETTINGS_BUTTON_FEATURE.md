@@ -1,34 +1,60 @@
 # Settings Button Feature
 
 ## Overview
-This document describes the settings button feature that was added to the Qt Chess application to provide quick access to all game settings. The settings menu has been removed from the menu bar and is now only accessible through the settings button.
+This document describes the conversion of the menu bar to buttons that was implemented in the Qt Chess application. All menu bar functions have been converted to buttons in the time control panel for a cleaner, more accessible interface.
 
-## Problem Statement
-將設定使用按鈕來顯示 (Display settings using a button)
+## Problem Statements
+1. 將設定使用按鈕來顯示 (Display settings using a button)
+2. 將工作列全部變成按鍵 (Convert the entire menu bar to buttons)
 
-Previously, all settings were accessible through the menu bar at the top of the application. Users requested a more convenient way to access settings through a button. Based on user feedback, the settings menu has been removed from the menu bar to simplify the interface, with all settings now consolidated in the settings button.
+Previously, functions were accessible through the menu bar at the top of the application. Based on user feedback, first the settings were moved to a button, then all menu bar items were converted to buttons for a cleaner interface.
 
 ## Solution
-A settings button (⚙ 設定) has been added to the time control panel on the right side of the application window. When clicked, it displays a popup menu with all available settings options. The settings menu has been removed from the menu bar.
+All menu bar functions have been converted to buttons in the time control panel on the right side of the application window. The menu bar has been completely hidden.
 
 ## Implementation Details
 
 ### Files Modified
 1. **src/qt_chess.h**
    - Added `QPushButton* m_settingsButton` member variable
+   - Added `QPushButton* m_checkUpdatesButton` member variable
    - Added `void onSettingsButtonClicked()` slot declaration
+   - Commented out `QAction* m_newGameAction` (replaced with button)
 
 2. **src/qt_chess.cpp**
+   - Hidden the menu bar with `menuBar()->hide()`
    - Created the settings button in `setupTimeControlUI()` function
+   - Created the new game button in `setupTimeControlUI()` function
+   - Created the check updates button in `setupTimeControlUI()` function
    - Implemented `onSettingsButtonClicked()` to display a popup menu
-   - Removed settings menu from `setupMenuBar()` function
+   - Updated all references from `m_newGameAction` to `m_newGameButton`
 
 ### Button Location
-The settings button is located in the time control panel on the right side of the window, positioned below the "退出房間" (Exit Room) button.
+All buttons are located in the time control panel on the right side of the window, positioned at the bottom of the panel in the following order:
+1. ▶ 開始對弈 (Start Game)
+2. 🏳 放棄認輸 (Give Up)
+3. 🚪 退出房間 (Exit Room)
+4. ⚙ 設定 (Settings)
+5. 🔄 新遊戲 (New Game)
+6. 🔄 檢查更新 (Check for Updates)
 
 ### Button Appearance
+
+**Settings Button (⚙ 設定)**
 - Text: "⚙ 設定" (Settings with gear icon)
 - Style: Modern tech style with neon cyan gradient
+- Height: 45px minimum
+- Font: 12pt, bold
+
+**New Game Button (🔄 新遊戲)**
+- Text: "🔄 新遊戲" (New Game with refresh icon)
+- Style: Modern tech style with neon green gradient
+- Height: 45px minimum
+- Font: 12pt, bold
+
+**Check Updates Button (🔄 檢查更新)**
+- Text: "🔄 檢查更新" (Check for Updates with refresh icon)
+- Style: Modern tech style with neon yellow gradient
 - Height: 45px minimum
 - Font: 12pt, bold
 
@@ -52,11 +78,12 @@ The `onSettingsButtonClicked()` function:
 - Displays the menu at the button's bottom-left corner using `mapToGlobal()`
 
 ## User Benefits
-1. **Quick Access**: Settings are now accessible with a single click from the main game interface
-2. **Convenience**: No need to navigate through the menu bar
-3. **Visibility**: The button is always visible in the time control panel
+1. **Quick Access**: All functions accessible with a single click
+2. **No Menu Navigation**: No need to open menus
+3. **Visibility**: All buttons are always visible in the time control panel
 4. **Consistency**: Uses the same modern tech styling as other UI elements
-5. **Simplified Menu Bar**: Menu bar is cleaner with settings consolidated in one location
+5. **Cleaner Interface**: No menu bar clutter
+6. **More Screen Space**: Menu bar hidden provides more space for chess board
 
 ## Code Quality
 - Minimal changes to existing codebase
