@@ -240,7 +240,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_isOnlineGame(false)
     , m_waitingForOpponent(false)
     , m_onlineHostSelectedColor(PieceColor::White)
-    , m_newGameAction(nullptr)
+    // , m_newGameAction(nullptr)  // 已改用按鈕
     , m_bgmPlayer(nullptr)
     , m_bgmEnabled(true)
     , m_bgmVolume(30)
@@ -280,7 +280,8 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     loadBoardColorSettings();
     loadBoardFlipSettings();
     loadPieceIconsToCache(); // 載入設定後將圖示載入快取
-    setupMenuBar();
+    // setupMenuBar();  // 移除選單列，改用按鈕
+    menuBar()->hide();  // 隱藏選單列
     setupUI();
     loadTimeControlSettings();  // 在 setupUI() 之後載入以確保元件存在
     loadEngineSettings();  // 載入引擎設定
@@ -2860,6 +2861,62 @@ void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
     connect(m_settingsButton, &QPushButton::clicked, this, &Qt_Chess::onSettingsButtonClicked);
     timeControlPanelLayout->addWidget(m_settingsButton, 0);  // 伸展因子 0 以保持按鈕高度
 
+    // 新遊戲按鈕 - 現代科技風格綠色效果
+    m_newGameButton = new QPushButton("🔄 新遊戲", this);
+    m_newGameButton->setMinimumHeight(45);
+    QFont newGameButtonFont;
+    newGameButtonFont.setPointSize(12);
+    newGameButtonFont.setBold(true);
+    m_newGameButton->setFont(newGameButtonFont);
+    m_newGameButton->setStyleSheet(QString(
+        "QPushButton { "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "    stop:0 %1, stop:0.5 rgba(0, 255, 136, 0.7), stop:1 %1); "
+        "  color: %2; "
+        "  border: 3px solid %3; "
+        "  border-radius: 10px; "
+        "  padding: 8px; "
+        "}"
+        "QPushButton:hover { "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "    stop:0 %3, stop:0.5 rgba(0, 255, 136, 0.9), stop:1 %3); "
+        "  border-color: #00FF88; "
+        "}"
+        "QPushButton:pressed { "
+        "  background: %3; "
+        "}"
+    ).arg(THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_ACCENT_SUCCESS));
+    connect(m_newGameButton, &QPushButton::clicked, this, &Qt_Chess::onNewGameClicked);
+    timeControlPanelLayout->addWidget(m_newGameButton, 0);  // 伸展因子 0 以保持按鈕高度
+
+    // 檢查更新按鈕 - 現代科技風格黃色效果
+    m_checkUpdatesButton = new QPushButton("🔄 檢查更新", this);
+    m_checkUpdatesButton->setMinimumHeight(45);
+    QFont checkUpdatesButtonFont;
+    checkUpdatesButtonFont.setPointSize(12);
+    checkUpdatesButtonFont.setBold(true);
+    m_checkUpdatesButton->setFont(checkUpdatesButtonFont);
+    m_checkUpdatesButton->setStyleSheet(QString(
+        "QPushButton { "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "    stop:0 %1, stop:0.5 rgba(255, 217, 61, 0.7), stop:1 %1); "
+        "  color: %2; "
+        "  border: 3px solid %3; "
+        "  border-radius: 10px; "
+        "  padding: 8px; "
+        "}"
+        "QPushButton:hover { "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "    stop:0 %3, stop:0.5 rgba(255, 217, 61, 0.9), stop:1 %3); "
+        "  border-color: #FFD93D; "
+        "}"
+        "QPushButton:pressed { "
+        "  background: %3; "
+        "}"
+    ).arg(THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_ACCENT_WARNING));
+    connect(m_checkUpdatesButton, &QPushButton::clicked, this, &Qt_Chess::onCheckForUpdatesClicked);
+    timeControlPanelLayout->addWidget(m_checkUpdatesButton, 0);  // 伸展因子 0 以保持按鈕高度
+
     // 初始化 game timer
     m_gameTimer = new QTimer(this);
     connect(m_gameTimer, &QTimer::timeout, this, &Qt_Chess::onGameTimerTick);
@@ -5360,8 +5417,8 @@ void Qt_Chess::onOnlineModeClicked() {
                 }
                 
                 // 停用新遊戲功能
-                if (m_newGameAction) {
-                    m_newGameAction->setEnabled(false);
+                if (m_newGameButton) {
+                    m_newGameButton->setEnabled(false);
                 }
                 
                 // 停用雙人和電腦模式按鈕（連線上後不能切換模式）
@@ -5428,8 +5485,8 @@ void Qt_Chess::onOnlineModeClicked() {
                 if (m_incrementSlider) m_incrementSlider->setEnabled(false);
                 
                 // 停用新遊戲功能
-                if (m_newGameAction) {
-                    m_newGameAction->setEnabled(false);
+                if (m_newGameButton) {
+                    m_newGameButton->setEnabled(false);
                 }
                 
                 // 停用雙人和電腦模式按鈕（連線上後不能切換模式）
@@ -5484,8 +5541,8 @@ void Qt_Chess::onNetworkDisconnected() {
     m_waitingForOpponent = false;
     
     // 恢復新遊戲功能
-    if (m_newGameAction) {
-        m_newGameAction->setEnabled(true);
+    if (m_newGameButton) {
+        m_newGameButton->setEnabled(true);
     }
     
     // 隱藏顏色選擇widget
@@ -5933,8 +5990,8 @@ void Qt_Chess::onCancelRoomClicked() {
         if (m_computerModeButton) m_computerModeButton->setEnabled(true);
         
         // 恢復新遊戲功能
-        if (m_newGameAction) {
-            m_newGameAction->setEnabled(true);
+        if (m_newGameButton) {
+            m_newGameButton->setEnabled(true);
         }
         
         // 隱藏顏色選擇widget
@@ -6022,8 +6079,8 @@ void Qt_Chess::onExitRoomClicked() {
         if (m_computerModeButton) m_computerModeButton->setEnabled(true);
         
         // 恢復新遊戲功能
-        if (m_newGameAction) {
-            m_newGameAction->setEnabled(true);
+        if (m_newGameButton) {
+            m_newGameButton->setEnabled(true);
         }
         
         // 隱藏顏色選擇widget

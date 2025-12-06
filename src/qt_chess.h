@@ -94,6 +94,7 @@ private:
     QPushButton* m_newGameButton;
     QPushButton* m_giveUpButton;
     QPushButton* m_settingsButton;  // 設定按鈕
+    QPushButton* m_checkUpdatesButton;  // 檢查更新按鈕
     QWidget* m_boardWidget;
     QMenuBar* m_menuBar;
     bool m_gameStarted;  // 追蹤遊戲是否已開始
@@ -115,7 +116,7 @@ private:
     bool m_isOnlineGame;                 // 是否為線上對戰
     bool m_waitingForOpponent;           // 等待對手
     PieceColor m_onlineHostSelectedColor;  // 房主選擇的顏色（線上模式）
-    QAction* m_newGameAction;            // 新遊戲動作（用於啟用/停用）
+    // QAction* m_newGameAction;            // 新遊戲動作（用於啟用/停用）- 已改用按鈕
     
     // 背景音樂
     QMediaPlayer* m_bgmPlayer;
