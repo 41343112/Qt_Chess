@@ -5173,12 +5173,21 @@ void Qt_Chess::finishStartupAnimation() {
 }
 
 void Qt_Chess::initializeBackgroundMusic() {
-    // 創建背景音樂播放器 (Qt5 API)
+    // 創建背景音樂播放器
     m_bgmPlayer = new QMediaPlayer(this);
-    m_audioOutput = nullptr;  // Qt5 不使用 QAudioOutput
     
-    // 設定音量 (Qt5 使用 0-100 整數)
-    m_bgmPlayer->setVolume(m_bgmVolume);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    // Qt6 API - 使用 QAudioOutput
+    m_audioOutput = new QAudioOutput(this);
+    m_bgmPlayer->setAudioOutput(m_audioOutput);
+    // 設定音量 (Qt6 使用 0.0-1.0 浮點數)
+    m_audioOutput->setVolume(m_bgmVolume / 100.0);
+#else
+    // Qt5 - 不使用 QAudioOutput，音量控制可能不可用
+    m_audioOutput = nullptr;
+    // 注意：某些 Qt5 版本的 QMediaPlayer 可能沒有 setVolume 方法
+    // 背景音樂將以默認音量播放
+#endif
     
     // 初始化背景音樂列表 - 使用 resources/backgroundsounds 中的5首音樂
     m_bgmList.clear();
@@ -5188,7 +5197,17 @@ void Qt_Chess::initializeBackgroundMusic() {
               << "qrc:/resources/backgroundsounds/backgroundsound_4.mp3"
               << "qrc:/resources/backgroundsounds/backgroundsound_5.mp3";
     
-    // 設定循環播放 - 當媒體結束時重新播放 (Qt5 使用 stateChanged)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    // Qt6 使用 playbackStateChanged
+    connect(m_bgmPlayer, &QMediaPlayer::playbackStateChanged, this, [this](QMediaPlayer::PlaybackState state) {
+        if (state == QMediaPlayer::StoppedState && m_bgmEnabled && m_gameStarted) {
+            // 媒體播放完畢，重新開始（只在遊戲進行中才循環播放）
+            m_bgmPlayer->setPosition(0);
+            m_bgmPlayer->play();
+        }
+    });
+#else
+    // Qt5 使用 stateChanged
     connect(m_bgmPlayer, &QMediaPlayer::stateChanged, this, [this](QMediaPlayer::State state) {
         if (state == QMediaPlayer::StoppedState && m_bgmEnabled && m_gameStarted) {
             // 媒體播放完畢，重新開始（只在遊戲進行中才循環播放）
@@ -5196,6 +5215,7 @@ void Qt_Chess::initializeBackgroundMusic() {
             m_bgmPlayer->play();
         }
     });
+#endif
 }
 
 void Qt_Chess::startBackgroundMusic() {
@@ -5214,8 +5234,13 @@ void Qt_Chess::startBackgroundMusic() {
     m_lastBgmIndex = newIndex;
     QString bgmPath = m_bgmList[newIndex];
     
-    // 設定並播放背景音樂 (Qt5 使用 setMedia)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    // Qt6 使用 setSource
+    m_bgmPlayer->setSource(QUrl(bgmPath));
+#else
+    // Qt5 使用 setMedia
     m_bgmPlayer->setMedia(QUrl(bgmPath));
+#endif
     m_bgmPlayer->play();
 }
 
@@ -5241,9 +5266,14 @@ void Qt_Chess::onToggleBackgroundMusicClicked() {
 
 void Qt_Chess::setBackgroundMusicVolume(int volume) {
     m_bgmVolume = qBound(0, volume, 100);
-    if (m_bgmPlayer) {
-        m_bgmPlayer->setVolume(m_bgmVolume);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    if (m_audioOutput) {
+        m_audioOutput->setVolume(m_bgmVolume / 100.0);
     }
+#else
+    // Qt5: 音量控制可能不可用，忽略
+    // 某些 Qt5 版本的 QMediaPlayer 沒有 setVolume 方法
+#endif
 }
 
 void Qt_Chess::onCheckForUpdatesClicked() {
