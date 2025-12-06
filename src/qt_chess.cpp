@@ -5547,17 +5547,13 @@ void Qt_Chess::onPromotedToHost() {
     qDebug() << "[Qt_Chess::onPromotedToHost] Promoted from Guest to Host";
     
     // 獲取房號用於顯示
-    QString roomInfo = getRoomInfoString();
     QString roomNumber = m_networkManager ? m_networkManager->getRoomNumber() : QString();
-    
-    // 通知玩家角色變更
-    QMessageBox::information(this, tr("角色變更"), tr("原房主已離開，您已成為新房主。%1\n\n等待新對手加入房間...").arg(roomInfo));
     
     // 更新狀態為等待對手
     m_waitingForOpponent = true;
     
-    // 更新狀態標籤
-    m_connectionStatusLabel->setText(tr("⏳ 您已成為房主，等待對手加入..."));
+    // 更新狀態標籤顯示角色變更和等待狀態
+    m_connectionStatusLabel->setText(tr("👑 您已成為房主 | 原房主已離開，等待新對手加入..."));
     
     // 更新房間資訊標籤顯示房號（與初始創建房間時一致）
     if (m_roomInfoLabel && !roomNumber.isEmpty()) {
@@ -5693,17 +5689,25 @@ void Qt_Chess::onGameStartReceived(PieceColor playerColor) {
 
 void Qt_Chess::onOpponentDisconnected() {
     // 獲取房號用於顯示
-    QString roomInfo = getRoomInfoString();
+    QString roomNumber = m_networkManager ? m_networkManager->getRoomNumber() : QString();
     
     // 檢查遊戲是否已開始，如果是則自動結束遊戲
     if (m_gameStarted) {
-        QMessageBox::information(this, "對手退出", QString("對手已退出遊戲%1\n\n遊戲自動結束").arg(roomInfo));
+        // 更新連線狀態標籤顯示對手退出和遊戲結束
+        m_connectionStatusLabel->setText(QString("❌ 對手已退出遊戲 | 遊戲自動結束"));
         
         // 結束遊戲並更新狀態
         handleGameEnd();
         updateStatus();
     } else {
-        QMessageBox::information(this, "對手斷線", QString("對手已斷開連接%1").arg(roomInfo));
+        // 更新連線狀態標籤顯示對手斷線
+        m_connectionStatusLabel->setText(QString("❌ 對手已斷開連接"));
+    }
+    
+    // 更新房間資訊標籤顯示房號
+    if (m_roomInfoLabel && !roomNumber.isEmpty()) {
+        m_roomInfoLabel->setText(QString("🎮 房號: %1").arg(roomNumber));
+        m_roomInfoLabel->show();
     }
     
     m_isOnlineGame = false;
@@ -6305,10 +6309,4 @@ void Qt_Chess::showRoomInfoDialog(const QString& roomNumber) {
     m_roomInfoLabel->setText(QString("🎮 房號: %1").arg(roomNumber));
     
     dialog.exec();
-}
-
-QString Qt_Chess::getRoomInfoString() const {
-    // 獲取房號並格式化為顯示字串
-    QString roomNumber = m_networkManager ? m_networkManager->getRoomNumber() : QString();
-    return roomNumber.isEmpty() ? QString() : QString("\n房號: %1").arg(roomNumber);
 }
