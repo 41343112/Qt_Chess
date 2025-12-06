@@ -5692,9 +5692,10 @@ void Qt_Chess::onOpponentDisconnected() {
     if (m_gameStarted) {
         QMessageBox::information(this, "對手退出", QString("對手已退出遊戲%1\n\n遊戲自動結束").arg(roomInfo));
         
-        // 更新狀態顯示並處理遊戲結束（handleGameEnd 會停止計時器並設定 m_gameStarted = false）
-        updateStatus();
+        // 處理遊戲結束（handleGameEnd 會停止計時器並設定 m_gameStarted = false）
         handleGameEnd();
+        // 在遊戲結束後更新狀態顯示
+        updateStatus();
     } else {
         QMessageBox::information(this, "對手斷線", QString("對手已斷開連接%1").arg(roomInfo));
     }
