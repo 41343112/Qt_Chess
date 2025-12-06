@@ -685,45 +685,6 @@ void Qt_Chess::setupMenuBar() {
     connect(giveUpAction, &QAction::triggered, this, &Qt_Chess::onGiveUpClicked);
     gameMenu->addAction(giveUpAction);
 
-    // 設定選單
-    QMenu* settingsMenu = m_menuBar->addMenu("⚙ 設定");
-
-    // 音效設定動作
-    QAction* soundSettingsAction = new QAction("🔊 音效設定", this);
-    connect(soundSettingsAction, &QAction::triggered, this, &Qt_Chess::onSoundSettingsClicked);
-    settingsMenu->addAction(soundSettingsAction);
-
-    // 棋子圖標設定動作
-    QAction* pieceIconSettingsAction = new QAction("♟ 棋子圖標設定", this);
-    connect(pieceIconSettingsAction, &QAction::triggered, this, &Qt_Chess::onPieceIconSettingsClicked);
-    settingsMenu->addAction(pieceIconSettingsAction);
-
-    // 棋盤顏色設定動作
-    QAction* boardColorSettingsAction = new QAction("🎨 棋盤顏色設定", this);
-    connect(boardColorSettingsAction, &QAction::triggered, this, &Qt_Chess::onBoardColorSettingsClicked);
-    settingsMenu->addAction(boardColorSettingsAction);
-
-    settingsMenu->addSeparator();
-
-    // 反轉棋盤動作
-    QAction* flipBoardAction = new QAction("🔃 反轉棋盤", this);
-    connect(flipBoardAction, &QAction::triggered, this, &Qt_Chess::onFlipBoardClicked);
-    settingsMenu->addAction(flipBoardAction);
-
-    // 切換全螢幕動作
-    QAction* toggleFullScreenAction = new QAction("📺 切換全螢幕", this);
-    connect(toggleFullScreenAction, &QAction::triggered, this, &Qt_Chess::onToggleFullScreenClicked);
-    settingsMenu->addAction(toggleFullScreenAction);
-    
-    settingsMenu->addSeparator();
-    
-    // 背景音樂開關動作
-    QAction* toggleBgmAction = new QAction("🎵 背景音樂", this);
-    toggleBgmAction->setCheckable(true);
-    toggleBgmAction->setChecked(m_bgmEnabled);
-    connect(toggleBgmAction, &QAction::triggered, this, &Qt_Chess::onToggleBackgroundMusicClicked);
-    settingsMenu->addAction(toggleBgmAction);
-    
     // 說明選單
     QMenu* helpMenu = m_menuBar->addMenu("❓ 說明");
     
