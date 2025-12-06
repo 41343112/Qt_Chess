@@ -501,6 +501,14 @@ void NetworkManager::processMessage(const QJsonObject& message)
             QString hostColorStr = message["hostColor"].toString();
             PieceColor hostColor = (hostColorStr == "White") ? PieceColor::White : PieceColor::Black;
             
+            // 計算伺服器時間偏移（如果訊息中包含伺服器時間戳）
+            qint64 serverTimeOffset = 0;
+            if (message.contains("serverTimestamp")) {
+                qint64 serverTimestamp = message["serverTimestamp"].toVariant().toLongLong();
+                qint64 localTimestamp = QDateTime::currentMSecsSinceEpoch();
+                serverTimeOffset = serverTimestamp - localTimestamp;
+            }
+            
             // 根據房主的顏色選擇更新玩家顏色
             if (m_role == NetworkRole::Host) {
                 m_playerColor = hostColor;
@@ -510,7 +518,7 @@ void NetworkManager::processMessage(const QJsonObject& message)
                 m_opponentColor = hostColor;
             }
             
-            emit startGameReceived(whiteTimeMs, blackTimeMs, incrementMs, hostColor);
+            emit startGameReceived(whiteTimeMs, blackTimeMs, incrementMs, hostColor, serverTimeOffset);
         }
         break;
     
