@@ -1,8 +1,11 @@
-QT       += core gui multimedia multimediawidgets network
+QT       += core gui multimedia multimediawidgets network websockets
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++17
+
+# Enable console output for qDebug() on Windows
+win32: CONFIG += console
 
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
@@ -17,7 +20,9 @@ SOURCES += \
     src/soundsettingsdialog.cpp \
     src/pieceiconsettingsdialog.cpp \
     src/boardcolorsettingsdialog.cpp \
-    src/updatechecker.cpp
+    src/updatechecker.cpp \
+    src/networkmanager.cpp \
+    src/onlinedialog.cpp
 
 HEADERS += \
     src/qt_chess.h \
@@ -28,7 +33,9 @@ HEADERS += \
     src/pieceiconsettingsdialog.h \
     src/boardcolorsettingsdialog.h \
     src/theme.h \
-    src/updatechecker.h
+    src/updatechecker.h \
+    src/networkmanager.h \
+    src/onlinedialog.h
 
 FORMS += \
     src/qt_chess.ui
