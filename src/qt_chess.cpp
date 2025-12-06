@@ -5547,8 +5547,7 @@ void Qt_Chess::onPromotedToHost() {
     qDebug() << "[Qt_Chess::onPromotedToHost] Promoted from Guest to Host";
     
     // 獲取房號用於顯示
-    QString roomNumber = m_networkManager ? m_networkManager->getRoomNumber() : QString();
-    QString roomInfo = roomNumber.isEmpty() ? "" : QString("\n房號: %1").arg(roomNumber);
+    QString roomInfo = getRoomInfoString();
     
     // 通知玩家角色變更
     QMessageBox::information(this, tr("角色變更"), tr("原房主已離開，您已成為新房主。%1\n\n等待新對手加入房間...").arg(roomInfo));
@@ -5687,17 +5686,13 @@ void Qt_Chess::onGameStartReceived(PieceColor playerColor) {
 
 void Qt_Chess::onOpponentDisconnected() {
     // 獲取房號用於顯示
-    QString roomNumber = m_networkManager ? m_networkManager->getRoomNumber() : QString();
-    QString roomInfo = roomNumber.isEmpty() ? "" : QString("\n房號: %1").arg(roomNumber);
+    QString roomInfo = getRoomInfoString();
     
     // 檢查遊戲是否已開始，如果是則自動結束遊戲
     if (m_gameStarted) {
         QMessageBox::information(this, "對手退出", QString("對手已退出遊戲%1\n\n遊戲自動結束").arg(roomInfo));
         
-        // 標記遊戲已結束
-        m_gameStarted = false;
-        
-        // 更新狀態顯示並處理遊戲結束（handleGameEnd 會停止計時器）
+        // 更新狀態顯示並處理遊戲結束（handleGameEnd 會停止計時器並設定 m_gameStarted = false）
         updateStatus();
         handleGameEnd();
     } else {
@@ -6303,4 +6298,10 @@ void Qt_Chess::showRoomInfoDialog(const QString& roomNumber) {
     m_roomInfoLabel->setText(QString("🎮 房號: %1").arg(roomNumber));
     
     dialog.exec();
+}
+
+QString Qt_Chess::getRoomInfoString() const {
+    // 獲取房號並格式化為顯示字串
+    QString roomNumber = m_networkManager ? m_networkManager->getRoomNumber() : QString();
+    return roomNumber.isEmpty() ? QString() : QString("\n房號: %1").arg(roomNumber);
 }

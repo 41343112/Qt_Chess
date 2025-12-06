@@ -349,6 +349,7 @@ private:
     void updateConnectionStatus();       // 更新連線狀態顯示
     bool isOnlineTurn() const;           // 是否輪到線上玩家
     void showRoomInfoDialog(const QString& roomNumber);  // 顯示房間資訊
+    QString getRoomInfoString() const;   // 獲取格式化的房間資訊字串（用於顯示）
     
     void applyModernStylesheet();        // 應用現代科技風格全局樣式表
     
