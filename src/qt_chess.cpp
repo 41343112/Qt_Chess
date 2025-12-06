@@ -5579,6 +5579,11 @@ void Qt_Chess::onPromotedToHost() {
         m_colorSelectionWidget->show();
     }
     
+    // 啟用時間控制滑桿（新房主可以調整時間設定）
+    if (m_whiteTimeLimitSlider) m_whiteTimeLimitSlider->setEnabled(true);
+    if (m_blackTimeLimitSlider) m_blackTimeLimitSlider->setEnabled(true);
+    if (m_incrementSlider) m_incrementSlider->setEnabled(true);
+    
     // 隱藏開始按鈕（因為還沒有對手）
     if (m_startButton) {
         m_startButton->hide();
