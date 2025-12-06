@@ -25,6 +25,7 @@
 #include <QTimer>
 #include <QGroupBox>
 #include <QFileDialog>
+#include <QColorDialog>
 #include <QDate>
 #include <QTextStream>
 #include <QClipboard>
@@ -252,6 +253,14 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_opacityEffect(nullptr)
     , m_updateChecker(nullptr)
     , m_manualUpdateCheck(false)
+    , m_stackedWidget(nullptr)
+    , m_mainGameView(nullptr)
+    , m_settingsView(nullptr)
+    , m_settingsTabWidget(nullptr)
+    , m_soundSettingsWidget(nullptr)
+    , m_pieceIconSettingsWidget(nullptr)
+    , m_boardColorSettingsWidget(nullptr)
+    , m_backFromSettingsButton(nullptr)
 {
     ui->setupUi(this);
     setWindowTitle("♔ 國際象棋 - 科技對弈 ♚");
@@ -321,8 +330,12 @@ Qt_Chess::~Qt_Chess()
 }
 
 void Qt_Chess::setupUI() {
-    QWidget* centralWidget = new QWidget(this);
-    QVBoxLayout* mainLayout = new QVBoxLayout(centralWidget);
+    // 創建堆疊 widget 作為中央 widget
+    m_stackedWidget = new QStackedWidget(this);
+    
+    // 創建主遊戲視圖
+    m_mainGameView = new QWidget(m_stackedWidget);
+    QVBoxLayout* mainLayout = new QVBoxLayout(m_mainGameView);
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
 
@@ -658,7 +671,14 @@ void Qt_Chess::setupUI() {
 
     mainLayout->addLayout(m_contentLayout);
 
-    setCentralWidget(centralWidget);
+    // 將主遊戲視圖添加到堆疊 widget
+    m_stackedWidget->addWidget(m_mainGameView);
+    
+    // 設置設定面板
+    setupSettingsPanel();
+    
+    // 設置堆疊 widget 為中央 widget
+    setCentralWidget(m_stackedWidget);
 }
 
 void Qt_Chess::setupMenuBar() {
@@ -1406,33 +1426,15 @@ void Qt_Chess::onStartButtonClicked() {
 }
 
 void Qt_Chess::onSoundSettingsClicked() {
-    SoundSettingsDialog dialog(this);
-    dialog.setSettings(m_soundSettings);
-
-    if (dialog.exec() == QDialog::Accepted) {
-        m_soundSettings = dialog.getSettings();
-        applySoundSettings();
-    }
+    showSettingsPanel(0);  // 顯示音效設定標籤
 }
 
 void Qt_Chess::onPieceIconSettingsClicked() {
-    PieceIconSettingsDialog dialog(this);
-    dialog.setSettings(m_pieceIconSettings);
-
-    if (dialog.exec() == QDialog::Accepted) {
-        m_pieceIconSettings = dialog.getSettings();
-        applyPieceIconSettings();
-    }
+    showSettingsPanel(1);  // 顯示棋子圖標設定標籤
 }
 
 void Qt_Chess::onBoardColorSettingsClicked() {
-    BoardColorSettingsDialog dialog(this);
-    dialog.setSettings(m_boardColorSettings);
-
-    if (dialog.exec() == QDialog::Accepted) {
-        m_boardColorSettings = dialog.getSettings();
-        applyBoardColorSettings();
-    }
+    showSettingsPanel(2);  // 顯示棋盤顏色設定標籤
 }
 
 PieceType Qt_Chess::showPromotionDialog(PieceColor color) {
@@ -6409,4 +6411,612 @@ void Qt_Chess::showRoomInfoDialog(const QString& roomNumber) {
     m_roomInfoLabel->setText(QString("🎮 房號: %1").arg(roomNumber));
     
     dialog.exec();
+}
+
+// ===== 設定面板實現 =====
+
+void Qt_Chess::setupSettingsPanel() {
+    // 創建設定視圖
+    m_settingsView = new QWidget(m_stackedWidget);
+    QVBoxLayout* settingsLayout = new QVBoxLayout(m_settingsView);
+    settingsLayout->setContentsMargins(20, 20, 20, 20);
+    settingsLayout->setSpacing(10);
+    
+    // 標題和返回按鈕
+    QHBoxLayout* headerLayout = new QHBoxLayout();
+    QLabel* settingsTitle = new QLabel("⚙️ 遊戲設定", m_settingsView);
+    QFont titleFont;
+    titleFont.setPointSize(18);
+    titleFont.setBold(true);
+    settingsTitle->setFont(titleFont);
+    settingsTitle->setStyleSheet(QString("color: %1;").arg(THEME_ACCENT_PRIMARY));
+    
+    m_backFromSettingsButton = new QPushButton("← 返回遊戲", m_settingsView);
+    m_backFromSettingsButton->setMinimumHeight(40);
+    m_backFromSettingsButton->setStyleSheet(QString(
+        "QPushButton { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %1, stop:1 %2); "
+        "  color: %3; "
+        "  border: 2px solid %4; "
+        "  border-radius: 8px; "
+        "  padding: 8px 20px; "
+        "  font-size: 14px; "
+        "  font-weight: bold; "
+        "}"
+        "QPushButton:hover { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %4, stop:1 %1); "
+        "  border-color: %4; "
+        "}"
+    ).arg(THEME_BG_PANEL, THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_ACCENT_PRIMARY));
+    connect(m_backFromSettingsButton, &QPushButton::clicked, this, &Qt_Chess::hideSettingsPanel);
+    
+    headerLayout->addWidget(settingsTitle);
+    headerLayout->addStretch();
+    headerLayout->addWidget(m_backFromSettingsButton);
+    settingsLayout->addLayout(headerLayout);
+    
+    // 創建標籤頁 widget
+    m_settingsTabWidget = new QTabWidget(m_settingsView);
+    m_settingsTabWidget->setStyleSheet(QString(
+        "QTabWidget::pane { "
+        "  border: 2px solid %1; "
+        "  border-radius: 5px; "
+        "  background: %2; "
+        "}"
+        "QTabBar::tab { "
+        "  background: %2; "
+        "  color: %3; "
+        "  border: 2px solid %1; "
+        "  border-bottom: none; "
+        "  border-top-left-radius: 5px; "
+        "  border-top-right-radius: 5px; "
+        "  padding: 10px 20px; "
+        "  margin-right: 2px; "
+        "  font-size: 13px; "
+        "  font-weight: bold; "
+        "}"
+        "QTabBar::tab:selected { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %4, stop:1 %2); "
+        "  color: %4; "
+        "  border-color: %4; "
+        "}"
+        "QTabBar::tab:hover { "
+        "  background: %5; "
+        "}"
+    ).arg(THEME_BORDER, THEME_BG_PANEL, THEME_TEXT_PRIMARY, THEME_ACCENT_PRIMARY, THEME_BG_MEDIUM));
+    
+    // 創建各個設定標籤頁
+    m_soundSettingsWidget = createSoundSettingsWidget();
+    m_pieceIconSettingsWidget = createPieceIconSettingsWidget();
+    m_boardColorSettingsWidget = createBoardColorSettingsWidget();
+    
+    m_settingsTabWidget->addTab(m_soundSettingsWidget, "🔊 音效設定");
+    m_settingsTabWidget->addTab(m_pieceIconSettingsWidget, "♟️ 棋子圖標");
+    m_settingsTabWidget->addTab(m_boardColorSettingsWidget, "🎨 棋盤顏色");
+    
+    settingsLayout->addWidget(m_settingsTabWidget);
+    
+    // 將設定視圖添加到堆疊 widget
+    m_stackedWidget->addWidget(m_settingsView);
+}
+
+void Qt_Chess::showSettingsPanel(int tabIndex) {
+    if (tabIndex >= 0 && tabIndex < m_settingsTabWidget->count()) {
+        m_settingsTabWidget->setCurrentIndex(tabIndex);
+    }
+    m_stackedWidget->setCurrentWidget(m_settingsView);
+}
+
+void Qt_Chess::hideSettingsPanel() {
+    m_stackedWidget->setCurrentWidget(m_mainGameView);
+}
+
+QWidget* Qt_Chess::createSoundSettingsWidget() {
+    // 創建滾動區域以容納所有內容
+    QScrollArea* scrollArea = new QScrollArea();
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setFrameShape(QFrame::NoFrame);
+    
+    QWidget* widget = new QWidget();
+    QVBoxLayout* layout = new QVBoxLayout(widget);
+    layout->setContentsMargins(20, 20, 20, 20);
+    layout->setSpacing(15);
+    
+    // 說明標籤
+    QLabel* infoLabel = new QLabel("在這裡自訂遊戲中的音效設定。您可以為每個事件選擇自訂音效檔案、調整音量，以及啟用或停用個別音效。", widget);
+    infoLabel->setWordWrap(true);
+    infoLabel->setStyleSheet(QString("color: %1; padding: 10px; background: rgba(0, 217, 255, 0.1); border-radius: 5px; border-left: 3px solid %1;").arg(THEME_ACCENT_PRIMARY));
+    layout->addWidget(infoLabel);
+    
+    // 全部音效開關
+    QCheckBox* allSoundsCheckBox = new QCheckBox("🔊 啟用所有音效", widget);
+    allSoundsCheckBox->setChecked(m_soundSettings.allSoundsEnabled);
+    QFont checkboxFont = allSoundsCheckBox->font();
+    checkboxFont.setPointSize(13);
+    checkboxFont.setBold(true);
+    allSoundsCheckBox->setFont(checkboxFont);
+    allSoundsCheckBox->setStyleSheet(QString(
+        "QCheckBox { color: %1; padding: 5px; }"
+        "QCheckBox::indicator { width: 20px; height: 20px; }"
+    ).arg(THEME_ACCENT_SUCCESS));
+    connect(allSoundsCheckBox, &QCheckBox::toggled, this, [this, allSoundsCheckBox](bool enabled) {
+        m_soundSettings.allSoundsEnabled = enabled;
+        m_soundSettings.moveSoundEnabled = enabled;
+        m_soundSettings.captureSoundEnabled = enabled;
+        m_soundSettings.castlingSoundEnabled = enabled;
+        m_soundSettings.checkSoundEnabled = enabled;
+        m_soundSettings.checkmateSoundEnabled = enabled;
+        applySoundSettings();
+        // 更新所有子複選框
+        QList<QCheckBox*> checkboxes = m_soundSettingsWidget->findChildren<QCheckBox*>();
+        for (QCheckBox* cb : checkboxes) {
+            if (cb != allSoundsCheckBox) {
+                cb->setChecked(enabled);
+            }
+        }
+    });
+    layout->addWidget(allSoundsCheckBox);
+    
+    // 添加分隔線
+    QFrame* line1 = new QFrame(widget);
+    line1->setFrameShape(QFrame::HLine);
+    line1->setFrameShadow(QFrame::Sunken);
+    line1->setStyleSheet(QString("background-color: %1;").arg(THEME_BORDER));
+    layout->addWidget(line1);
+    
+    // 創建一個輔助函數來添加音效控制行
+    auto addSoundControl = [&](const QString& label, QString& soundPath, bool& enabled, double& volume) {
+        QGroupBox* groupBox = new QGroupBox(label, widget);
+        groupBox->setStyleSheet(QString(
+            "QGroupBox { "
+            "  color: %1; "
+            "  border: 2px solid %2; "
+            "  border-radius: 5px; "
+            "  margin-top: 10px; "
+            "  padding-top: 10px; "
+            "  font-weight: bold; "
+            "}"
+            "QGroupBox::title { "
+            "  subcontrol-origin: margin; "
+            "  subcontrol-position: top left; "
+            "  padding: 0 5px; "
+            "}"
+        ).arg(THEME_TEXT_PRIMARY, THEME_BORDER));
+        QVBoxLayout* groupLayout = new QVBoxLayout(groupBox);
+        
+        // 啟用複選框
+        QCheckBox* enableCheckBox = new QCheckBox("啟用此音效", groupBox);
+        enableCheckBox->setChecked(enabled);
+        connect(enableCheckBox, &QCheckBox::toggled, [&enabled, this, allSoundsCheckBox](bool checked) {
+            enabled = checked;
+            applySoundSettings();
+        });
+        groupLayout->addWidget(enableCheckBox);
+        
+        // 檔案路徑和瀏覽按鈕
+        QHBoxLayout* fileLayout = new QHBoxLayout();
+        QLineEdit* pathEdit = new QLineEdit(soundPath, groupBox);
+        pathEdit->setReadOnly(true);
+        pathEdit->setPlaceholderText("預設音效");
+        QPushButton* browseButton = new QPushButton("瀏覽...", groupBox);
+        browseButton->setMaximumWidth(80);
+        connect(browseButton, &QPushButton::clicked, [&soundPath, pathEdit, this]() {
+            QString fileName = QFileDialog::getOpenFileName(this, "選擇音效檔案", "", 
+                "音訊檔案 (*.wav *.mp3 *.ogg);;所有檔案 (*.*)");
+            if (!fileName.isEmpty()) {
+                soundPath = fileName;
+                pathEdit->setText(fileName);
+                applySoundSettings();
+            }
+        });
+        fileLayout->addWidget(pathEdit);
+        fileLayout->addWidget(browseButton);
+        groupLayout->addLayout(fileLayout);
+        
+        // 音量滑桿
+        QHBoxLayout* volumeLayout = new QHBoxLayout();
+        QLabel* volumeLabel = new QLabel("音量:", groupBox);
+        QSlider* volumeSlider = new QSlider(Qt::Horizontal, groupBox);
+        volumeSlider->setRange(0, 100);
+        volumeSlider->setValue(static_cast<int>(volume * 100));
+        QLabel* volumeValueLabel = new QLabel(QString::number(static_cast<int>(volume * 100)) + "%", groupBox);
+        volumeValueLabel->setMinimumWidth(45);
+        connect(volumeSlider, &QSlider::valueChanged, [&volume, volumeValueLabel, this](int value) {
+            volume = value / 100.0;
+            volumeValueLabel->setText(QString::number(value) + "%");
+            applySoundSettings();
+        });
+        volumeLayout->addWidget(volumeLabel);
+        volumeLayout->addWidget(volumeSlider, 1);
+        volumeLayout->addWidget(volumeValueLabel);
+        groupLayout->addLayout(volumeLayout);
+        
+        // 預覽和重設按鈕
+        QHBoxLayout* buttonLayout = new QHBoxLayout();
+        QPushButton* previewButton = new QPushButton("▶ 預覽", groupBox);
+        QPushButton* resetButton = new QPushButton("🔄 重設", groupBox);
+        connect(previewButton, &QPushButton::clicked, [&soundPath, &volume, this]() {
+            // 預覽音效
+            QSoundEffect previewSound;
+            if (!soundPath.isEmpty() && QFile::exists(soundPath)) {
+                previewSound.setSource(QUrl::fromLocalFile(soundPath));
+            } else {
+                // 使用預設音效
+                QString defaultPath = SoundSettingsDialog::getDefaultSettings().moveSound; // 暫時用移動音效
+                previewSound.setSource(QUrl(defaultPath));
+            }
+            previewSound.setVolume(volume);
+            previewSound.play();
+        });
+        connect(resetButton, &QPushButton::clicked, [&soundPath, pathEdit, this]() {
+            soundPath = "";
+            pathEdit->clear();
+            applySoundSettings();
+        });
+        buttonLayout->addWidget(previewButton);
+        buttonLayout->addWidget(resetButton);
+        groupLayout->addLayout(buttonLayout);
+        
+        layout->addWidget(groupBox);
+    };
+    
+    // 添加各個音效控制
+    addSoundControl("🎵 移動音效", m_soundSettings.moveSound, m_soundSettings.moveSoundEnabled, m_soundSettings.moveVolume);
+    addSoundControl("💥 吃子音效", m_soundSettings.captureSound, m_soundSettings.captureSoundEnabled, m_soundSettings.captureVolume);
+    addSoundControl("🏰 王車易位音效", m_soundSettings.castlingSound, m_soundSettings.castlingSoundEnabled, m_soundSettings.castlingVolume);
+    addSoundControl("⚠️ 將軍音效", m_soundSettings.checkSound, m_soundSettings.checkSoundEnabled, m_soundSettings.checkVolume);
+    addSoundControl("🏆 將死音效", m_soundSettings.checkmateSound, m_soundSettings.checkmateSoundEnabled, m_soundSettings.checkmateVolume);
+    
+    // 添加伸展以將所有內容推到頂部
+    layout->addStretch();
+    
+    // 重設所有設定按鈕
+    QPushButton* resetAllButton = new QPushButton("🔄 重設所有音效為預設值", widget);
+    resetAllButton->setMinimumHeight(40);
+    resetAllButton->setStyleSheet(QString(
+        "QPushButton { "
+        "  background: %1; "
+        "  color: %2; "
+        "  border: 2px solid %3; "
+        "  border-radius: 5px; "
+        "  padding: 10px; "
+        "  font-size: 12px; "
+        "  font-weight: bold; "
+        "}"
+        "QPushButton:hover { "
+        "  background: %3; "
+        "}"
+    ).arg(THEME_BG_MEDIUM, THEME_TEXT_PRIMARY, THEME_ACCENT_SECONDARY));
+    connect(resetAllButton, &QPushButton::clicked, this, [this, allSoundsCheckBox]() {
+        m_soundSettings = SoundSettingsDialog::getDefaultSettings();
+        applySoundSettings();
+        allSoundsCheckBox->setChecked(m_soundSettings.allSoundsEnabled);
+        QMessageBox::information(this, "重設完成", "所有音效設定已重設為預設值！");
+        // 重新創建設定面板以更新UI
+        int currentTab = m_settingsTabWidget->currentIndex();
+        m_settingsTabWidget->removeTab(0);
+        m_soundSettingsWidget = createSoundSettingsWidget();
+        m_settingsTabWidget->insertTab(0, m_soundSettingsWidget, "🔊 音效設定");
+        m_settingsTabWidget->setCurrentIndex(currentTab);
+    });
+    layout->addWidget(resetAllButton);
+    
+    scrollArea->setWidget(widget);
+    return scrollArea;
+}
+
+QWidget* Qt_Chess::createPieceIconSettingsWidget() {
+    QScrollArea* scrollArea = new QScrollArea();
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setFrameShape(QFrame::NoFrame);
+    
+    QWidget* widget = new QWidget();
+    QVBoxLayout* layout = new QVBoxLayout(widget);
+    layout->setContentsMargins(20, 20, 20, 20);
+    layout->setSpacing(15);
+    
+    // 說明標籤
+    QLabel* infoLabel = new QLabel("在這裡自訂棋盤上棋子的圖標。您可以選擇預設圖標集或為每個棋子上傳自訂圖片。", widget);
+    infoLabel->setWordWrap(true);
+    infoLabel->setStyleSheet(QString("color: %1; padding: 10px; background: rgba(0, 217, 255, 0.1); border-radius: 5px; border-left: 3px solid %1;").arg(THEME_ACCENT_PRIMARY));
+    layout->addWidget(infoLabel);
+    
+    // 棋子大小控制
+    QGroupBox* scaleGroup = new QGroupBox("📏 棋子大小", widget);
+    scaleGroup->setStyleSheet(QString(
+        "QGroupBox { "
+        "  color: %1; "
+        "  border: 2px solid %2; "
+        "  border-radius: 5px; "
+        "  margin-top: 10px; "
+        "  padding-top: 10px; "
+        "  font-weight: bold; "
+        "}"
+    ).arg(THEME_TEXT_PRIMARY, THEME_BORDER));
+    QVBoxLayout* scaleLayout = new QVBoxLayout(scaleGroup);
+    
+    QHBoxLayout* scaleSliderLayout = new QHBoxLayout();
+    QLabel* scaleLabel = new QLabel("縮放比例:", scaleGroup);
+    QSlider* scaleSlider = new QSlider(Qt::Horizontal, scaleGroup);
+    scaleSlider->setRange(60, 100);
+    scaleSlider->setValue(m_pieceIconSettings.pieceScale);
+    QLabel* scaleValueLabel = new QLabel(QString::number(m_pieceIconSettings.pieceScale) + "%", scaleGroup);
+    scaleValueLabel->setMinimumWidth(45);
+    connect(scaleSlider, &QSlider::valueChanged, [this, scaleValueLabel](int value) {
+        m_pieceIconSettings.pieceScale = value;
+        scaleValueLabel->setText(QString::number(value) + "%");
+        applyPieceIconSettings();
+    });
+    scaleSliderLayout->addWidget(scaleLabel);
+    scaleSliderLayout->addWidget(scaleSlider, 1);
+    scaleSliderLayout->addWidget(scaleValueLabel);
+    scaleLayout->addLayout(scaleSliderLayout);
+    layout->addWidget(scaleGroup);
+    
+    // 圖標集選擇
+    QGroupBox* iconSetGroup = new QGroupBox("🎨 圖標集選擇", widget);
+    iconSetGroup->setStyleSheet(QString(
+        "QGroupBox { "
+        "  color: %1; "
+        "  border: 2px solid %2; "
+        "  border-radius: 5px; "
+        "  margin-top: 10px; "
+        "  padding-top: 10px; "
+        "  font-weight: bold; "
+        "}"
+    ).arg(THEME_TEXT_PRIMARY, THEME_BORDER));
+    QVBoxLayout* iconSetLayout = new QVBoxLayout(iconSetGroup);
+    
+    QRadioButton* unicodeRadio = new QRadioButton("預設 Unicode 棋子符號 (♔ ♕ ♖ ♗ ♘ ♙)", iconSetGroup);
+    unicodeRadio->setChecked(m_pieceIconSettings.iconSetType == PieceIconSettingsDialog::IconSetType::Unicode);
+    connect(unicodeRadio, &QRadioButton::toggled, [this](bool checked) {
+        if (checked) {
+            m_pieceIconSettings.iconSetType = PieceIconSettingsDialog::IconSetType::Unicode;
+            m_pieceIconSettings.useCustomIcons = false;
+            applyPieceIconSettings();
+        }
+    });
+    iconSetLayout->addWidget(unicodeRadio);
+    
+    QRadioButton* customRadio = new QRadioButton("自訂圖標（下方選擇）", iconSetGroup);
+    customRadio->setChecked(m_pieceIconSettings.iconSetType == PieceIconSettingsDialog::IconSetType::Custom);
+    connect(customRadio, &QRadioButton::toggled, [this](bool checked) {
+        if (checked) {
+            m_pieceIconSettings.iconSetType = PieceIconSettingsDialog::IconSetType::Custom;
+            m_pieceIconSettings.useCustomIcons = true;
+            applyPieceIconSettings();
+        }
+    });
+    iconSetLayout->addWidget(customRadio);
+    layout->addWidget(iconSetGroup);
+    
+    // 自訂圖標選擇提示
+    QLabel* customIconLabel = new QLabel("💡 提示：目前自訂圖標功能需要您為每個棋子單獨選擇圖片檔案。建議選擇 PNG 格式且背景透明的圖片以獲得最佳效果。", widget);
+    customIconLabel->setWordWrap(true);
+    customIconLabel->setStyleSheet("color: #FFD93D; padding: 8px; background: rgba(255, 217, 61, 0.1); border-radius: 5px;");
+    layout->addWidget(customIconLabel);
+    
+    // 添加伸展
+    layout->addStretch();
+    
+    // 重設按鈕
+    QPushButton* resetButton = new QPushButton("🔄 重設為預設值", widget);
+    resetButton->setMinimumHeight(40);
+    resetButton->setStyleSheet(QString(
+        "QPushButton { "
+        "  background: %1; "
+        "  color: %2; "
+        "  border: 2px solid %3; "
+        "  border-radius: 5px; "
+        "  padding: 10px; "
+        "  font-size: 12px; "
+        "  font-weight: bold; "
+        "}"
+        "QPushButton:hover { "
+        "  background: %3; "
+        "}"
+    ).arg(THEME_BG_MEDIUM, THEME_TEXT_PRIMARY, THEME_ACCENT_SECONDARY));
+    connect(resetButton, &QPushButton::clicked, this, [this]() {
+        m_pieceIconSettings = PieceIconSettingsDialog::getDefaultSettings();
+        applyPieceIconSettings();
+        QMessageBox::information(this, "重設完成", "棋子圖標設定已重設為預設值！");
+        // 重新創建設定面板以更新UI
+        int currentTab = m_settingsTabWidget->currentIndex();
+        m_settingsTabWidget->removeTab(1);
+        m_pieceIconSettingsWidget = createPieceIconSettingsWidget();
+        m_settingsTabWidget->insertTab(1, m_pieceIconSettingsWidget, "♟️ 棋子圖標");
+        m_settingsTabWidget->setCurrentIndex(currentTab);
+    });
+    layout->addWidget(resetButton);
+    
+    scrollArea->setWidget(widget);
+    return scrollArea;
+}
+
+QWidget* Qt_Chess::createBoardColorSettingsWidget() {
+    QScrollArea* scrollArea = new QScrollArea();
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setFrameShape(QFrame::NoFrame);
+    
+    QWidget* widget = new QWidget();
+    QVBoxLayout* layout = new QVBoxLayout(widget);
+    layout->setContentsMargins(20, 20, 20, 20);
+    layout->setSpacing(15);
+    
+    // 說明標籤
+    QLabel* infoLabel = new QLabel("在這裡自訂棋盤的顏色配置。您可以從預設的配色方案中選擇，或自訂淺色和深色方格的顏色。", widget);
+    infoLabel->setWordWrap(true);
+    infoLabel->setStyleSheet(QString("color: %1; padding: 10px; background: rgba(0, 217, 255, 0.1); border-radius: 5px; border-left: 3px solid %1;").arg(THEME_ACCENT_PRIMARY));
+    layout->addWidget(infoLabel);
+    
+    // 顏色預覽
+    QGroupBox* previewGroup = new QGroupBox("👁️ 顏色預覽", widget);
+    previewGroup->setStyleSheet(QString(
+        "QGroupBox { "
+        "  color: %1; "
+        "  border: 2px solid %2; "
+        "  border-radius: 5px; "
+        "  margin-top: 10px; "
+        "  padding-top: 10px; "
+        "  font-weight: bold; "
+        "}"
+    ).arg(THEME_TEXT_PRIMARY, THEME_BORDER));
+    QVBoxLayout* previewLayout = new QVBoxLayout(previewGroup);
+    
+    // 2x2 預覽網格
+    QWidget* previewWidget = new QWidget(previewGroup);
+    QGridLayout* previewGrid = new QGridLayout(previewWidget);
+    previewGrid->setSpacing(0);
+    previewGrid->setContentsMargins(0, 0, 0, 0);
+    
+    QLabel* previewSquares[2][2];
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 2; j++) {
+            previewSquares[i][j] = new QLabel(previewWidget);
+            previewSquares[i][j]->setMinimumSize(60, 60);
+            previewSquares[i][j]->setMaximumSize(60, 60);
+            previewSquares[i][j]->setFrameStyle(QFrame::Box);
+            bool isLight = (i + j) % 2 == 0;
+            QColor color = isLight ? m_boardColorSettings.lightSquareColor : m_boardColorSettings.darkSquareColor;
+            previewSquares[i][j]->setStyleSheet(QString("background-color: %1; border: 1px solid %2;").arg(color.name(), THEME_BORDER));
+            previewGrid->addWidget(previewSquares[i][j], i, j);
+        }
+    }
+    previewLayout->addWidget(previewWidget, 0, Qt::AlignCenter);
+    layout->addWidget(previewGroup);
+    
+    // 預設配色方案
+    QGroupBox* presetsGroup = new QGroupBox("🎨 預設配色方案", widget);
+    presetsGroup->setStyleSheet(QString(
+        "QGroupBox { "
+        "  color: %1; "
+        "  border: 2px solid %2; "
+        "  border-radius: 5px; "
+        "  margin-top: 10px; "
+        "  padding-top: 10px; "
+        "  font-weight: bold; "
+        "}"
+    ).arg(THEME_TEXT_PRIMARY, THEME_BORDER));
+    QVBoxLayout* presetsLayout = new QVBoxLayout(presetsGroup);
+    
+    QStringList presetNames = {
+        "經典棕褐色",
+        "藍灰配色",
+        "綠白配色",
+        "紫粉配色",
+        "木紋深色",
+        "海洋藍配色",
+        "淺色系"
+    };
+    
+    for (int i = 0; i < presetNames.size(); i++) {
+        QPushButton* presetButton = new QPushButton(presetNames[i], presetsGroup);
+        presetButton->setMinimumHeight(35);
+        connect(presetButton, &QPushButton::clicked, [this, i, previewSquares]() {
+            BoardColorSettingsDialog::ColorScheme scheme = static_cast<BoardColorSettingsDialog::ColorScheme>(i);
+            m_boardColorSettings = BoardColorSettingsDialog::getPresetSettings(scheme);
+            applyBoardColorSettings();
+            // 更新預覽
+            for (int row = 0; row < 2; row++) {
+                for (int col = 0; col < 2; col++) {
+                    bool isLight = (row + col) % 2 == 0;
+                    QColor color = isLight ? m_boardColorSettings.lightSquareColor : m_boardColorSettings.darkSquareColor;
+                    previewSquares[row][col]->setStyleSheet(QString("background-color: %1; border: 1px solid %2;").arg(color.name(), THEME_BORDER));
+                }
+            }
+        });
+        presetsLayout->addWidget(presetButton);
+    }
+    layout->addWidget(presetsGroup);
+    
+    // 自訂顏色
+    QGroupBox* customGroup = new QGroupBox("🎨 自訂顏色", widget);
+    customGroup->setStyleSheet(QString(
+        "QGroupBox { "
+        "  color: %1; "
+        "  border: 2px solid %2; "
+        "  border-radius: 5px; "
+        "  margin-top: 10px; "
+        "  padding-top: 10px; "
+        "  font-weight: bold; "
+        "}"
+    ).arg(THEME_TEXT_PRIMARY, THEME_BORDER));
+    QVBoxLayout* customLayout = new QVBoxLayout(customGroup);
+    
+    QPushButton* lightColorButton = new QPushButton("選擇淺色方格顏色", customGroup);
+    connect(lightColorButton, &QPushButton::clicked, [this, previewSquares]() {
+        QColor color = QColorDialog::getColor(m_boardColorSettings.lightSquareColor, this, "選擇淺色方格顏色");
+        if (color.isValid()) {
+            m_boardColorSettings.lightSquareColor = color;
+            m_boardColorSettings.scheme = BoardColorSettingsDialog::ColorScheme::Custom1;
+            applyBoardColorSettings();
+            // 更新預覽
+            for (int row = 0; row < 2; row++) {
+                for (int col = 0; col < 2; col++) {
+                    bool isLight = (row + col) % 2 == 0;
+                    QColor c = isLight ? m_boardColorSettings.lightSquareColor : m_boardColorSettings.darkSquareColor;
+                    previewSquares[row][col]->setStyleSheet(QString("background-color: %1; border: 1px solid %2;").arg(c.name(), THEME_BORDER));
+                }
+            }
+        }
+    });
+    customLayout->addWidget(lightColorButton);
+    
+    QPushButton* darkColorButton = new QPushButton("選擇深色方格顏色", customGroup);
+    connect(darkColorButton, &QPushButton::clicked, [this, previewSquares]() {
+        QColor color = QColorDialog::getColor(m_boardColorSettings.darkSquareColor, this, "選擇深色方格顏色");
+        if (color.isValid()) {
+            m_boardColorSettings.darkSquareColor = color;
+            m_boardColorSettings.scheme = BoardColorSettingsDialog::ColorScheme::Custom1;
+            applyBoardColorSettings();
+            // 更新預覽
+            for (int row = 0; row < 2; row++) {
+                for (int col = 0; col < 2; col++) {
+                    bool isLight = (row + col) % 2 == 0;
+                    QColor c = isLight ? m_boardColorSettings.lightSquareColor : m_boardColorSettings.darkSquareColor;
+                    previewSquares[row][col]->setStyleSheet(QString("background-color: %1; border: 1px solid %2;").arg(c.name(), THEME_BORDER));
+                }
+            }
+        }
+    });
+    customLayout->addWidget(darkColorButton);
+    layout->addWidget(customGroup);
+    
+    // 添加伸展
+    layout->addStretch();
+    
+    // 重設按鈕
+    QPushButton* resetButton = new QPushButton("🔄 重設為預設值", widget);
+    resetButton->setMinimumHeight(40);
+    resetButton->setStyleSheet(QString(
+        "QPushButton { "
+        "  background: %1; "
+        "  color: %2; "
+        "  border: 2px solid %3; "
+        "  border-radius: 5px; "
+        "  padding: 10px; "
+        "  font-size: 12px; "
+        "  font-weight: bold; "
+        "}"
+        "QPushButton:hover { "
+        "  background: %3; "
+        "}"
+    ).arg(THEME_BG_MEDIUM, THEME_TEXT_PRIMARY, THEME_ACCENT_SECONDARY));
+    connect(resetButton, &QPushButton::clicked, this, [this, previewSquares]() {
+        m_boardColorSettings = BoardColorSettingsDialog::getDefaultSettings();
+        applyBoardColorSettings();
+        // 更新預覽
+        for (int row = 0; row < 2; row++) {
+            for (int col = 0; col < 2; col++) {
+                bool isLight = (row + col) % 2 == 0;
+                QColor color = isLight ? m_boardColorSettings.lightSquareColor : m_boardColorSettings.darkSquareColor;
+                previewSquares[row][col]->setStyleSheet(QString("background-color: %1; border: 1px solid %2;").arg(color.name(), THEME_BORDER));
+            }
+        }
+        QMessageBox::information(this, "重設完成", "棋盤顏色設定已重設為預設值！");
+    });
+    layout->addWidget(resetButton);
+    
+    scrollArea->setWidget(widget);
+    return scrollArea;
 }

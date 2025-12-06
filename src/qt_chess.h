@@ -27,6 +27,9 @@
 #include <QButtonGroup>
 #include <QPropertyAnimation>
 #include <QGraphicsOpacityEffect>
+#include <QStackedWidget>
+#include <QTabWidget>
+#include <QScrollArea>
 #include <vector>
 #include "chessboard.h"
 #include "chessengine.h"
@@ -388,5 +391,22 @@ private:
     // 更新檢查器
     UpdateChecker* m_updateChecker;      // 更新檢查器
     bool m_manualUpdateCheck;            // 是否為手動檢查更新
+    
+    // 設定面板相關
+    QStackedWidget* m_stackedWidget;     // 主視圖/設定視圖切換器
+    QWidget* m_mainGameView;             // 主遊戲視圖
+    QWidget* m_settingsView;             // 設定視圖
+    QTabWidget* m_settingsTabWidget;     // 設定標籤頁
+    QWidget* m_soundSettingsWidget;      // 音效設定 widget
+    QWidget* m_pieceIconSettingsWidget;  // 棋子圖標設定 widget
+    QWidget* m_boardColorSettingsWidget; // 棋盤顏色設定 widget
+    QPushButton* m_backFromSettingsButton; // 從設定返回按鈕
+    
+    void setupSettingsPanel();           // 設置設定面板
+    void showSettingsPanel(int tabIndex); // 顯示設定面板
+    void hideSettingsPanel();            // 隱藏設定面板
+    QWidget* createSoundSettingsWidget(); // 創建音效設定 widget
+    QWidget* createPieceIconSettingsWidget(); // 創建棋子圖標設定 widget
+    QWidget* createBoardColorSettingsWidget(); // 創建棋盤顏色設定 widget
 };
 #endif // QT_CHESS_H
