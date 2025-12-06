@@ -150,7 +150,8 @@ wss.on('connection', ws => {
                 }
                 
                 // 更新最後切換時間（如果是第一步，這裡開始計時）
-                timer.lastSwitchTime = currentTime;
+                // 加上緩衝時間以補償網路延遲，確保客戶端收到訊息時不會扣錯時間
+                timer.lastSwitchTime = currentTime + 1;  // 加 1 秒緩衝
                 
                 // 廣播移動訊息和計時器狀態
                 const moveMessage = {
