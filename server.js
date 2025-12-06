@@ -4,7 +4,9 @@ const WebSocket = require('ws');
 const wss = new WebSocket.Server({ port: process.env.PORT || 3000 });
 
 // 房間資料
-const rooms = {}; // rooms[roomId] = [ws1, ws2, ...]
+// rooms[roomId] = [ws1, ws2, ...]
+// 注意：陣列中第一個元素 (index 0) 始終為房主
+const rooms = {};
 
 // 遊戲計時狀態
 const gameTimers = {}; // gameTimers[roomId] = { timeA, timeB, currentPlayer, lastSwitchTime, whiteIsA }
@@ -15,6 +17,8 @@ function generateRoomId() {
 }
 
 // 處理玩家離開房間的共用邏輯
+// 此函數處理玩家明確離開或斷線的情況
+// 注意：目前設計為 2 人房間，因此 includes() 的 O(n) 複雜度是可接受的
 function handlePlayerLeaveRoom(ws, roomId) {
     if(!rooms[roomId] || !rooms[roomId].includes(ws)) {
         return; // 玩家不在此房間
