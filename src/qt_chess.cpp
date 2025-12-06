@@ -2873,6 +2873,7 @@ void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
     // 設定按鈕 - 現代科技風格
     m_settingsButton = new QPushButton("⚙ 設定", this);
     m_settingsButton->setMinimumHeight(45);
+    m_settingsButton->setToolTip("開啟設定選單");  // 提供螢幕閱讀器支援
     QFont settingsButtonFont;
     settingsButtonFont.setPointSize(12);
     settingsButtonFont.setBold(true);
