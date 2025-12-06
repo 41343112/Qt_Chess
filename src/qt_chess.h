@@ -271,6 +271,7 @@ private:
     void startTimer();
     void stopTimer();
     void applyIncrement();
+    void checkAndStartTimerOnFirstMove();  // 檢查並在第一步棋時啟動計時器的輔助函數
     void loadTimeControlSettings();
     void saveTimeControlSettings();
     void handleGameEnd();  // 處理遊戲結束狀態的輔助函數

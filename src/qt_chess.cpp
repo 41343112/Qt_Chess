@@ -947,10 +947,7 @@ void Qt_Chess::onSquareClicked(int displayRow, int displayCol) {
             PieceType promType = PieceType::None;
             
             // 如果這是第一步棋且時間控制已啟用，啟動計時器
-            if (m_timeControlEnabled && !m_timerStarted) {
-                m_timerStarted = true;
-                startTimer();
-            }
+            checkAndStartTimerOnFirstMove();
             
             // 為剛完成移動的玩家應用時間增量
             applyIncrement();
@@ -3239,6 +3236,14 @@ void Qt_Chess::applyIncrement() {
     }
 }
 
+void Qt_Chess::checkAndStartTimerOnFirstMove() {
+    // 如果這是第一步棋且時間控制已啟用，啟動計時器
+    if (m_timeControlEnabled && !m_timerStarted) {
+        m_timerStarted = true;
+        startTimer();
+    }
+}
+
 void Qt_Chess::handleGameEnd() {
     // 停止 timer when game ends
     stopTimer();
@@ -4480,10 +4485,7 @@ void Qt_Chess::onEngineBestMove(const QString& move) {
         m_uciMoveHistory.append(move);
         
         // 如果這是第一步棋且時間控制已啟用，啟動計時器
-        if (m_timeControlEnabled && !m_timerStarted) {
-            m_timerStarted = true;
-            startTimer();
-        }
+        checkAndStartTimerOnFirstMove();
         
         // 為剛完成移動的玩家應用時間增量
         applyIncrement();
@@ -5655,10 +5657,7 @@ void Qt_Chess::onOpponentMove(const QPoint& from, const QPoint& to, PieceType pr
         updateCapturedPiecesDisplay();
         
         // 如果這是第一步棋且時間控制已啟用，啟動計時器
-        if (m_timeControlEnabled && !m_timerStarted) {
-            m_timerStarted = true;
-            startTimer();
-        }
+        checkAndStartTimerOnFirstMove();
         
         // 強制更新和重繪UI，確保棋盤變化立即顯示
         if (m_boardWidget) {
