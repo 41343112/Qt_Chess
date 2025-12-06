@@ -5656,9 +5656,6 @@ void Qt_Chess::onOpponentMove(const QPoint& from, const QPoint& to, PieceType pr
         updateMoveList();
         updateCapturedPiecesDisplay();
         
-        // 如果這是第一步棋且時間控制已啟用，啟動計時器
-        checkAndStartTimerOnFirstMove();
-        
         // 強制更新和重繪UI，確保棋盤變化立即顯示
         if (m_boardWidget) {
             m_boardWidget->update();
@@ -5678,10 +5675,11 @@ void Qt_Chess::onOpponentMove(const QPoint& from, const QPoint& to, PieceType pr
             m_checkSound.play();
         }
         
+        // 如果這是第一步棋且時間控制已啟用，啟動計時器
+        checkAndStartTimerOnFirstMove();
+        
         // 應用時間增量
-        if (m_timeControlEnabled && m_timerStarted) {
-            applyIncrement();
-        }
+        applyIncrement();
     } else {
         qDebug() << "[Qt_Chess::onOpponentMove] Move failed!";
     }
