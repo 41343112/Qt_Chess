@@ -1266,7 +1266,6 @@ void Qt_Chess::onRequestDrawClicked() {
         if (m_isOnlineGame && m_networkManager) {
             // 在線上模式下，發送和棋請求給對手
             m_networkManager->sendDrawOffer();
-            QMessageBox::information(this, "和棋請求", "已發送和棋請求給對手，等待對方回應...");
         } else {
             // 本地模式（理論上不應該出現，因為按鈕只在線上模式顯示）
             m_chessBoard.setGameResult(GameResult::Draw);
