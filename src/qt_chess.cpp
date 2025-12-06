@@ -50,6 +50,10 @@ const QString GAME_ENDED_TEXT = "遊戲結束"; // 遊戲結束時顯示的文�
 const int UPDATE_CHECK_DELAY_MS = 3000; // 啟動後檢查更新的延遲時間（毫秒）
 const int RELEASE_NOTES_PREVIEW_LENGTH = 200; // 更新說明預覽的字元數
 
+// Unicode 棋子文字顏色
+const QString WHITE_PIECE_COLOR = "#FFFFFF"; // 白色棋子顏色
+const QString BLACK_PIECE_COLOR = "#000000"; // 黑色棋子顏色
+
 // 上一步移動高亮顏色 - 現代科技風格的青色/霓虹色調
 const QString LAST_MOVE_LIGHT_COLOR = "#7FDBDB";  // 淺色格子的高亮（科技青色）
 const QString LAST_MOVE_DARK_COLOR = "#4ECDC4";   // 深色格子的高亮（霓虹青色）
@@ -734,12 +738,8 @@ void Qt_Chess::updateSquareColor(int displayRow, int displayCol) {
     bool isLight = (logicalRow + logicalCol) % 2 == 0;
     QColor color = isLight ? m_boardColorSettings.lightSquareColor : m_boardColorSettings.darkSquareColor;
     
-    // 獲取該格子上的棋子以確定文字顏色
-    const ChessPiece& piece = m_chessBoard.getPiece(logicalRow, logicalCol);
-    QString textColor = "#FFFFFF"; // 預設白色
-    if (piece.getType() != PieceType::None) {
-        textColor = (piece.getColor() == PieceColor::White) ? "#FFFFFF" : "#000000";
-    }
+    // 使用輔助函數獲取文字顏色
+    QString textColor = getPieceTextColor(logicalRow, logicalCol);
     
     // 現代科技風格 - 帶有微妙的內發光邊框效果和適當的文字顏色
     m_squares[displayRow][displayCol]->setStyleSheet(
@@ -750,9 +750,9 @@ void Qt_Chess::updateSquareColor(int displayRow, int displayCol) {
 QString Qt_Chess::getPieceTextColor(int logicalRow, int logicalCol) const {
     const ChessPiece& piece = m_chessBoard.getPiece(logicalRow, logicalCol);
     if (piece.getType() != PieceType::None) {
-        return (piece.getColor() == PieceColor::White) ? "#FFFFFF" : "#000000";
+        return (piece.getColor() == PieceColor::White) ? WHITE_PIECE_COLOR : BLACK_PIECE_COLOR;
     }
-    return "#FFFFFF"; // 預設白色
+    return WHITE_PIECE_COLOR; // 預設白色
 }
 
 void Qt_Chess::updateBoard() {
