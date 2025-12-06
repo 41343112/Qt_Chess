@@ -949,11 +949,11 @@ void Qt_Chess::onSquareClicked(int displayRow, int displayCol) {
             // 檢查是否為第一步棋，如果是且計時器未啟動，則啟動計時器
             bool isFirstMove = m_uciMoveHistory.isEmpty();
             if (isFirstMove && m_timeControlEnabled && !m_timerStarted) {
+                qDebug() << "[Qt_Chess] First move detected - White time:" << m_whiteTimeMs << "| Black time:" << m_blackTimeMs;
                 m_timerStarted = true;
                 m_gameStartLocalTime = QDateTime::currentMSecsSinceEpoch();  // 記錄遊戲開始時間
                 m_currentTurnStartTime = m_gameStartLocalTime;  // 記錄當前回合開始時間
                 startTimer();
-                qDebug() << "[Qt_Chess] Timer started after first move";
                 qDebug() << "[Qt_Chess] Current player after first move:" << (m_chessBoard.getCurrentPlayer() == PieceColor::White ? "White" : "Black");
             }
             
@@ -2965,6 +2965,11 @@ void Qt_Chess::onIncrementChanged(int value) {
 }
 
 void Qt_Chess::onGameTimerTick() {
+    qDebug() << "[Qt_Chess::onGameTimerTick] Called - m_timeControlEnabled:" << m_timeControlEnabled 
+             << "| m_isOnlineGame:" << m_isOnlineGame
+             << "| m_gameStartLocalTime:" << m_gameStartLocalTime
+             << "| White time:" << m_whiteTimeMs << "| Black time:" << m_blackTimeMs;
+    
     if (!m_timeControlEnabled) return;
 
     // 如果使用伺服器控制的計時器，從伺服器狀態更新顯示
@@ -3173,8 +3178,14 @@ void Qt_Chess::updateTimeDisplaysFromServer() {
 }
 
 void Qt_Chess::startTimer() {
+    qDebug() << "[Qt_Chess::startTimer] Attempting to start - m_timeControlEnabled:" << m_timeControlEnabled
+             << "| m_timerStarted:" << m_timerStarted
+             << "| m_gameTimer:" << (m_gameTimer != nullptr)
+             << "| isActive:" << (m_gameTimer ? m_gameTimer->isActive() : false);
+    
     if (m_timeControlEnabled && m_timerStarted && m_gameTimer && !m_gameTimer->isActive()) {
         m_gameTimer->start(100); // 每 100ms 觸發一次以平滑倒計時
+        qDebug() << "[Qt_Chess::startTimer] Timer started successfully";
     }
 }
 
