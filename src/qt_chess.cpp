@@ -636,7 +636,7 @@ void Qt_Chess::setupUI() {
         "}"
     ).arg(THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_ACCENT_WARNING));
     m_exitButton->hide();  // 初始隱藏
-    connect(m_exitButton, &QPushButton::clicked, this, &Qt_Chess::onNewGameClicked);
+    connect(m_exitButton, &QPushButton::clicked, this, &Qt_Chess::onExitClicked);
     boardButtonLayout->addWidget(m_exitButton);
     
     boardContainerVLayout->addWidget(m_boardButtonPanel, 0);
@@ -1274,6 +1274,21 @@ void Qt_Chess::onRequestDrawClicked() {
 
         // 顯示和棋訊息
         QMessageBox::information(this, "遊戲結束", "雙方同意和棋！");
+    }
+}
+
+void Qt_Chess::onExitClicked() {
+    // 顯示確認對話框
+    QMessageBox::StandardButton reply = QMessageBox::question(
+        this,
+        "確認退出",
+        "你確定要退出當前遊戲嗎？",
+        QMessageBox::Yes | QMessageBox::No
+        );
+
+    if (reply == QMessageBox::Yes) {
+        // 退出遊戲，返回設定畫面
+        onNewGameClicked();
     }
 }
 

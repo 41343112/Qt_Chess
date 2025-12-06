@@ -64,6 +64,7 @@ private slots:
     void onNewGameClicked();
     void onResignClicked();       // 認輸按鈕點擊
     void onRequestDrawClicked();  // 請求和棋按鈕點擊
+    void onExitClicked();         // 退出按鈕點擊
     void onSoundSettingsClicked();
     void onPieceIconSettingsClicked();
     void onBoardColorSettingsClicked();
