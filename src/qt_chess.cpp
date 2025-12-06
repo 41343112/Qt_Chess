@@ -3123,55 +3123,18 @@ void Qt_Chess::updateTimeDisplaysFromServer() {
     whiteTime = qMax(static_cast<qint64>(0), whiteTime);
     blackTime = qMax(static_cast<qint64>(0), blackTime);
     
-    // 防止時間跳躍的智能更新機制
+    // 防止時間跳躍：只允許時間遞減，不允許時間回跳
+    // 當雙方顯示都歸0時，由伺服器（裁判）判斷超時
     int newWhiteTime = static_cast<int>(whiteTime);
     int newBlackTime = static_cast<int>(blackTime);
     
-    // 檢查是否剛收到伺服器更新（在最近500ms內）
-    qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
-    bool justReceivedUpdate = (currentTime - m_lastServerUpdateTime) < 500;
-    
-    // 對於白方時間
-    if (justReceivedUpdate) {
-        // 剛收到伺服器更新：允許較大的變化，但仍要平滑處理
-        int diff = newWhiteTime - m_whiteTimeMs;
-        if (qAbs(diff) > 100) {
-            // 差距較大時，逐步調整而不是直接跳躍
-            if (diff > 0) {
-                // 時間增加（可能是切換玩家），最多增加50ms每次
-                m_whiteTimeMs = qMin(newWhiteTime, m_whiteTimeMs + 50);
-            } else {
-                // 時間減少（正常倒數），允許更新
-                m_whiteTimeMs = newWhiteTime;
-            }
-        } else {
-            // 差距小，直接更新
-            m_whiteTimeMs = newWhiteTime;
-        }
-    } else {
-        // 正常倒數狀態：只允許時間遞減
-        if (newWhiteTime <= m_whiteTimeMs) {
-            m_whiteTimeMs = newWhiteTime;
-        }
-        // 如果新時間大於當前時間（回跳），忽略此次更新
+    // 只在時間減少或相等時更新，完全防止時間增加（回跳）
+    if (newWhiteTime <= m_whiteTimeMs) {
+        m_whiteTimeMs = newWhiteTime;
     }
     
-    // 對於黑方時間（相同邏輯）
-    if (justReceivedUpdate) {
-        int diff = newBlackTime - m_blackTimeMs;
-        if (qAbs(diff) > 100) {
-            if (diff > 0) {
-                m_blackTimeMs = qMin(newBlackTime, m_blackTimeMs + 50);
-            } else {
-                m_blackTimeMs = newBlackTime;
-            }
-        } else {
-            m_blackTimeMs = newBlackTime;
-        }
-    } else {
-        if (newBlackTime <= m_blackTimeMs) {
-            m_blackTimeMs = newBlackTime;
-        }
+    if (newBlackTime <= m_blackTimeMs) {
+        m_blackTimeMs = newBlackTime;
     }
     
     // 更新顯示
