@@ -94,6 +94,7 @@ private:
     QPushButton* m_newGameButton;
     QPushButton* m_resignButton;      // 認輸按鈕
     QPushButton* m_requestDrawButton; // 請求和棋按鈕
+    QPushButton* m_exitButton;        // 退出按鈕（本地遊戲）
     QWidget* m_boardButtonPanel;      // 棋盤下方按鈕面板
     QWidget* m_boardWidget;
     QMenuBar* m_menuBar;
