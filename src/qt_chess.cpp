@@ -5282,6 +5282,10 @@ void Qt_Chess::onOnlineModeClicked() {
                     m_newGameAction->setEnabled(false);
                 }
                 
+                // 停用雙人和電腦模式按鈕（連線上後不能切換模式）
+                if (m_humanModeButton) m_humanModeButton->setEnabled(false);
+                if (m_computerModeButton) m_computerModeButton->setEnabled(false);
+                
                 // 修改開始按鈕為取消功能（紅色）
                 if (m_startButton) {
                     m_startButton->setText("✗ 取消等待");
@@ -5336,10 +5340,19 @@ void Qt_Chess::onOnlineModeClicked() {
                     m_colorSelectionWidget->hide();
                 }
                 
+                // 房客：禁用時間控制（只有房主可以設定時間）
+                if (m_whiteTimeLimitSlider) m_whiteTimeLimitSlider->setEnabled(false);
+                if (m_blackTimeLimitSlider) m_blackTimeLimitSlider->setEnabled(false);
+                if (m_incrementSlider) m_incrementSlider->setEnabled(false);
+                
                 // 停用新遊戲功能
                 if (m_newGameAction) {
                     m_newGameAction->setEnabled(false);
                 }
+                
+                // 停用雙人和電腦模式按鈕（連線上後不能切換模式）
+                if (m_humanModeButton) m_humanModeButton->setEnabled(false);
+                if (m_computerModeButton) m_computerModeButton->setEnabled(false);
                 
                 // 修改開始按鈕為取消功能（紅色）
                 if (m_startButton) {
@@ -5764,6 +5777,10 @@ void Qt_Chess::onOpponentDisconnected() {
     if (m_blackTimeLimitSlider) m_blackTimeLimitSlider->setEnabled(true);
     if (m_incrementSlider) m_incrementSlider->setEnabled(true);
     
+    // 恢復模式選擇按鈕
+    if (m_humanModeButton) m_humanModeButton->setEnabled(true);
+    if (m_computerModeButton) m_computerModeButton->setEnabled(true);
+    
     // 返回雙人模式
     m_onlineModeButton->setChecked(false);
     m_humanModeButton->setChecked(true);
@@ -5823,6 +5840,10 @@ void Qt_Chess::onCancelRoomClicked() {
         if (m_whiteTimeLimitSlider) m_whiteTimeLimitSlider->setEnabled(true);
         if (m_blackTimeLimitSlider) m_blackTimeLimitSlider->setEnabled(true);
         if (m_incrementSlider) m_incrementSlider->setEnabled(true);
+        
+        // 恢復模式選擇按鈕
+        if (m_humanModeButton) m_humanModeButton->setEnabled(true);
+        if (m_computerModeButton) m_computerModeButton->setEnabled(true);
         
         // 恢復新遊戲功能
         if (m_newGameAction) {
@@ -5908,6 +5929,10 @@ void Qt_Chess::onExitRoomClicked() {
         if (m_whiteTimeLimitSlider) m_whiteTimeLimitSlider->setEnabled(true);
         if (m_blackTimeLimitSlider) m_blackTimeLimitSlider->setEnabled(true);
         if (m_incrementSlider) m_incrementSlider->setEnabled(true);
+        
+        // 恢復模式選擇按鈕
+        if (m_humanModeButton) m_humanModeButton->setEnabled(true);
+        if (m_computerModeButton) m_computerModeButton->setEnabled(true);
         
         // 恢復新遊戲功能
         if (m_newGameAction) {
