@@ -2858,10 +2858,10 @@ void Qt_Chess::updateTimeDisplays() {
             return "無限制";
         }
 
-        // 如果少於 LOW_TIME_THRESHOLD_MS（10 秒），顯示格式為 0:秒.小數
+        // 如果少於 LOW_TIME_THRESHOLD_MS（10 秒），顯示格式為秒.小數（例如：9.8）
         if (ms < LOW_TIME_THRESHOLD_MS) {
             double seconds = ms / 1000.0;
-            return QString("0:%1").arg(seconds, 0, 'f', 1);  // 格式：0:9.8
+            return QString("%1").arg(seconds, 0, 'f', 1);  // 格式：9.8
         }
 
         // 否則顯示分鐘:秒格式
