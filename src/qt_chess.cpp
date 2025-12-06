@@ -3155,13 +3155,13 @@ void Qt_Chess::updateTimeDisplaysFromServer() {
     // 更新顯示
     updateTimeDisplays();
     
-    // 檢查超時
-    if (m_whiteTimeMs <= 0 && m_timeControlEnabled) {
+    // 檢查超時（只檢查有設定時間限制的玩家）
+    if (m_whiteTimeMs <= 0 && m_timeControlEnabled && m_whiteInitialTimeMs > 0) {
         stopTimer();
         m_timerStarted = false;
         showTimeControlAfterTimeout();
         QMessageBox::information(this, "時間到", "白方超時！黑方獲勝！");
-    } else if (m_blackTimeMs <= 0 && m_timeControlEnabled) {
+    } else if (m_blackTimeMs <= 0 && m_timeControlEnabled && m_blackInitialTimeMs > 0) {
         stopTimer();
         m_timerStarted = false;
         showTimeControlAfterTimeout();
