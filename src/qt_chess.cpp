@@ -3060,8 +3060,12 @@ void Qt_Chess::updateTimeDisplaysFromServer() {
     
     // 計算距離最後切換經過的時間（毫秒）
     // m_serverLastSwitchTime 是秒數，需要轉換為毫秒
-    qint64 lastSwitchTimeMs = m_serverLastSwitchTime * 1000;
-    qint64 elapsedMs = currentUnixTimeMs - lastSwitchTimeMs;
+    // 如果 lastSwitchTime 為 0，表示計時器尚未啟動（等待第一步棋）
+    qint64 elapsedMs = 0;
+    if (m_serverLastSwitchTime > 0) {
+        qint64 lastSwitchTimeMs = m_serverLastSwitchTime * 1000;
+        elapsedMs = currentUnixTimeMs - lastSwitchTimeMs;
+    }
     
     // 確定我是玩家 A (房主) 還是玩家 B (房客)
     bool isPlayerA = (m_networkManager->getRole() == NetworkRole::Host);

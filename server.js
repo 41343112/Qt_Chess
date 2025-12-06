@@ -63,7 +63,7 @@ wss.on('connection', ws => {
                     timeA: whiteIsA ? whiteTimeMs : blackTimeMs,  // 房主的時間
                     timeB: whiteIsA ? blackTimeMs : whiteTimeMs,  // 房客的時間
                     currentPlayer: "White",  // 白方先手
-                    lastSwitchTime: Math.floor(Date.now() / 1000),  // UNIX 秒數
+                    lastSwitchTime: null,  // 設為 null，等待第一步棋才開始計時
                     whiteIsA: whiteIsA,  // 記錄白方是否為房主
                     incrementMs: msg.incrementMs || 0
                 };
@@ -103,12 +103,18 @@ wss.on('connection', ws => {
                 const timer = gameTimers[roomId];
                 const currentTime = Math.floor(Date.now() / 1000);  // UNIX 秒數
                 
-                // 計算距離上次切換經過的時間（秒）
-                const elapsed = currentTime - timer.lastSwitchTime;
+                // 檢查是否為第一步棋（計時器尚未啟動）
+                const isFirstMove = (timer.lastSwitchTime === null);
+                
+                let elapsedMs = 0;
+                if (!isFirstMove) {
+                    // 不是第一步，計算經過的時間
+                    const elapsed = currentTime - timer.lastSwitchTime;
+                    elapsedMs = elapsed * 1000;
+                }
+                // 如果是第一步，elapsedMs 保持為 0，不扣除時間
                 
                 // 從當前玩家的時間中扣除經過的時間（轉換為毫秒）
-                const elapsedMs = elapsed * 1000;
-                
                 if(timer.currentPlayer === "White"){
                     const timeToDeduct = timer.whiteIsA ? timer.timeA : timer.timeB;
                     const newTime = Math.max(0, timeToDeduct - elapsedMs);
@@ -135,7 +141,7 @@ wss.on('connection', ws => {
                     timer.currentPlayer = "White";
                 }
                 
-                // 更新最後切換時間
+                // 更新最後切換時間（如果是第一步，這裡開始計時）
                 timer.lastSwitchTime = currentTime;
                 
                 // 廣播移動訊息和計時器狀態
