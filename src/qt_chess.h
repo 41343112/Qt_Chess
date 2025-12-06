@@ -105,6 +105,7 @@ private:
     QSoundEffect m_castlingSound;
     QSoundEffect m_checkSound;
     QSoundEffect m_checkmateSound;
+    QSoundEffect m_previewSound;  // 用於設定面板中預覽音效
     SoundSettingsDialog::SoundSettings m_soundSettings;
     
     // 線上對戰

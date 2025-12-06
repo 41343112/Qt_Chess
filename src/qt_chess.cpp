@@ -6649,16 +6649,21 @@ QWidget* Qt_Chess::createSoundSettingsWidget() {
         QPushButton* resetButton = new QPushButton("🔄 重設", groupBox);
         connect(previewButton, &QPushButton::clicked, [&soundPath, &volume, this]() {
             // 預覽音效
-            QSoundEffect previewSound;
+            m_previewSound.stop();
+            
             if (!soundPath.isEmpty() && QFile::exists(soundPath)) {
-                previewSound.setSource(QUrl::fromLocalFile(soundPath));
+                m_previewSound.setSource(QUrl::fromLocalFile(soundPath));
             } else {
                 // 使用預設音效
-                QString defaultPath = SoundSettingsDialog::getDefaultSettings().moveSound; // 暫時用移動音效
-                previewSound.setSource(QUrl(defaultPath));
+                QString defaultPath = SoundSettingsDialog::getDefaultSettings().moveSound;
+                if (defaultPath.startsWith("qrc:")) {
+                    m_previewSound.setSource(QUrl(defaultPath));
+                } else {
+                    m_previewSound.setSource(QUrl::fromLocalFile(defaultPath));
+                }
             }
-            previewSound.setVolume(volume);
-            previewSound.play();
+            m_previewSound.setVolume(volume);
+            m_previewSound.play();
         });
         connect(resetButton, &QPushButton::clicked, [&soundPath, pathEdit, this]() {
             soundPath = "";
