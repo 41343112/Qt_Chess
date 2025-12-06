@@ -231,7 +231,6 @@ make
 - `boardcolorsettingsdialog.h/cpp` - 自訂棋盤顏色的顏色設定對話框
 - `qt_chess.ui` - Qt UI 設計檔案
 - `resources.qrc` - 嵌入音效檔案的 Qt 資源檔案
-- `engine/` - Stockfish 西洋棋引擎目錄
 
 ## 授權條款
 
