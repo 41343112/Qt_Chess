@@ -1397,6 +1397,55 @@ void Qt_Chess::onStartButtonClicked() {
         m_gameStarted = true;  // 非線上模式立即啟動（線上模式不會執行到這裡）
         
         // 不調用 startTimer()，等待第一步棋
+        
+        // 重置和棋請求按鈕狀態
+        if (m_requestDrawButton) {
+            m_requestDrawButton->setText("🤝 請求和棋");
+            m_requestDrawButton->setStyleSheet(QString(
+                "QPushButton { "
+                "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+                "    stop:0 %1, stop:0.5 rgba(0, 217, 255, 0.7), stop:1 %1); "
+                "  color: %2; "
+                "  border: 3px solid %3; "
+                "  border-radius: 10px; "
+                "  padding: 8px; "
+                "}"
+                "QPushButton:hover { "
+                "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+                "    stop:0 %3, stop:0.5 rgba(100, 230, 255, 0.9), stop:1 %3); "
+                "  border-color: #6BDBFF; "
+                "}"
+                "QPushButton:pressed { "
+                "  background: %3; "
+                "}"
+            ).arg(THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_ACCENT_PRIMARY));
+            m_requestDrawButton->disconnect();
+            connect(m_requestDrawButton, &QPushButton::clicked, this, &Qt_Chess::onRequestDrawClicked);
+        }
+        
+        if (m_resignButton) {
+            m_resignButton->setText("🏳 認輸");
+            m_resignButton->setStyleSheet(QString(
+                "QPushButton { "
+                "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+                "    stop:0 %1, stop:0.5 rgba(255, 82, 82, 0.7), stop:1 %1); "
+                "  color: %2; "
+                "  border: 3px solid %3; "
+                "  border-radius: 10px; "
+                "  padding: 8px; "
+                "}"
+                "QPushButton:hover { "
+                "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+                "    stop:0 %3, stop:0.5 rgba(255, 120, 120, 0.9), stop:1 %3); "
+                "  border-color: #FF7878; "
+                "}"
+                "QPushButton:pressed { "
+                "  background: %3; "
+                "}"
+            ).arg(THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_ACCENT_SECONDARY));
+            m_resignButton->disconnect();
+            connect(m_resignButton, &QPushButton::clicked, this, &Qt_Chess::onResignClicked);
+        }
 
         // 隱藏時間控制面板
         if (m_timeControlPanel) {
@@ -1463,6 +1512,55 @@ void Qt_Chess::onStartButtonClicked() {
         m_blackTimeMs = 0;
 
         m_gameStarted = true;  // 非線上模式立即啟動（線上模式不會執行到這裡）
+        
+        // 重置和棋請求按鈕狀態
+        if (m_requestDrawButton) {
+            m_requestDrawButton->setText("🤝 請求和棋");
+            m_requestDrawButton->setStyleSheet(QString(
+                "QPushButton { "
+                "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+                "    stop:0 %1, stop:0.5 rgba(0, 217, 255, 0.7), stop:1 %1); "
+                "  color: %2; "
+                "  border: 3px solid %3; "
+                "  border-radius: 10px; "
+                "  padding: 8px; "
+                "}"
+                "QPushButton:hover { "
+                "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+                "    stop:0 %3, stop:0.5 rgba(100, 230, 255, 0.9), stop:1 %3); "
+                "  border-color: #6BDBFF; "
+                "}"
+                "QPushButton:pressed { "
+                "  background: %3; "
+                "}"
+            ).arg(THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_ACCENT_PRIMARY));
+            m_requestDrawButton->disconnect();
+            connect(m_requestDrawButton, &QPushButton::clicked, this, &Qt_Chess::onRequestDrawClicked);
+        }
+        
+        if (m_resignButton) {
+            m_resignButton->setText("🏳 認輸");
+            m_resignButton->setStyleSheet(QString(
+                "QPushButton { "
+                "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+                "    stop:0 %1, stop:0.5 rgba(255, 82, 82, 0.7), stop:1 %1); "
+                "  color: %2; "
+                "  border: 3px solid %3; "
+                "  border-radius: 10px; "
+                "  padding: 8px; "
+                "}"
+                "QPushButton:hover { "
+                "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+                "    stop:0 %3, stop:0.5 rgba(255, 120, 120, 0.9), stop:1 %3); "
+                "  border-color: #FF7878; "
+                "}"
+                "QPushButton:pressed { "
+                "  background: %3; "
+                "}"
+            ).arg(THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_ACCENT_SECONDARY));
+            m_resignButton->disconnect();
+            connect(m_resignButton, &QPushButton::clicked, this, &Qt_Chess::onResignClicked);
+        }
 
         // 隱藏時間控制面板
         if (m_timeControlPanel) {
@@ -6276,6 +6374,55 @@ void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int increme
     m_gameStarted = true;  // 設定為 true，允許走棋
     m_timerStarted = true;
     
+    // 重置和棋請求按鈕狀態
+    if (m_requestDrawButton) {
+        m_requestDrawButton->setText("🤝 請求和棋");
+        m_requestDrawButton->setStyleSheet(QString(
+            "QPushButton { "
+            "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+            "    stop:0 %1, stop:0.5 rgba(0, 217, 255, 0.7), stop:1 %1); "
+            "  color: %2; "
+            "  border: 3px solid %3; "
+            "  border-radius: 10px; "
+            "  padding: 8px; "
+            "}"
+            "QPushButton:hover { "
+            "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+            "    stop:0 %3, stop:0.5 rgba(100, 230, 255, 0.9), stop:1 %3); "
+            "  border-color: #6BDBFF; "
+            "}"
+            "QPushButton:pressed { "
+            "  background: %3; "
+            "}"
+        ).arg(THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_ACCENT_PRIMARY));
+        m_requestDrawButton->disconnect();
+        connect(m_requestDrawButton, &QPushButton::clicked, this, &Qt_Chess::onRequestDrawClicked);
+    }
+    
+    if (m_resignButton) {
+        m_resignButton->setText("🏳 認輸");
+        m_resignButton->setStyleSheet(QString(
+            "QPushButton { "
+            "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+            "    stop:0 %1, stop:0.5 rgba(255, 82, 82, 0.7), stop:1 %1); "
+            "  color: %2; "
+            "  border: 3px solid %3; "
+            "  border-radius: 10px; "
+            "  padding: 8px; "
+            "}"
+            "QPushButton:hover { "
+            "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+            "    stop:0 %3, stop:0.5 rgba(255, 120, 120, 0.9), stop:1 %3); "
+            "  border-color: #FF7878; "
+            "}"
+            "QPushButton:pressed { "
+            "  background: %3; "
+            "}"
+        ).arg(THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_ACCENT_SECONDARY));
+        m_resignButton->disconnect();
+        connect(m_resignButton, &QPushButton::clicked, this, &Qt_Chess::onResignClicked);
+    }
+    
     qDebug() << "[Qt_Chess::onStartGameReceived] Game starting synchronously for both players"
              << "| My role:" << (m_networkManager->getRole() == NetworkRole::Host ? "Host" : "Guest")
              << "| Player color:" << (m_networkManager ? (int)m_networkManager->getPlayerColor() : -1);
@@ -6758,9 +6905,17 @@ void Qt_Chess::onDrawResponseReceived(bool accepted) {
         notificationLabel->setAlignment(Qt::AlignCenter);
         notificationLabel->adjustSize();
         
-        // 將標籤放置在窗口中央
-        int x = (width() - notificationLabel->width()) / 2;
-        int y = (height() - notificationLabel->height()) / 2;
+        // 將標籤放置在棋盤右側（不遮擋棋盤）
+        // 假設棋盤在窗口左側，標籤放在棋盤右邊緣之外
+        int boardSize = m_chessBoard.width();
+        int x = m_chessBoard.x() + boardSize + 20;  // 棋盤右側 + 20px 間距
+        int y = (height() - notificationLabel->height()) / 2;  // 垂直居中
+        
+        // 確保不超出窗口範圍
+        if (x + notificationLabel->width() > width()) {
+            x = width() - notificationLabel->width() - 20;  // 從右邊緣往左 20px
+        }
+        
         notificationLabel->move(x, y);
         notificationLabel->show();
         notificationLabel->raise();  // 確保在最上層
