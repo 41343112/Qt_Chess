@@ -6907,16 +6907,23 @@ void Qt_Chess::onDrawResponseReceived(bool accepted) {
         
         // 將標籤放置在棋盤右側（不遮擋棋盤）
         // 假設棋盤在窗口左側，標籤放在棋盤右邊緣之外
-        int boardSize = m_chessBoard.width();
-        int x = m_chessBoard.x() + boardSize + 20;  // 棋盤右側 + 20px 間距
-        int y = (height() - notificationLabel->height()) / 2;  // 垂直居中
-        
-        // 確保不超出窗口範圍
-        if (x + notificationLabel->width() > width()) {
-            x = width() - notificationLabel->width() - 20;  // 從右邊緣往左 20px
+        if (m_boardWidget) {
+            int boardSize = m_boardWidget->width();
+            int x = m_boardWidget->x() + boardSize + 20;  // 棋盤右側 + 20px 間距
+            int y = (height() - notificationLabel->height()) / 2;  // 垂直居中
+            
+            // 確保不超出窗口範圍
+            if (x + notificationLabel->width() > width()) {
+                x = width() - notificationLabel->width() - 20;  // 從右邊緣往左 20px
+            }
+            
+            notificationLabel->move(x, y);
+        } else {
+            // 如果找不到棋盤widget，則居中顯示
+            int x = (width() - notificationLabel->width()) / 2;
+            int y = (height() - notificationLabel->height()) / 2;
+            notificationLabel->move(x, y);
         }
-        
-        notificationLabel->move(x, y);
         notificationLabel->show();
         notificationLabel->raise();  // 確保在最上層
         
