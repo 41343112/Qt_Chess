@@ -22,7 +22,7 @@ namespace Theme {
     const QString TEXT_PRIMARY = "#B9E1EC";      // 主要色 #3 (14.57%) - 淺青色
     
     // 邊框顏色（來自 chess.jpg）
-    const QString BORDER = "#48919D";            // 中間區域平均色
+    const QString BORDER = "#48919D";            // 中間亮度像素平均色 (85≤brightness<170, 26.7%像素)
     
     // 懸停效果顏色
     const QString HOVER_BORDER = "#39D0EE";

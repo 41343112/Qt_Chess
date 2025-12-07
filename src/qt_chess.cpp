@@ -57,8 +57,8 @@ const QString WHITE_PIECE_COLOR = "#B9E1EC"; // 白色棋子顏色（淺青色�
 const QString BLACK_PIECE_COLOR = "#060C10"; // 黑色棋子顏色（深色，來自 chess.jpg）
 
 // 上一步移動高亮顏色 - chess.jpg 實際顏色
-const QString LAST_MOVE_LIGHT_COLOR = "#AADBE3";  // 淺色格子的高亮（明亮區域平均色）
-const QString LAST_MOVE_DARK_COLOR = "#1F8FB1";   // 深色格子的高亮（主要色 #5）
+const QString LAST_MOVE_LIGHT_COLOR = "#AADBE3";  // 淺色格子的高亮（明亮像素區域平均色，brightness>170）
+const QString LAST_MOVE_DARK_COLOR = "#1F8FB1";   // 深色格子的高亮（主要色 #5, 9.33%）
 
 // ===== chess.jpg 實際顏色方案 =====
 const QString THEME_BG_DARK = "#060C10";           // 背景（主要色 #2, 17.31%）
@@ -69,7 +69,7 @@ const QString THEME_ACCENT_SECONDARY = "#6F6648";  // 次要強調色（主要�
 const QString THEME_ACCENT_SUCCESS = "#1F8FB1";    // 成功色（主要色 #5, 9.33%）
 const QString THEME_ACCENT_WARNING = "#B7AB92";    // 警告色（主要色 #8, 7.38%）
 const QString THEME_TEXT_PRIMARY = "#B9E1EC";      // 主要文字顏色（主要色 #3, 14.57%）
-const QString THEME_BORDER = "#48919D";            // 邊框顏色（中間區域平均色）
+const QString THEME_BORDER = "#48919D";            // 邊框顏色（中間亮度像素平均色，85≤brightness<170）
 
 // 視窗大小的佈局常數
 const int PANEL_SPACING = 10;          // 面板之間的間距
