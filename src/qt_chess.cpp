@@ -6544,7 +6544,7 @@ void Qt_Chess::onDrawOfferReceived() {
             
             // 連接新的接受和棋功能
             connect(m_requestDrawButton, &QPushButton::clicked, this, [this]() {
-                // 同意和棋
+                // 同意和棋 - 通知雙方
                 if (m_networkManager) {
                     m_networkManager->sendDrawResponse(true);
                 }
@@ -6555,9 +6555,9 @@ void Qt_Chess::onDrawOfferReceived() {
                 // 處理遊戲結束
                 handleGameEnd();
                 
-                // 在狀態列顯示訊息
+                // 在狀態列顯示訊息 - 接受方看到的訊息
                 if (m_connectionStatusLabel) {
-                    m_connectionStatusLabel->setText("✅ 雙方同意和棋！");
+                    m_connectionStatusLabel->setText("✅ 你同意和棋！雙方和局");
                 }
             });
         }
@@ -6566,7 +6566,7 @@ void Qt_Chess::onDrawOfferReceived() {
         if (m_resignButton) {
             m_resignButton->setText("❌ 拒絕和棋");
             
-            // 改變按鈕樣式為橙色（警告色）
+            // 改變按鈕樣式為橙色（警告色） - 與接受按鈕大小一致
             QString orangeStyle = QString(
                 "QPushButton {"
                 "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
@@ -6577,7 +6577,7 @@ void Qt_Chess::onDrawOfferReceived() {
                 "   padding: 8px;"
                 "   font-weight: bold;"
                 "   font-size: 12pt;"
-                "   min-width: 100px;"
+                "   min-width: 120px;"
                 "   min-height: 45px;"
                 "}"
                 "QPushButton:hover {"
