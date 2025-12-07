@@ -6888,60 +6888,56 @@ void Qt_Chess::onDrawResponseReceived(bool accepted) {
             m_connectionStatusLabel->setText("✅ 對手同意和棋！雙方和局");
         }
     } else {
-        // 對手拒絕和棋，顯示臨時通知標籤（不使用對話框，不會阻礙下棋）
-        // 創建一個臨時的浮動標籤顯示拒絕訊息
-        QLabel* notificationLabel = new QLabel("❌ 對手拒絕了和棋請求", this);
-        notificationLabel->setStyleSheet(QString(
-            "QLabel {"
-            "  background-color: rgba(30, 30, 30, 0.95);"
-            "  color: #FF5252;"
-            "  border: 3px solid #FF5252;"
-            "  border-radius: 15px;"
-            "  padding: 20px 40px;"
-            "  font-size: 18pt;"
-            "  font-weight: bold;"
-            "}"
-        ));
-        notificationLabel->setAlignment(Qt::AlignCenter);
-        notificationLabel->adjustSize();
-        
-        // 將標籤放置在棋盤右側（不遮擋棋盤）
-        // 假設棋盤在窗口左側，標籤放在棋盤右邊緣之外
-        if (m_boardWidget) {
-            int boardSize = m_boardWidget->width();
-            int x = m_boardWidget->x() + boardSize + 20;  // 棋盤右側 + 20px 間距
-            int y = (height() - notificationLabel->height()) / 2;  // 垂直居中
+        // 對手拒絕和棋 - 在請求和棋按鈕上顯示拒絕訊息（不使用浮動通知）
+        if (m_requestDrawButton) {
+            // 保存原始文字和樣式，以便恢復
+            QString originalText = "🤝 請求和棋";
+            QString originalStyle = QString(
+                "QPushButton {"
+                "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %1, stop:1 %2);"
+                "  color: white;"
+                "  border: 2px solid %3;"
+                "  border-radius: 10px;"
+                "  padding: 8px 16px;"
+                "  font-weight: bold;"
+                "  font-size: 12pt;"
+                "  min-width: 120px;"
+                "  min-height: 45px;"
+                "}"
+                "QPushButton:hover {"
+                "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %4, stop:1 %5);"
+                "}"
+                "QPushButton:pressed {"
+                "  background: %6;"
+                "}"
+            ).arg(THEME_ACCENT_PRIMARY)
+             .arg(THEME_ACCENT_PRIMARY_LIGHT)
+             .arg(THEME_ACCENT_PRIMARY)
+             .arg(THEME_ACCENT_PRIMARY_LIGHT)
+             .arg(THEME_ACCENT_PRIMARY_LIGHT)
+             .arg(THEME_ACCENT_PRIMARY);
             
-            // 確保不超出窗口範圍
-            if (x + notificationLabel->width() > width()) {
-                x = width() - notificationLabel->width() - 20;  // 從右邊緣往左 20px
-            }
+            // 暫時顯示拒絕訊息
+            m_requestDrawButton->setText("❌ 對方拒絕合棋");
+            m_requestDrawButton->setStyleSheet(QString(
+                "QPushButton {"
+                "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FF5252, stop:1 #FF8A80);"
+                "  color: white;"
+                "  border: 2px solid #FF5252;"
+                "  border-radius: 10px;"
+                "  padding: 8px 16px;"
+                "  font-weight: bold;"
+                "  font-size: 12pt;"
+                "  min-width: 120px;"
+                "  min-height: 45px;"
+                "}"
+            ));
             
-            notificationLabel->move(x, y);
-        } else {
-            // 如果找不到棋盤widget，則居中顯示
-            int x = (width() - notificationLabel->width()) / 2;
-            int y = (height() - notificationLabel->height()) / 2;
-            notificationLabel->move(x, y);
-        }
-        notificationLabel->show();
-        notificationLabel->raise();  // 確保在最上層
-        
-        // 3秒後自動隱藏並刪除標籤
-        QTimer::singleShot(3000, this, [notificationLabel]() {
-            notificationLabel->hide();
-            notificationLabel->deleteLater();
-        });
-        
-        // 同時更新連線狀態標籤（如果可見的話）
-        if (m_connectionStatusLabel) {
-            m_connectionStatusLabel->setText("❌ 對手拒絕了和棋請求");
-            m_connectionStatusLabel->show();
-            
-            // 3秒後恢復正常狀態
-            QTimer::singleShot(3000, this, [this]() {
-                if (m_connectionStatusLabel && m_isOnlineGame) {
-                    m_connectionStatusLabel->setText("✅ 已連接");
+            // 3秒後恢復原始文字和樣式
+            QTimer::singleShot(3000, this, [this, originalText, originalStyle]() {
+                if (m_requestDrawButton) {
+                    m_requestDrawButton->setText(originalText);
+                    m_requestDrawButton->setStyleSheet(originalStyle);
                 }
             });
         }
