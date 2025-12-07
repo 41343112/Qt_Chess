@@ -6535,7 +6535,7 @@ void Qt_Chess::onDrawOfferReceived() {
         // 10秒後自動拒絕（如果用戶沒有接受）
         QTimer::singleShot(10000, this, [this]() {
             // 檢查遊戲是否還在進行（如果已結束說明用戶接受了）
-            if (m_gameStarted && !m_chessBoard.isGameOver()) {
+            if (m_gameStarted) {
                 // 自動拒絕
                 if (m_networkManager) {
                     m_networkManager->sendDrawResponse(false);
