@@ -290,7 +290,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     loadBoardColorSettings();
     loadBoardFlipSettings();
     loadPieceIconsToCache(); // 載入設定後將圖示載入快取
-    setupMenuBar();
+    // setupMenuBar();  // 已移除選單欄功能
     setupUI();
     setupMainMenu();  // 在 setupUI() 之後設置主選單
     loadTimeControlSettings();  // 在 setupUI() 之後載入以確保元件存在
@@ -626,10 +626,10 @@ void Qt_Chess::setupUI() {
     connect(m_requestDrawButton, &QPushButton::clicked, this, &Qt_Chess::onRequestDrawClicked);
     boardButtonLayout->addWidget(m_requestDrawButton);
     
-    // 退出按鈕 - 現代科技風格橙色警告效果（本地遊戲）
-    m_exitButton = new QPushButton("🚪 退出", m_boardButtonPanel);
+    // 返回主選單按鈕 - 現代科技風格橙色警告效果
+    m_exitButton = new QPushButton("🏠 返回主選單", m_boardButtonPanel);
     m_exitButton->setMinimumHeight(45);
-    m_exitButton->setMinimumWidth(100);
+    m_exitButton->setMinimumWidth(120);
     QFont exitButtonFont;
     exitButtonFont.setPointSize(12);
     exitButtonFont.setBold(true);
@@ -792,6 +792,9 @@ void Qt_Chess::setupUI() {
 }
 
 void Qt_Chess::setupMenuBar() {
+    // 選單欄功能已移除，改用主選單
+    // 所有功能現在都通過主選單訪問
+    /*
     m_menuBar = menuBar();
 
     // 遊戲選單
@@ -850,6 +853,7 @@ void Qt_Chess::setupMenuBar() {
     QAction* checkUpdateAction = new QAction("🔄 檢查更新", this);
     connect(checkUpdateAction, &QAction::triggered, this, &Qt_Chess::onCheckForUpdatesClicked);
     helpMenu->addAction(checkUpdateAction);
+    */
 }
 
 void Qt_Chess::updateSquareColor(int displayRow, int displayCol) {
@@ -1306,18 +1310,8 @@ void Qt_Chess::onRequestDrawClicked() {
 }
 
 void Qt_Chess::onExitClicked() {
-    // 顯示確認對話框
-    QMessageBox::StandardButton reply = QMessageBox::question(
-        this,
-        "確認退出",
-        "你確定要退出當前遊戲嗎？",
-        QMessageBox::Yes | QMessageBox::No
-        );
-
-    if (reply == QMessageBox::Yes) {
-        // 退出遊戲，返回設定畫面
-        onNewGameClicked();
-    }
+    // 返回主選單
+    onBackToMainMenuClicked();
 }
 
 void Qt_Chess::onStartButtonClicked() {
@@ -2825,78 +2819,7 @@ void Qt_Chess::setupTimeControlUI(QVBoxLayout* timeControlPanelLayout) {
     connect(m_incrementSlider, &QSlider::valueChanged, this, &Qt_Chess::onIncrementChanged);
     timeControlLayout->addWidget(m_incrementSlider);
 
-    // 對弈模式 - 直接接在時間控制下方（同一個群組框內）
-    QLabel* gameModeLabel = new QLabel("⚔ 對弈模式:", this);
-    gameModeLabel->setFont(labelFont);
-    gameModeLabel->setStyleSheet(QString("QLabel { color: %1; font-weight: bold; }").arg(THEME_ACCENT_PRIMARY));
-    timeControlLayout->addWidget(gameModeLabel);
-    
-    // 使用方塊按鈕選擇雙人或電腦對弈 - 現代科技風格
-    QHBoxLayout* gameModeButtonsLayout = new QHBoxLayout();
-    
-    // 現代科技風格按鈕樣式 - 雙人模式（霓虹綠色）
-    QString humanModeStyle = QString(
-        "QPushButton { "
-        "  border: 2px solid %1; border-radius: 8px; padding: 8px; "
-        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %2, stop:1 %3); "
-        "  color: %4; font-weight: bold; "
-        "}"
-        "QPushButton:checked { "
-        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %5, stop:1 rgba(0, 255, 136, 0.6)); "
-        "  color: %3; border-color: %5; "
-        "}"
-        "QPushButton:hover { "
-        "  border-color: %5; "
-        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %2, stop:0.5 rgba(0, 255, 136, 0.2), stop:1 %3); "
-        "}"
-    ).arg(THEME_BORDER, THEME_BG_PANEL, THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_ACCENT_SUCCESS);
-    
-    // 現代科技風格按鈕樣式 - 電腦模式（霓虹青色）
-    QString computerModeStyle = QString(
-        "QPushButton { "
-        "  border: 2px solid %1; border-radius: 8px; padding: 8px; "
-        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %2, stop:1 %3); "
-        "  color: %4; font-weight: bold; "
-        "}"
-        "QPushButton:checked { "
-        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %5, stop:1 rgba(0, 217, 255, 0.6)); "
-        "  color: %3; border-color: %5; "
-        "}"
-        "QPushButton:hover { "
-        "  border-color: %5; "
-        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %2, stop:0.5 rgba(0, 217, 255, 0.2), stop:1 %3); "
-        "}"
-    ).arg(THEME_BORDER, THEME_BG_PANEL, THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_ACCENT_PRIMARY);
-    
-    // 雙人對弈按鈕
-    m_humanModeButton = new QPushButton("👥 雙人", this);
-    m_humanModeButton->setFont(labelFont);
-    m_humanModeButton->setCheckable(true);
-    m_humanModeButton->setChecked(true);
-    m_humanModeButton->setMinimumSize(70, 45);
-    m_humanModeButton->setStyleSheet(humanModeStyle);
-    connect(m_humanModeButton, &QPushButton::clicked, this, &Qt_Chess::onHumanModeClicked);
-    gameModeButtonsLayout->addWidget(m_humanModeButton);
-    
-    // 電腦對弈按鈕
-    m_computerModeButton = new QPushButton("🤖 電腦", this);
-    m_computerModeButton->setFont(labelFont);
-    m_computerModeButton->setCheckable(true);
-    m_computerModeButton->setMinimumSize(70, 45);
-    m_computerModeButton->setStyleSheet(computerModeStyle);
-    connect(m_computerModeButton, &QPushButton::clicked, this, &Qt_Chess::onComputerModeClicked);
-    gameModeButtonsLayout->addWidget(m_computerModeButton);
-    
-    // 線上對戰按鈕
-    m_onlineModeButton = new QPushButton("🌐 線上", this);
-    m_onlineModeButton->setFont(labelFont);
-    m_onlineModeButton->setCheckable(true);
-    m_onlineModeButton->setMinimumSize(70, 45);
-    m_onlineModeButton->setStyleSheet(computerModeStyle);
-    connect(m_onlineModeButton, &QPushButton::clicked, this, &Qt_Chess::onOnlineModeClicked);
-    gameModeButtonsLayout->addWidget(m_onlineModeButton);
-    
-    timeControlLayout->addLayout(gameModeButtonsLayout);
+    // 對弈模式選擇已移至主選單，此處不再顯示
     
     // 選邊按鈕容器（電腦模式時顯示）
     m_colorSelectionWidget = new QWidget(this);
@@ -7091,8 +7014,9 @@ void Qt_Chess::setupMainMenu() {
     // 標題標籤 - 現代科技風格
     QLabel* titleLabel = new QLabel("♔ 國際象棋 - 科技對弈 ♚", m_mainMenuWidget);
     titleLabel->setAlignment(Qt::AlignCenter);
+    titleLabel->setWordWrap(true);  // 允許換行
     QFont titleFont;
-    titleFont.setPointSize(32);
+    titleFont.setPointSize(28);  // 稍微減小字體以避免在小視窗中消失
     titleFont.setBold(true);
     titleLabel->setFont(titleFont);
     titleLabel->setStyleSheet(QString(
@@ -7173,9 +7097,7 @@ void Qt_Chess::showMainMenu() {
     if (m_gameContentWidget) {
         m_gameContentWidget->hide();
     }
-    if (m_menuBar) {
-        m_menuBar->hide();
-    }
+    // 選單欄已移除，不需要隱藏
 }
 
 void Qt_Chess::showGameContent() {
@@ -7185,8 +7107,10 @@ void Qt_Chess::showGameContent() {
     if (m_gameContentWidget) {
         m_gameContentWidget->show();
     }
-    if (m_menuBar) {
-        m_menuBar->show();
+    // 選單欄已移除，不需要顯示
+    // 顯示返回主選單按鈕
+    if (m_exitButton) {
+        m_exitButton->show();
     }
 }
 
