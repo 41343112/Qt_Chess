@@ -6598,33 +6598,24 @@ void Qt_Chess::onDrawOfferReceived() {
             
             // 改變按鈕樣式為綠色
             QString greenStyle = QString(
-                "QPushButton {"
-                "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
-                "       stop:0 %1, stop:1 %2);"
-                "   color: white;"
-                "   border: 2px solid %3;"
-                "   border-radius: 10px;"
-                "   padding: 8px;"
-                "   font-weight: bold;"
-                "   font-size: 12pt;"
-                "   min-width: 120px;"
-                "   min-height: 45px;"
-                "}"
-                "QPushButton:hover {"
-                "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
-                "       stop:0 %4, stop:1 %5);"
-                "}"
-                "QPushButton:pressed {"
-                "   background: %6;"
-                "}"
-            ).arg("#00C853")  // 綠色漸層起點
-             .arg("#00E676")  // 綠色漸層終點
-             .arg("#00C853")  // 邊框顏色
-             .arg("#1DE9B6")  // hover 漸層起點
-             .arg("#00E676")  // hover 漸層終點
-             .arg("#00C853"); // pressed 背景色
-            
-            m_requestDrawButton->setStyleSheet(greenStyle);
+                        "QPushButton { "
+                               "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+                               "    stop:0 %1, stop:0.5 rgba(0, 255, 255, 0.7), stop:1 %1); "
+                               "  color: %2; "
+                               "  border: 3px solid %3; "
+                               "  border-radius: 10px; "
+                               "  padding: 8px; "
+                               "}"
+                               "QPushButton:hover { "
+                               "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+                               "    stop:0 %3, stop:0.5 rgba(100, 230, 255, 0.9), stop:1 %3); "
+                               "  border-color: #6BDBFF; "
+                               "}"
+                               "QPushButton:pressed { "
+                               "  background: %3; "
+                               "}"
+                           ).arg(THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_ACCENT_PRIMARY);
+
             m_requestDrawButton->disconnect(); // 斷開原有連接
             
             // 連接新的接受和棋功能
@@ -6650,36 +6641,7 @@ void Qt_Chess::onDrawOfferReceived() {
         // 修改「認輸」按鈕文字和功能，讓它變成「拒絕和棋」
         if (m_resignButton) {
             m_resignButton->setText("❌ 拒絕和棋");
-            
-            // 改變按鈕樣式為橙色（警告色） - 與接受按鈕大小一致
-            QString orangeStyle = QString(
-                "QPushButton {"
-                "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
-                "       stop:0 %1, stop:1 %2);"
-                "   color: white;"
-                "   border: 2px solid %3;"
-                "   border-radius: 10px;"
-                "   padding: 8px;"
-                "   font-weight: bold;"
-                "   font-size: 12pt;"
-                "   min-width: 120px;"
-                "   min-height: 45px;"
-                "}"
-                "QPushButton:hover {"
-                "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
-                "       stop:0 %4, stop:1 %5);"
-                "}"
-                "QPushButton:pressed {"
-                "   background: %6;"
-                "}"
-            ).arg("#FF9800")  // 橙色漸層起點
-             .arg("#FFB74D")  // 橙色漸層終點
-             .arg("#FF9800")  // 邊框顏色
-             .arg("#FFB74D")  // hover 漸層起點
-             .arg("#FFCC80")  // hover 漸層終點
-             .arg("#FF9800"); // pressed 背景色
-            
-            m_resignButton->setStyleSheet(orangeStyle);
+
             m_resignButton->disconnect(); // 斷開原有連接
             
             // 連接拒絕和棋功能
@@ -6746,7 +6708,7 @@ void Qt_Chess::onDrawOfferReceived() {
         }
         
         // 10秒後自動拒絕（如果用戶沒有接受或拒絕）
-        QTimer::singleShot(10000, this, [this]() {
+        QTimer::singleShot(5000, this, [this]() {
             // 檢查遊戲是否還在進行（如果已結束說明用戶接受了）
             if (m_gameStarted) {
                 // 自動拒絕
@@ -6831,45 +6793,25 @@ void Qt_Chess::onDrawResponseReceived(bool accepted) {
             // 保存原始文字和樣式，以便恢復
             QString originalText = "🤝 請求和棋";
             QString originalStyle = QString(
-                "QPushButton {"
-                "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %1, stop:1 %2);"
-                "  color: white;"
-                "  border: 2px solid %3;"
-                "  border-radius: 10px;"
-                "  padding: 8px 16px;"
-                "  font-weight: bold;"
-                "  font-size: 12pt;"
-                "  min-width: 120px;"
-                "  min-height: 45px;"
-                "}"
-                "QPushButton:hover {"
-                "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %4, stop:1 %5);"
-                "}"
-                "QPushButton:pressed {"
-                "  background: %6;"
-                "}"
-            ).arg(THEME_ACCENT_PRIMARY)
-             .arg("#33E0FF")  // Lighter cyan for gradient
-             .arg(THEME_ACCENT_PRIMARY)
-             .arg("#33E0FF")  // Lighter cyan for hover gradient
-             .arg("#66E7FF")  // Even lighter cyan for hover gradient
-             .arg(THEME_ACCENT_PRIMARY);
-            
+                        "QPushButton { "
+                         "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+                         "    stop:0 %1, stop:0.5 rgba(0, 255, 255, 0.7), stop:1 %1); "
+                         "  color: %2; "
+                         "  border: 3px solid %3; "
+                         "  border-radius: 10px; "
+                         "  padding: 8px; "
+                         "}"
+                         "QPushButton:hover { "
+                         "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+                         "    stop:0 %3, stop:0.5 rgba(100, 230, 255, 0.9), stop:1 %3); "
+                         "  border-color: #6BDBFF; "
+                         "}"
+                         "QPushButton:pressed { "
+                         "  background: %3; "
+                         "}"
+                     ).arg(THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_ACCENT_PRIMARY);
             // 暫時顯示拒絕訊息
             m_requestDrawButton->setText("❌ 對方拒絕合棋");
-            m_requestDrawButton->setStyleSheet(QString(
-                "QPushButton {"
-                "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #FF5252, stop:1 #FF8A80);"
-                "  color: white;"
-                "  border: 2px solid #FF5252;"
-                "  border-radius: 10px;"
-                "  padding: 8px 16px;"
-                "  font-weight: bold;"
-                "  font-size: 12pt;"
-                "  min-width: 120px;"
-                "  min-height: 45px;"
-                "}"
-            ));
             
             // 3秒後恢復原始文字和樣式
             QTimer::singleShot(3000, this, [this, originalText, originalStyle]() {
