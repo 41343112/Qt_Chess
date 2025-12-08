@@ -261,6 +261,13 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_opacityEffect(nullptr)
     , m_updateChecker(nullptr)
     , m_manualUpdateCheck(false)
+    , m_mainMenuWidget(nullptr)
+    , m_mainMenuLocalPlayButton(nullptr)
+    , m_mainMenuComputerPlayButton(nullptr)
+    , m_mainMenuOnlinePlayButton(nullptr)
+    , m_mainMenuSettingsButton(nullptr)
+    , m_gameContentWidget(nullptr)
+    , m_backToMenuButton(nullptr)
 {
     ui->setupUi(this);
     setWindowTitle("♔ 國際象棋 - 科技對弈 ♚");
@@ -284,6 +291,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     loadBoardFlipSettings();
     loadPieceIconsToCache(); // 載入設定後將圖示載入快取
     setupMenuBar();
+    setupMainMenu();  // 設置主選單
     setupUI();
     loadTimeControlSettings();  // 在 setupUI() 之後載入以確保元件存在
     loadEngineSettings();  // 載入引擎設定
@@ -294,6 +302,9 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     updateTimeDisplays();
     updateReplayButtons();  // 設置回放按鈕初始狀態
     updateCapturedPiecesDisplay();  // 初始化被吃掉棋子顯示
+    
+    // 初始隱藏遊戲內容，顯示主選單
+    showMainMenu();
     
     // 初始化更新檢查器
     m_updateChecker = new UpdateChecker(this);
@@ -331,7 +342,13 @@ Qt_Chess::~Qt_Chess()
 
 void Qt_Chess::setupUI() {
     QWidget* centralWidget = new QWidget(this);
-    QVBoxLayout* mainLayout = new QVBoxLayout(centralWidget);
+    QVBoxLayout* rootLayout = new QVBoxLayout(centralWidget);
+    rootLayout->setContentsMargins(0, 0, 0, 0);
+    rootLayout->setSpacing(0);
+    
+    // 創建遊戲內容容器
+    m_gameContentWidget = new QWidget(centralWidget);
+    QVBoxLayout* mainLayout = new QVBoxLayout(m_gameContentWidget);
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
 
@@ -767,6 +784,9 @@ void Qt_Chess::setupUI() {
     m_contentLayout->addWidget(m_timeControlPanel, 1);  // 固定寬度不伸展
 
     mainLayout->addLayout(m_contentLayout);
+    
+    // 將遊戲內容添加到根佈局
+    rootLayout->addWidget(m_gameContentWidget);
 
     setCentralWidget(centralWidget);
 }
@@ -776,6 +796,13 @@ void Qt_Chess::setupMenuBar() {
 
     // 遊戲選單
     QMenu* gameMenu = m_menuBar->addMenu("🎮 遊戲");
+    
+    // 返回主選單動作
+    QAction* backToMenuAction = new QAction("🏠 返回主選單", this);
+    connect(backToMenuAction, &QAction::triggered, this, &Qt_Chess::onBackToMainMenuClicked);
+    gameMenu->addAction(backToMenuAction);
+    
+    gameMenu->addSeparator();
 
     // 設定選單
     QMenu* settingsMenu = m_menuBar->addMenu("⚙ 設定");
@@ -7039,4 +7066,164 @@ void Qt_Chess::showRoomInfoDialog(const QString& roomNumber) {
     m_roomInfoLabel->setText(QString("🎮 房號: %1").arg(roomNumber));
     
     dialog.exec();
+}
+
+void Qt_Chess::setupMainMenu() {
+    // 創建主選單容器
+    m_mainMenuWidget = new QWidget(centralWidget());
+    QVBoxLayout* menuLayout = new QVBoxLayout(m_mainMenuWidget);
+    menuLayout->setContentsMargins(50, 50, 50, 50);
+    menuLayout->setSpacing(20);
+    
+    // 標題標籤 - 現代科技風格
+    QLabel* titleLabel = new QLabel("♔ 國際象棋 - 科技對弈 ♚", m_mainMenuWidget);
+    titleLabel->setAlignment(Qt::AlignCenter);
+    QFont titleFont;
+    titleFont.setPointSize(32);
+    titleFont.setBold(true);
+    titleLabel->setFont(titleFont);
+    titleLabel->setStyleSheet(QString(
+        "QLabel { "
+        "  color: %1; "
+        "  padding: 20px; "
+        "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+        "    stop:0 transparent, stop:0.5 rgba(0, 255, 255, 0.3), stop:1 transparent); "
+        "  border-radius: 10px; "
+        "}"
+    ).arg(THEME_ACCENT_PRIMARY));
+    menuLayout->addWidget(titleLabel);
+    
+    menuLayout->addSpacing(30);
+    
+    // 按鈕樣式 - 現代科技風格
+    QString buttonStyle = QString(
+        "QPushButton { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+        "    stop:0 %1, stop:1 %2); "
+        "  color: %3; "
+        "  padding: 20px; "
+        "  font-size: 18pt; "
+        "  font-weight: bold; "
+        "  border: 3px solid %4; "
+        "  border-radius: 10px; "
+        "  min-width: 300px; "
+        "} "
+        "QPushButton:hover { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+        "    stop:0 %4, stop:1 %1); "
+        "  border: 3px solid %5; "
+        "} "
+        "QPushButton:pressed { "
+        "  background: %2; "
+        "}"
+    ).arg(THEME_BG_PANEL, THEME_BG_MEDIUM, THEME_TEXT_PRIMARY, 
+          THEME_ACCENT_PRIMARY, THEME_ACCENT_SUCCESS);
+    
+    // 本地遊玩按鈕
+    m_mainMenuLocalPlayButton = new QPushButton("🎮 本地遊玩", m_mainMenuWidget);
+    m_mainMenuLocalPlayButton->setStyleSheet(buttonStyle);
+    connect(m_mainMenuLocalPlayButton, &QPushButton::clicked, 
+            this, &Qt_Chess::onMainMenuLocalPlayClicked);
+    menuLayout->addWidget(m_mainMenuLocalPlayButton, 0, Qt::AlignCenter);
+    
+    // 與電腦對戰按鈕
+    m_mainMenuComputerPlayButton = new QPushButton("🤖 與電腦對戰", m_mainMenuWidget);
+    m_mainMenuComputerPlayButton->setStyleSheet(buttonStyle);
+    connect(m_mainMenuComputerPlayButton, &QPushButton::clicked, 
+            this, &Qt_Chess::onMainMenuComputerPlayClicked);
+    menuLayout->addWidget(m_mainMenuComputerPlayButton, 0, Qt::AlignCenter);
+    
+    // 線上遊玩按鈕
+    m_mainMenuOnlinePlayButton = new QPushButton("🌐 線上遊玩", m_mainMenuWidget);
+    m_mainMenuOnlinePlayButton->setStyleSheet(buttonStyle);
+    connect(m_mainMenuOnlinePlayButton, &QPushButton::clicked, 
+            this, &Qt_Chess::onMainMenuOnlinePlayClicked);
+    menuLayout->addWidget(m_mainMenuOnlinePlayButton, 0, Qt::AlignCenter);
+    
+    // 設定按鈕
+    m_mainMenuSettingsButton = new QPushButton("⚙️ 設定", m_mainMenuWidget);
+    m_mainMenuSettingsButton->setStyleSheet(buttonStyle);
+    connect(m_mainMenuSettingsButton, &QPushButton::clicked, 
+            this, &Qt_Chess::onMainMenuSettingsClicked);
+    menuLayout->addWidget(m_mainMenuSettingsButton, 0, Qt::AlignCenter);
+    
+    menuLayout->addStretch();
+    
+    // 將主選單添加到中央視窗，但初始隱藏
+    QVBoxLayout* rootLayout = qobject_cast<QVBoxLayout*>(centralWidget()->layout());
+    if (rootLayout) {
+        rootLayout->addWidget(m_mainMenuWidget);
+    }
+}
+
+void Qt_Chess::showMainMenu() {
+    if (m_mainMenuWidget) {
+        m_mainMenuWidget->show();
+    }
+    if (m_gameContentWidget) {
+        m_gameContentWidget->hide();
+    }
+    if (m_menuBar) {
+        m_menuBar->hide();
+    }
+}
+
+void Qt_Chess::showGameContent() {
+    if (m_mainMenuWidget) {
+        m_mainMenuWidget->hide();
+    }
+    if (m_gameContentWidget) {
+        m_gameContentWidget->show();
+    }
+    if (m_menuBar) {
+        m_menuBar->show();
+    }
+}
+
+void Qt_Chess::onMainMenuLocalPlayClicked() {
+    // 切換到本地遊玩模式（雙人對戰）
+    showGameContent();
+    onHumanModeClicked();  // 設置為雙人模式
+    onNewGameClicked();    // 開始新遊戲
+}
+
+void Qt_Chess::onMainMenuComputerPlayClicked() {
+    // 切換到電腦對戰模式
+    showGameContent();
+    onComputerModeClicked();  // 設置為電腦模式
+    // 不自動開始遊戲，讓使用者選擇顏色
+}
+
+void Qt_Chess::onMainMenuOnlinePlayClicked() {
+    // 切換到線上遊玩模式
+    showGameContent();
+    onOnlineModeClicked();  // 顯示線上對戰對話框
+}
+
+void Qt_Chess::onMainMenuSettingsClicked() {
+    // 顯示設定選單
+    // 這裡可以顯示一個設定對話框，或者顯示遊戲內容並開啟設定選單
+    showGameContent();
+    // 可以自動開啟音效設定對話框
+    onSoundSettingsClicked();
+}
+
+void Qt_Chess::onBackToMainMenuClicked() {
+    // 返回主選單
+    // 如果有進行中的遊戲，可以詢問是否確定要退出
+    if (m_gameStarted && !m_chessBoard.isGameOver()) {
+        QMessageBox::StandardButton reply = QMessageBox::question(
+            this, 
+            "返回主選單", 
+            "遊戲進行中，確定要返回主選單嗎？",
+            QMessageBox::Yes | QMessageBox::No
+        );
+        if (reply == QMessageBox::No) {
+            return;
+        }
+    }
+    
+    // 重置遊戲狀態
+    m_gameStarted = false;
+    showMainMenu();
 }
