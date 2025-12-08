@@ -7205,8 +7205,54 @@ void Qt_Chess::onMainMenuOnlinePlayClicked() {
 }
 
 void Qt_Chess::onMainMenuSettingsClicked() {
-    // 顯示設定對話框（保持在主選單）
-    onSoundSettingsClicked();
+    // 顯示設定選單 - 提供多個選項
+    QDialog settingsDialog(this);
+    settingsDialog.setWindowTitle("⚙️ 設定");
+    settingsDialog.setMinimumWidth(300);
+    
+    QVBoxLayout* layout = new QVBoxLayout(&settingsDialog);
+    
+    // 標題
+    QLabel* titleLabel = new QLabel("選擇要設定的項目：", &settingsDialog);
+    titleLabel->setStyleSheet("QLabel { font-size: 14pt; font-weight: bold; padding: 10px; }");
+    layout->addWidget(titleLabel);
+    
+    // 音效設定按鈕
+    QPushButton* soundButton = new QPushButton("🔊 音效設定", &settingsDialog);
+    soundButton->setStyleSheet("QPushButton { padding: 12px; font-size: 12pt; }");
+    connect(soundButton, &QPushButton::clicked, [this, &settingsDialog]() {
+        settingsDialog.accept();
+        onSoundSettingsClicked();
+    });
+    layout->addWidget(soundButton);
+    
+    // 棋子圖標設定按鈕
+    QPushButton* pieceIconButton = new QPushButton("♟ 棋子圖標設定", &settingsDialog);
+    pieceIconButton->setStyleSheet("QPushButton { padding: 12px; font-size: 12pt; }");
+    connect(pieceIconButton, &QPushButton::clicked, [this, &settingsDialog]() {
+        settingsDialog.accept();
+        onPieceIconSettingsClicked();
+    });
+    layout->addWidget(pieceIconButton);
+    
+    // 棋盤顏色設定按鈕
+    QPushButton* boardColorButton = new QPushButton("🎨 棋盤顏色設定", &settingsDialog);
+    boardColorButton->setStyleSheet("QPushButton { padding: 12px; font-size: 12pt; }");
+    connect(boardColorButton, &QPushButton::clicked, [this, &settingsDialog]() {
+        settingsDialog.accept();
+        onBoardColorSettingsClicked();
+    });
+    layout->addWidget(boardColorButton);
+    
+    layout->addSpacing(10);
+    
+    // 關閉按鈕
+    QPushButton* closeButton = new QPushButton("關閉", &settingsDialog);
+    closeButton->setStyleSheet("QPushButton { padding: 10px; font-size: 11pt; }");
+    connect(closeButton, &QPushButton::clicked, &settingsDialog, &QDialog::accept);
+    layout->addWidget(closeButton);
+    
+    settingsDialog.exec();
 }
 
 void Qt_Chess::resetGameState() {
