@@ -6913,6 +6913,14 @@ void Qt_Chess::clearPieceIconCache() {
     m_pieceIconCache.clear();
 }
 
+QPixmap Qt_Chess::getCachedPieceIcon(PieceType type, PieceColor color) const {
+    QString iconPath = getPieceIconPath(type, color);
+    if (!iconPath.isEmpty() && m_pieceIconCache.contains(iconPath)) {
+        return m_pieceIconCache.value(iconPath);
+    }
+    return QPixmap();
+}
+
 int Qt_Chess::calculateIconSize(QPushButton* square) const {
     if (!square) return DEFAULT_ICON_SIZE;
     int squareWidth = square->width();
