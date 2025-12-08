@@ -34,8 +34,12 @@ enum class GameVariant {
     BonusMoves = 2,      // 獎勵移動：踩到獎勵格可額外移動
     ShieldPower = 3,     // 護盾能力：踩到護盾格可免疫地雷
     TeleportChaos = 4,   // 傳送混亂：踩到傳送格會隨機傳送
-    ProgressiveMines = 5 // 漸進地雷：地雷數量隨遊戲進行增加
+    ProgressiveMines = 5,// 漸進地雷：地雷數量隨遊戲進行增加
+    COUNT                // 變體總數（用於陣列大小）
 };
+
+// 遊戲變體數量常數
+static constexpr int GAME_VARIANT_COUNT = static_cast<int>(GameVariant::COUNT);
 
 struct MoveRecord {
     QPoint from;
@@ -122,7 +126,7 @@ private:
     GameResult m_gameResult; // 遊戲結果
     std::vector<ChessPiece> m_capturedWhite; // 被吃掉的白色棋子
     std::vector<ChessPiece> m_capturedBlack; // 被吃掉的黑色棋子
-    bool m_gameVariants[6]; // 6種創新玩法變體的啟用狀態
+    bool m_gameVariants[GAME_VARIANT_COUNT]; // 創新玩法變體的啟用狀態
     
     // 地形系統（類似踩地雷）
     std::vector<std::vector<TerrainType>> m_terrain; // 棋盤地形（隱藏）

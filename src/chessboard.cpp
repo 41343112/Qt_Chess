@@ -13,7 +13,7 @@ ChessBoard::ChessBoard()
       m_blackExtraMove(false)
 {
     // 初始化遊戲變體為全部停用
-    for (int i = 0; i < 6; ++i) {
+    for (int i = 0; i < GAME_VARIANT_COUNT; ++i) {
         m_gameVariants[i] = false;
     }
     initializeBoard();
@@ -60,7 +60,15 @@ void ChessBoard::initializeBoard() {
     m_moveHistory.clear();
     m_gameResult = GameResult::InProgress;
     clearCapturedPieces();
-    clearAllTerrain();
+    // 清空地形（初始化）
+    for (int row = 0; row < 8; ++row) {
+        for (int col = 0; col < 8; ++col) {
+            m_terrain[row][col] = TerrainType::None;
+            m_terrainRevealed[row][col] = false;
+            m_adjacentMines[row][col] = 0;
+            m_pieceShields[row][col] = false;
+        }
+    }
     m_whiteExtraMove = false;
     m_blackExtraMove = false;
 }
