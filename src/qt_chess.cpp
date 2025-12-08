@@ -341,13 +341,13 @@ Qt_Chess::~Qt_Chess()
 }
 
 void Qt_Chess::setupUI() {
-    QWidget* centralWidget = new QWidget(this);
-    QVBoxLayout* rootLayout = new QVBoxLayout(centralWidget);
+    QWidget* rootWidget = new QWidget(this);
+    QVBoxLayout* rootLayout = new QVBoxLayout(rootWidget);
     rootLayout->setContentsMargins(0, 0, 0, 0);
     rootLayout->setSpacing(0);
     
     // 創建遊戲內容容器
-    m_gameContentWidget = new QWidget(centralWidget);
+    m_gameContentWidget = new QWidget(rootWidget);
     QVBoxLayout* mainLayout = new QVBoxLayout(m_gameContentWidget);
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
@@ -788,7 +788,7 @@ void Qt_Chess::setupUI() {
     // 將遊戲內容添加到根佈局
     rootLayout->addWidget(m_gameContentWidget);
 
-    setCentralWidget(centralWidget);
+    setCentralWidget(rootWidget);
 }
 
 void Qt_Chess::setupMenuBar() {
@@ -7071,10 +7071,16 @@ void Qt_Chess::showRoomInfoDialog(const QString& roomNumber) {
 void Qt_Chess::setupMainMenu() {
     // 獲取根佈局
     QWidget* central = centralWidget();
-    if (!central) return;
+    if (!central) {
+        qWarning() << "setupMainMenu: centralWidget is null!";
+        return;
+    }
     
     QVBoxLayout* rootLayout = qobject_cast<QVBoxLayout*>(central->layout());
-    if (!rootLayout) return;
+    if (!rootLayout) {
+        qWarning() << "setupMainMenu: rootLayout is null or not a QVBoxLayout!";
+        return;
+    }
     
     // 創建主選單容器
     m_mainMenuWidget = new QWidget(central);
@@ -7195,7 +7201,7 @@ void Qt_Chess::onMainMenuComputerPlayClicked() {
     // 切換到電腦對戰模式
     showGameContent();
     onComputerModeClicked();  // 設置為電腦模式
-    // 不自動開始遊戲，讓使用者選擇顏色
+    // 不自動開始遊戲，讓使用者在時間控制面板選擇顏色（執白/執黑/隨機）
 }
 
 void Qt_Chess::onMainMenuOnlinePlayClicked() {
@@ -7266,8 +7272,10 @@ void Qt_Chess::resetGameState() {
     m_isOnlineGame = false;
     
     // 停止計時器
-    if (m_gameTimer && m_gameTimer->isActive()) {
-        m_gameTimer->stop();
+    if (m_gameTimer) {
+        if (m_gameTimer->isActive()) {
+            m_gameTimer->stop();
+        }
     }
     m_timerStarted = false;
     
@@ -7300,7 +7308,7 @@ void Qt_Chess::resetGameState() {
 
 void Qt_Chess::onBackToMainMenuClicked() {
     // 返回主選單
-    // 如果有進行中的遊戲，可以詢問是否確定要退出
+    // 如果有進行中的遊戲，詢問是否確定要退出
     if (m_gameStarted && !m_chessBoard.isGameOver()) {
         QMessageBox::StandardButton reply = QMessageBox::question(
             this, 
