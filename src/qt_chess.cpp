@@ -275,8 +275,8 @@ Qt_Chess::Qt_Chess(QWidget *parent)
 
     // 設置最小視窗大小以確保所有內容都能完整顯示而不被裁切
     // 最小寬度：允許棋盤至少 8*MIN_SQUARE_SIZE 加上面板和邊距
-    // 最小高度：允許棋盤和控制項合理顯示
-    setMinimumSize(814, 420);
+    // 最小高度：允許棋盤和控制項合理顯示，同時確保主選單完整顯示
+    setMinimumSize(814, 480);  // 增加最小高度以容納主選單
 
     setMouseTracking(true);
     
@@ -7008,21 +7008,22 @@ void Qt_Chess::setupMainMenu() {
     // 創建主選單容器
     m_mainMenuWidget = new QWidget(central);
     QVBoxLayout* menuLayout = new QVBoxLayout(m_mainMenuWidget);
-    menuLayout->setContentsMargins(50, 50, 50, 50);
-    menuLayout->setSpacing(20);
+    menuLayout->setContentsMargins(20, 10, 20, 10);  // 減小邊距以適應小視窗
+    menuLayout->setSpacing(10);  // 減小間距
     
     // 標題標籤 - 現代科技風格
     QLabel* titleLabel = new QLabel("♔ 國際象棋 - 科技對弈 ♚", m_mainMenuWidget);
     titleLabel->setAlignment(Qt::AlignCenter);
     titleLabel->setWordWrap(true);  // 允許換行
+    titleLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);  // 允許壓縮
     QFont titleFont;
-    titleFont.setPointSize(28);  // 稍微減小字體以避免在小視窗中消失
+    titleFont.setPointSize(24);  // 進一步減小字體以適應小視窗
     titleFont.setBold(true);
     titleLabel->setFont(titleFont);
     titleLabel->setStyleSheet(QString(
         "QLabel { "
         "  color: %1; "
-        "  padding: 20px; "
+        "  padding: 10px; "  // 減小內邊距
         "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
         "    stop:0 transparent, stop:0.5 rgba(0, 255, 255, 0.3), stop:1 transparent); "
         "  border-radius: 10px; "
@@ -7030,20 +7031,21 @@ void Qt_Chess::setupMainMenu() {
     ).arg(THEME_ACCENT_PRIMARY));
     menuLayout->addWidget(titleLabel);
     
-    menuLayout->addSpacing(30);
+    menuLayout->addSpacing(10);  // 減小標題後的間距
     
-    // 按鈕樣式 - 現代科技風格
+    // 按鈕樣式 - 現代科技風格（更緊湊以適應小視窗）
     QString buttonStyle = QString(
         "QPushButton { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
         "    stop:0 %1, stop:1 %2); "
         "  color: %3; "
-        "  padding: 20px; "
-        "  font-size: 18pt; "
+        "  padding: 12px; "  // 減小內邊距
+        "  font-size: 16pt; "  // 減小字體
         "  font-weight: bold; "
         "  border: 3px solid %4; "
         "  border-radius: 10px; "
-        "  min-width: 300px; "
+        "  min-width: 250px; "  // 減小最小寬度
+        "  min-height: 40px; "  // 添加最小高度確保按鈕不會太小
         "} "
         "QPushButton:hover { "
         "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
