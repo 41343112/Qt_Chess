@@ -291,8 +291,8 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     loadBoardFlipSettings();
     loadPieceIconsToCache(); // 載入設定後將圖示載入快取
     setupMenuBar();
-    setupMainMenu();  // 設置主選單
     setupUI();
+    setupMainMenu();  // 在 setupUI() 之後設置主選單
     loadTimeControlSettings();  // 在 setupUI() 之後載入以確保元件存在
     loadEngineSettings();  // 載入引擎設定
     initializeEngine();  // 初始化棋局引擎
@@ -7069,8 +7069,15 @@ void Qt_Chess::showRoomInfoDialog(const QString& roomNumber) {
 }
 
 void Qt_Chess::setupMainMenu() {
+    // 獲取根佈局
+    QWidget* central = centralWidget();
+    if (!central) return;
+    
+    QVBoxLayout* rootLayout = qobject_cast<QVBoxLayout*>(central->layout());
+    if (!rootLayout) return;
+    
     // 創建主選單容器
-    m_mainMenuWidget = new QWidget(centralWidget());
+    m_mainMenuWidget = new QWidget(central);
     QVBoxLayout* menuLayout = new QVBoxLayout(m_mainMenuWidget);
     menuLayout->setContentsMargins(50, 50, 50, 50);
     menuLayout->setSpacing(20);
@@ -7149,11 +7156,8 @@ void Qt_Chess::setupMainMenu() {
     
     menuLayout->addStretch();
     
-    // 將主選單添加到中央視窗，但初始隱藏
-    QVBoxLayout* rootLayout = qobject_cast<QVBoxLayout*>(centralWidget()->layout());
-    if (rootLayout) {
-        rootLayout->addWidget(m_mainMenuWidget);
-    }
+    // 將主選單添加到根佈局
+    rootLayout->addWidget(m_mainMenuWidget);
 }
 
 void Qt_Chess::showMainMenu() {
@@ -7201,11 +7205,51 @@ void Qt_Chess::onMainMenuOnlinePlayClicked() {
 }
 
 void Qt_Chess::onMainMenuSettingsClicked() {
-    // 顯示設定選單
-    // 這裡可以顯示一個設定對話框，或者顯示遊戲內容並開啟設定選單
-    showGameContent();
-    // 可以自動開啟音效設定對話框
+    // 顯示設定對話框（保持在主選單）
     onSoundSettingsClicked();
+}
+
+void Qt_Chess::resetGameState() {
+    // 重置遊戲狀態
+    m_gameStarted = false;
+    m_pieceSelected = false;
+    m_selectedSquare = QPoint(-1, -1);
+    m_isDragging = false;
+    m_isReplayMode = false;
+    m_waitingForOpponent = false;
+    m_isOnlineGame = false;
+    
+    // 停止計時器
+    if (m_gameTimer && m_gameTimer->isActive()) {
+        m_gameTimer->stop();
+    }
+    m_timerStarted = false;
+    
+    // 重置棋盤
+    m_chessBoard.resetBoard();
+    
+    // 清除移動歷史顯示
+    if (m_moveListWidget) {
+        m_moveListWidget->clear();
+    }
+    
+    // 隱藏 PGN 按鈕
+    if (m_exportPGNButton) {
+        m_exportPGNButton->hide();
+    }
+    if (m_copyPGNButton) {
+        m_copyPGNButton->hide();
+    }
+    
+    // 如果有網路連接，斷開連接
+    if (m_networkManager && m_networkManager->isConnected()) {
+        m_networkManager->disconnectFromServer();
+    }
+    
+    // 更新顯示
+    updateBoard();
+    updateStatus();
+    updateCapturedPiecesDisplay();
 }
 
 void Qt_Chess::onBackToMainMenuClicked() {
@@ -7224,6 +7268,6 @@ void Qt_Chess::onBackToMainMenuClicked() {
     }
     
     // 重置遊戲狀態
-    m_gameStarted = false;
+    resetGameState();
     showMainMenu();
 }

@@ -415,5 +415,6 @@ private:
     void setupMainMenu();                // 設置主選單 UI
     void showMainMenu();                 // 顯示主選單
     void showGameContent();              // 顯示遊戲內容
+    void resetGameState();               // 重置遊戲狀態
 };
 #endif // QT_CHESS_H
