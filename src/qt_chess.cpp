@@ -6522,36 +6522,14 @@ void Qt_Chess::onCancelRoomClicked() {
         m_isOnlineGame = false;
         m_waitingForOpponent = false;
         
-        // 恢復開始按鈕的原始功能和樣式
+        // 隱藏開始按鈕，直到重新創建或加入房間
         if (m_startButton) {
-            m_startButton->show();  // 確保按鈕顯示
-            disconnect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onCancelRoomClicked);
-            connect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onStartButtonClicked);
-            m_startButton->setText("▶ 開始對弈");
-            m_startButton->setEnabled(true);
-            m_startButton->setStyleSheet(QString(
-                "QPushButton { "
-                "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
-                "    stop:0 %1, stop:0.5 rgba(0, 255, 136, 0.8), stop:1 %1); "
-                "  color: %2; "
-                "  border: 3px solid %1; "
-                "  border-radius: 12px; "
-                "  padding: 10px; "
-                "}"
-                "QPushButton:hover { "
-                "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
-                "    stop:0 %1, stop:0.3 rgba(0, 255, 136, 0.9), stop:0.7 rgba(0, 217, 255, 0.9), stop:1 %1); "
-                "  border-color: white; "
-                "}"
-                "QPushButton:pressed { "
-                "  background: %1; "
-                "}"
-                "QPushButton:disabled { "
-                "  background: rgba(50, 50, 70, 0.6); "
-                "  color: #666; "
-                "  border-color: #444; "
-                "}"
-            ).arg(THEME_ACCENT_SUCCESS, THEME_BG_DARK));
+            m_startButton->hide();
+        }
+        
+        // 顯示創建/加入房間按鈕，讓用戶可以重新選擇
+        if (m_onlineButtonsWidget) {
+            m_onlineButtonsWidget->show();
         }
         
         // 恢復時間控制
@@ -6566,12 +6544,19 @@ void Qt_Chess::onCancelRoomClicked() {
             m_colorSelectionWidget->hide();
         }
         
-        // 返回雙人模式
-        m_currentGameMode = GameMode::HumanVsHuman;
-        m_connectionStatusLabel->hide();
-        m_roomInfoLabel->hide();
+        // 保持在線上模式，返回選擇畫面
+        m_currentGameMode = GameMode::OnlineGame;
         
-        QMessageBox::information(this, "已取消", "已取消連線，返回雙人模式");
+        // 隱藏房間資訊
+        if (m_roomInfoLabel) {
+            m_roomInfoLabel->hide();
+        }
+        
+        // 顯示提示訊息
+        if (m_connectionStatusLabel) {
+            m_connectionStatusLabel->setText("🌐 請選擇創建房間或加入房間");
+            m_connectionStatusLabel->show();
+        }
     }
 }
 
@@ -6594,44 +6579,19 @@ void Qt_Chess::onExitRoomClicked() {
             m_exitRoomButton->hide();
         }
         
-        // 隱藏線上UI元素
-        if (m_connectionStatusLabel) {
-            m_connectionStatusLabel->hide();
-        }
+        // 隱藏房間資訊
         if (m_roomInfoLabel) {
             m_roomInfoLabel->hide();
         }
         
-        // 恢復開始按鈕
+        // 隱藏開始按鈕，直到重新創建或加入房間
         if (m_startButton) {
-            m_startButton->show();
-            disconnect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onCancelRoomClicked);
-            connect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onStartButtonClicked);
-            m_startButton->setText("▶ 開始對弈");
-            m_startButton->setEnabled(true);
-            m_startButton->setStyleSheet(QString(
-                "QPushButton { "
-                "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
-                "    stop:0 %1, stop:0.5 rgba(0, 255, 136, 0.8), stop:1 %1); "
-                "  color: %2; "
-                "  border: 3px solid %1; "
-                "  border-radius: 12px; "
-                "  padding: 10px; "
-                "}"
-                "QPushButton:hover { "
-                "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
-                "    stop:0 %1, stop:0.3 rgba(0, 255, 136, 0.9), stop:0.7 rgba(0, 217, 255, 0.9), stop:1 %1); "
-                "  border-color: white; "
-                "}"
-                "QPushButton:pressed { "
-                "  background: %1; "
-                "}"
-                "QPushButton:disabled { "
-                "  background: rgba(50, 50, 70, 0.6); "
-                "  color: #666; "
-                "  border-color: #444; "
-                "}"
-            ).arg(THEME_ACCENT_SUCCESS, THEME_BG_DARK));
+            m_startButton->hide();
+        }
+        
+        // 顯示創建/加入房間按鈕，讓用戶可以重新選擇
+        if (m_onlineButtonsWidget) {
+            m_onlineButtonsWidget->show();
         }
         
         // 恢復時間控制
@@ -6648,8 +6608,8 @@ void Qt_Chess::onExitRoomClicked() {
             m_colorSelectionWidget->hide();
         }
         
-        // 返回雙人模式（模式選擇按鈕已移除）
-        m_currentGameMode = GameMode::HumanVsHuman;
+        // 保持在線上模式，返回選擇畫面
+        m_currentGameMode = GameMode::OnlineGame;
         
         // 關閉網路連線（在重置遊戲狀態之前關閉，確保訊息處理完成）
         if (m_networkManager) {
@@ -6663,6 +6623,12 @@ void Qt_Chess::onExitRoomClicked() {
         // 只有在確實是線上遊戲時才重置棋盤
         if (wasOnlineGame) {
             onNewGameClicked();
+        }
+        
+        // 顯示提示訊息
+        if (m_connectionStatusLabel) {
+            m_connectionStatusLabel->setText("🌐 請選擇創建房間或加入房間");
+            m_connectionStatusLabel->show();
         }
         
         // 移除對話框以減少延遲
