@@ -27,6 +27,7 @@
 #include <QGroupBox>
 #include <QFileDialog>
 #include <QDate>
+#include <QDateTime>
 #include <QTextStream>
 #include <QClipboard>
 #include <QNetworkInterface>
@@ -2441,11 +2442,10 @@ void Qt_Chess::onRequestDrawClicked() {
     // 檢查冷卻時間（3秒）
     qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
     qint64 timeSinceLastRequest = currentTime - m_lastDrawRequestTime;
-    const qint64 cooldownMs = 3000;  // 3秒冷卻時間
     
-    if (timeSinceLastRequest < cooldownMs && m_lastDrawRequestTime > 0) {
+    if (timeSinceLastRequest < DRAW_REQUEST_COOLDOWN_MS && m_lastDrawRequestTime > 0) {
         // 還在冷卻時間內，顯示剩餘時間
-        int remainingSeconds = (cooldownMs - timeSinceLastRequest + 999) / 1000;  // 向上取整
+        int remainingSeconds = static_cast<int>((DRAW_REQUEST_COOLDOWN_MS - timeSinceLastRequest + 999) / 1000);  // 向上取整
         if (m_connectionStatusLabel) {
             m_connectionStatusLabel->setText(QString("⏳ 請等待 %1 秒後再次發送").arg(remainingSeconds));
         }
@@ -5423,15 +5423,16 @@ void Qt_Chess::onJoinRoomButtonClicked() {
     
     // 驗證房號格式
     roomNumber = roomNumber.trimmed();
-    if (roomNumber.length() != 4) {
+    if (roomNumber.length() != ROOM_NUMBER_LENGTH) {
         QMessageBox::warning(this, "輸入錯誤", "房號必須是4位數字");
         return;
     }
     
     bool isNumber;
     int roomNum = roomNumber.toInt(&isNumber);
-    if (!isNumber || roomNum < 1000 || roomNum > 9999) {
-        QMessageBox::warning(this, "輸入錯誤", "請輸入有效的房間號碼（1000-9999）");
+    if (!isNumber || roomNum < ROOM_NUMBER_MIN || roomNum > ROOM_NUMBER_MAX) {
+        QMessageBox::warning(this, "輸入錯誤", 
+            QString("請輸入有效的房間號碼（%1-%2）").arg(ROOM_NUMBER_MIN).arg(ROOM_NUMBER_MAX));
         return;
     }
     

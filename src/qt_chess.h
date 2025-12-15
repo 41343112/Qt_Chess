@@ -43,6 +43,12 @@ class Qt_Chess;
 }
 QT_END_NAMESPACE
 
+// Constants for online mode
+constexpr qint64 DRAW_REQUEST_COOLDOWN_MS = 3000;  // 3 seconds cooldown for draw requests
+constexpr int ROOM_NUMBER_MIN = 1000;              // Minimum room number
+constexpr int ROOM_NUMBER_MAX = 9999;              // Maximum room number
+constexpr int ROOM_NUMBER_LENGTH = 4;              // Room number length
+
 class Qt_Chess : public QMainWindow
 {
     Q_OBJECT
