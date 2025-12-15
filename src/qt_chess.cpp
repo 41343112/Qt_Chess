@@ -5256,6 +5256,11 @@ void Qt_Chess::onOnlineModeClicked() {
                 m_connectionStatusLabel->show();
                 m_roomInfoLabel->show();
                 
+                // 隱藏退出遊戲按鈕（等待期間使用退出房間按鈕）
+                if (m_exitButton) {
+                    m_exitButton->hide();
+                }
+                
                 // 顯示顏色選擇widget讓房主選擇要執的顏色
                 if (m_colorSelectionWidget) {
                     m_colorSelectionWidget->show();
@@ -5311,6 +5316,11 @@ void Qt_Chess::onOnlineModeClicked() {
                 
                 m_connectionStatusLabel->setText("🔄 正在連接...");
                 m_connectionStatusLabel->show();
+                
+                // 隱藏退出遊戲按鈕（連接期間使用取消連接按鈕）
+                if (m_exitButton) {
+                    m_exitButton->hide();
+                }
                 
                 // 房客不顯示顏色選擇widget
                 if (m_colorSelectionWidget) {
