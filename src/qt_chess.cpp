@@ -630,8 +630,8 @@ void Qt_Chess::setupUI() {
     connect(m_requestDrawButton, &QPushButton::clicked, this, &Qt_Chess::onRequestDrawClicked);
     boardButtonLayout->addWidget(m_requestDrawButton);
     
-    // 返回主選單按鈕 - 現代科技風格橙色警告效果
-    m_exitButton = new QPushButton("🏠 返回主選單", m_boardButtonPanel);
+    // 退出遊戲按鈕 - 現代科技風格紅色警告效果
+    m_exitButton = new QPushButton("🚪 退出遊戲", m_boardButtonPanel);
     m_exitButton->setMinimumHeight(45);
     m_exitButton->setMinimumWidth(120);
     QFont exitButtonFont;
@@ -641,7 +641,7 @@ void Qt_Chess::setupUI() {
     m_exitButton->setStyleSheet(QString(
         "QPushButton { "
         "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
-        "    stop:0 %1, stop:0.5 rgba(255, 140, 0, 0.7), stop:1 %1); "
+        "    stop:0 %1, stop:0.5 rgba(233, 69, 96, 0.7), stop:1 %1); "
         "  color: %2; "
         "  border: 3px solid %3; "
         "  border-radius: 10px; "
@@ -649,13 +649,13 @@ void Qt_Chess::setupUI() {
         "}"
         "QPushButton:hover { "
         "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
-        "    stop:0 %3, stop:0.5 rgba(255, 160, 50, 0.9), stop:1 %3); "
-        "  border-color: #FFA500; "
+        "    stop:0 %3, stop:0.5 rgba(255, 100, 120, 0.9), stop:1 %3); "
+        "  border-color: #FF6B6B; "
         "}"
         "QPushButton:pressed { "
         "  background: %3; "
         "}"
-    ).arg(THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_ACCENT_WARNING));
+    ).arg(THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_ACCENT_SECONDARY));
     m_exitButton->hide();  // 初始隱藏
     connect(m_exitButton, &QPushButton::clicked, this, &Qt_Chess::onExitClicked);
     boardButtonLayout->addWidget(m_exitButton);
@@ -2289,7 +2289,8 @@ void Qt_Chess::onNewGameClicked() {
     // 隱藏認輸和請求和棋按鈕
     if (m_resignButton) m_resignButton->hide();
     if (m_requestDrawButton) m_requestDrawButton->hide();
-    if (m_exitButton) m_exitButton->hide();
+    // 保持退出按鈕顯示，讓使用者可以返回主選單
+    if (m_exitButton) m_exitButton->show();
 
     // 隱藏匯出 PGN 按鈕和複製棋譜按鈕
     if (m_exportPGNButton) m_exportPGNButton->hide();
@@ -2391,8 +2392,127 @@ void Qt_Chess::onRequestDrawClicked() {
 }
 
 void Qt_Chess::onExitClicked() {
-    // 返回主選單
-    onBackToMainMenuClicked();
+    // 如果遊戲還沒開始，返回主選單
+    if (!m_gameStarted) {
+        onBackToMainMenuClicked();
+        return;
+    }
+    
+    // 退出當前對局，返回到開始對弈前的狀態（還在本地遊戲）
+    // 如果遊戲已開始，詢問是否確定要退出
+    if (m_chessBoard.getGameResult() == GameResult::InProgress) {
+        QMessageBox::StandardButton reply = QMessageBox::question(
+            this, 
+            "退出遊戲", 
+            "遊戲已開始，確定要退出遊戲嗎？當前回合將被停止。",
+            QMessageBox::Yes | QMessageBox::No
+        );
+        if (reply == QMessageBox::No) {
+            return;
+        }
+    }
+    
+    // 如果在回放模式中，先退出
+    if (m_isReplayMode) {
+        exitReplayMode();
+    }
+    
+    // 重置棋盤到初始狀態
+    m_chessBoard.initializeBoard();
+    m_pieceSelected = false;
+    m_gameStarted = false;
+    m_uciMoveHistory.clear();
+    
+    // 停止背景音樂
+    stopBackgroundMusic();
+    
+    // 重置上一步移動高亮
+    m_lastMoveFrom = QPoint(-1, -1);
+    m_lastMoveTo = QPoint(-1, -1);
+    
+    // 重置時間控制
+    stopTimer();
+    m_timerStarted = false;
+    
+    // 停止引擎思考並重置引擎
+    if (m_chessEngine) {
+        m_chessEngine->stop();
+        m_chessEngine->newGame();
+    }
+    
+    // 將時間和吃子紀錄恢復到右側面板
+    restoreWidgetsFromGameEnd();
+    
+    // 顯示時間控制面板
+    if (m_timeControlPanel) {
+        m_timeControlPanel->show();
+    }
+    
+    // 隱藏時間顯示和進度條
+    if (m_whiteTimeLabel) m_whiteTimeLabel->hide();
+    if (m_blackTimeLabel) m_blackTimeLabel->hide();
+    if (m_whiteTimeProgressBar) m_whiteTimeProgressBar->hide();
+    if (m_blackTimeProgressBar) m_blackTimeProgressBar->hide();
+    
+    // 隱藏認輸、請求和棋按鈕
+    if (m_resignButton) m_resignButton->hide();
+    if (m_requestDrawButton) m_requestDrawButton->hide();
+    // 保持退出按鈕顯示，讓使用者可以返回主選單
+    if (m_exitButton) m_exitButton->show();
+    
+    // 隱藏匯出 PGN 按鈕和複製棋譜按鈕
+    if (m_exportPGNButton) m_exportPGNButton->hide();
+    if (m_copyPGNButton) m_copyPGNButton->hide();
+    
+    // 隱藏電腦思考標籤
+    if (m_thinkingLabel) m_thinkingLabel->hide();
+    
+    // 清空棋譜列表
+    if (m_moveListWidget) m_moveListWidget->clear();
+    
+    // 根據滑桿值重置時間
+    if (m_whiteTimeLimitSlider) {
+        m_whiteTimeMs = calculateTimeFromSliderValue(m_whiteTimeLimitSlider->value());
+    }
+    if (m_blackTimeLimitSlider) {
+        m_blackTimeMs = calculateTimeFromSliderValue(m_blackTimeLimitSlider->value());
+    }
+    
+    // 檢查是否啟用時間控制
+    m_timeControlEnabled = (m_whiteTimeMs > 0 || m_blackTimeMs > 0);
+    
+    // 重置棋盤後啟用開始按鈕
+    if (m_startButton) {
+        m_startButton->setEnabled(true);
+        m_startButton->setText("▶ 開始對弈");
+        m_startButton->show();
+    }
+    
+    // 啟用時間控制滑桿
+    if (m_whiteTimeLimitSlider) m_whiteTimeLimitSlider->setEnabled(true);
+    if (m_blackTimeLimitSlider) m_blackTimeLimitSlider->setEnabled(true);
+    if (m_incrementSlider) m_incrementSlider->setEnabled(true);
+    
+    // 在電腦模式下，重新啟用顏色選擇按鈕
+    if (m_currentGameMode == GameMode::HumanVsComputer) {
+        if (m_whiteButton) m_whiteButton->setEnabled(true);
+        if (m_randomButton) m_randomButton->setEnabled(true);
+        if (m_blackButton) m_blackButton->setEnabled(true);
+    }
+    
+    updateBoard();
+    updateStatus();
+    updateTimeDisplays();
+    updateCapturedPiecesDisplay();
+    
+    // 更新回放按鈕狀態（新遊戲沒有移動歷史）
+    updateReplayButtons();
+    
+    // 當遊戲還沒開始時，將右側伸展設為 0
+    setRightPanelStretch(0);
+    
+    // 清除任何殘留的高亮顯示（例如選中的棋子、有效移動、將軍警告）
+    clearHighlights();
 }
 
 void Qt_Chess::onStartButtonClicked() {
@@ -5136,6 +5256,11 @@ void Qt_Chess::onOnlineModeClicked() {
                 m_connectionStatusLabel->show();
                 m_roomInfoLabel->show();
                 
+                // 隱藏退出遊戲按鈕（等待期間使用退出房間按鈕）
+                if (m_exitButton) {
+                    m_exitButton->hide();
+                }
+                
                 // 顯示顏色選擇widget讓房主選擇要執的顏色
                 if (m_colorSelectionWidget) {
                     m_colorSelectionWidget->show();
@@ -5191,6 +5316,11 @@ void Qt_Chess::onOnlineModeClicked() {
                 
                 m_connectionStatusLabel->setText("🔄 正在連接...");
                 m_connectionStatusLabel->show();
+                
+                // 隱藏退出遊戲按鈕（連接期間使用取消連接按鈕）
+                if (m_exitButton) {
+                    m_exitButton->hide();
+                }
                 
                 // 房客不顯示顏色選擇widget
                 if (m_colorSelectionWidget) {
@@ -5329,6 +5459,10 @@ void Qt_Chess::onRoomCreated(const QString& roomNumber) {
     }
     if (m_exitRoomButton) {
         m_exitRoomButton->show();
+    }
+    // 隱藏退出遊戲按鈕（等待期間使用退出房間按鈕）
+    if (m_exitButton) {
+        m_exitButton->hide();
     }
 }
 
@@ -5709,6 +5843,10 @@ void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int increme
     }
     if (m_exitRoomButton) {
         m_exitRoomButton->show();
+    }
+    // 隱藏退出遊戲按鈕（線上模式使用退出房間按鈕）
+    if (m_exitButton) {
+        m_exitButton->hide();
     }
     
     // 更新開始按鈕
