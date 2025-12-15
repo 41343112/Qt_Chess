@@ -630,8 +630,8 @@ void Qt_Chess::setupUI() {
     connect(m_requestDrawButton, &QPushButton::clicked, this, &Qt_Chess::onRequestDrawClicked);
     boardButtonLayout->addWidget(m_requestDrawButton);
     
-    // 返回主選單按鈕 - 現代科技風格橙色警告效果
-    m_exitButton = new QPushButton("🏠 返回主選單", m_boardButtonPanel);
+    // 退出遊戲按鈕 - 現代科技風格紅色警告效果
+    m_exitButton = new QPushButton("🚪 退出遊戲", m_boardButtonPanel);
     m_exitButton->setMinimumHeight(45);
     m_exitButton->setMinimumWidth(120);
     QFont exitButtonFont;
@@ -641,7 +641,7 @@ void Qt_Chess::setupUI() {
     m_exitButton->setStyleSheet(QString(
         "QPushButton { "
         "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
-        "    stop:0 %1, stop:0.5 rgba(255, 140, 0, 0.7), stop:1 %1); "
+        "    stop:0 %1, stop:0.5 rgba(233, 69, 96, 0.7), stop:1 %1); "
         "  color: %2; "
         "  border: 3px solid %3; "
         "  border-radius: 10px; "
@@ -649,13 +649,13 @@ void Qt_Chess::setupUI() {
         "}"
         "QPushButton:hover { "
         "  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
-        "    stop:0 %3, stop:0.5 rgba(255, 160, 50, 0.9), stop:1 %3); "
-        "  border-color: #FFA500; "
+        "    stop:0 %3, stop:0.5 rgba(255, 100, 120, 0.9), stop:1 %3); "
+        "  border-color: #FF6B6B; "
         "}"
         "QPushButton:pressed { "
         "  background: %3; "
         "}"
-    ).arg(THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_ACCENT_WARNING));
+    ).arg(THEME_BG_DARK, THEME_TEXT_PRIMARY, THEME_ACCENT_SECONDARY));
     m_exitButton->hide();  // 初始隱藏
     connect(m_exitButton, &QPushButton::clicked, this, &Qt_Chess::onExitClicked);
     boardButtonLayout->addWidget(m_exitButton);
@@ -2391,8 +2391,42 @@ void Qt_Chess::onRequestDrawClicked() {
 }
 
 void Qt_Chess::onExitClicked() {
-    // 返回主選單
-    onBackToMainMenuClicked();
+    // 退出遊戲並停止當前回合
+    // 如果有進行中的遊戲，詢問是否確定要退出
+    if (m_gameStarted && m_chessBoard.getGameResult() == GameResult::InProgress) {
+        QMessageBox::StandardButton reply = QMessageBox::question(
+            this, 
+            "退出遊戲", 
+            "遊戲進行中，確定要退出遊戲嗎？當前回合將被停止。",
+            QMessageBox::Yes | QMessageBox::No
+        );
+        if (reply == QMessageBox::No) {
+            return;
+        }
+    }
+    
+    // 停止計時器
+    stopTimer();
+    m_timerStarted = false;
+    
+    // 停止背景音樂
+    stopBackgroundMusic();
+    
+    // 停止所有音效
+    stopAllSounds();
+    
+    // 停止棋局引擎
+    if (m_chessEngine) {
+        m_chessEngine->stopEngine();
+    }
+    
+    // 關閉網路連線
+    if (m_networkManager && m_isOnlineGame) {
+        m_networkManager->leaveRoom();
+    }
+    
+    // 退出應用程式
+    QApplication::quit();
 }
 
 void Qt_Chess::onStartButtonClicked() {
