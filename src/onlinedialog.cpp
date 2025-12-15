@@ -29,21 +29,21 @@ void OnlineDialog::setupUI()
     gameModeGroup->setStyleSheet("QGroupBox { font-weight: bold; color: #2196F3; }");
     QVBoxLayout* gameModeLayout = new QVBoxLayout(gameModeGroup);
     
-    m_standardModeCheckbox = new QCheckBox(tr("⚔️ 標準模式 - 經典國際象棋規則"), this);
-    m_standardModeCheckbox->setStyleSheet("QCheckBox { font-size: 10pt; padding: 3px; }");
-    m_standardModeCheckbox->setChecked(true); // 默認勾選標準模式
+    m_standardModeCheckbox = new QCheckBox(tr("🌫️ 霧戰"), this);
+    m_standardModeCheckbox->setStyleSheet("QCheckBox { font-size: 10pt; padding: 3px; color: white; }");
+    m_standardModeCheckbox->setChecked(true); // 默認勾選
     
-    m_rapidModeCheckbox = new QCheckBox(tr("⚡ 快棋模式 - 限時10分鐘"), this);
-    m_rapidModeCheckbox->setStyleSheet("QCheckBox { font-size: 10pt; padding: 3px; }");
+    m_rapidModeCheckbox = new QCheckBox(tr("🌍 地吸引力"), this);
+    m_rapidModeCheckbox->setStyleSheet("QCheckBox { font-size: 10pt; padding: 3px; color: white; }");
     
-    m_blitzModeCheckbox = new QCheckBox(tr("💨 閃電戰 - 限時3分鐘"), this);
-    m_blitzModeCheckbox->setStyleSheet("QCheckBox { font-size: 10pt; padding: 3px; }");
+    m_blitzModeCheckbox = new QCheckBox(tr("🔮 傳送陣"), this);
+    m_blitzModeCheckbox->setStyleSheet("QCheckBox { font-size: 10pt; padding: 3px; color: white; }");
     
-    m_handicapModeCheckbox = new QCheckBox(tr("🎲 讓子模式 - 可移除部分棋子"), this);
-    m_handicapModeCheckbox->setStyleSheet("QCheckBox { font-size: 10pt; padding: 3px; }");
+    m_handicapModeCheckbox = new QCheckBox(tr("🎲 骰子"), this);
+    m_handicapModeCheckbox->setStyleSheet("QCheckBox { font-size: 10pt; padding: 3px; color: white; }");
     
-    m_customRulesCheckbox = new QCheckBox(tr("🔧 自訂規則 - 特殊變體玩法"), this);
-    m_customRulesCheckbox->setStyleSheet("QCheckBox { font-size: 10pt; padding: 3px; }");
+    m_customRulesCheckbox = new QCheckBox(tr("💣 踩地雷"), this);
+    m_customRulesCheckbox->setStyleSheet("QCheckBox { font-size: 10pt; padding: 3px; color: white; }");
     
     gameModeLayout->addWidget(m_standardModeCheckbox);
     gameModeLayout->addWidget(m_rapidModeCheckbox);
@@ -79,19 +79,19 @@ QMap<QString, bool> OnlineDialog::getGameModes() const
     QMap<QString, bool> gameModes;
     
     if (m_standardModeCheckbox) {
-        gameModes["標準模式"] = m_standardModeCheckbox->isChecked();
+        gameModes["霧戰"] = m_standardModeCheckbox->isChecked();
     }
     if (m_rapidModeCheckbox) {
-        gameModes["快棋模式"] = m_rapidModeCheckbox->isChecked();
+        gameModes["地吸引力"] = m_rapidModeCheckbox->isChecked();
     }
     if (m_blitzModeCheckbox) {
-        gameModes["閃電戰"] = m_blitzModeCheckbox->isChecked();
+        gameModes["傳送陣"] = m_blitzModeCheckbox->isChecked();
     }
     if (m_handicapModeCheckbox) {
-        gameModes["讓子模式"] = m_handicapModeCheckbox->isChecked();
+        gameModes["骰子"] = m_handicapModeCheckbox->isChecked();
     }
     if (m_customRulesCheckbox) {
-        gameModes["自訂規則"] = m_customRulesCheckbox->isChecked();
+        gameModes["踩地雷"] = m_customRulesCheckbox->isChecked();
     }
     
     return gameModes;
