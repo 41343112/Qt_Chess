@@ -5449,6 +5449,10 @@ void Qt_Chess::onRoomCreated(const QString& roomNumber) {
     if (m_exitRoomButton) {
         m_exitRoomButton->show();
     }
+    // 隱藏退出遊戲按鈕（等待期間使用退出房間按鈕）
+    if (m_exitButton) {
+        m_exitButton->hide();
+    }
 }
 
 void Qt_Chess::onOpponentJoined() {
@@ -5828,6 +5832,10 @@ void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int increme
     }
     if (m_exitRoomButton) {
         m_exitRoomButton->show();
+    }
+    // 隱藏退出遊戲按鈕（線上模式使用退出房間按鈕）
+    if (m_exitButton) {
+        m_exitButton->hide();
     }
     
     // 更新開始按鈕
