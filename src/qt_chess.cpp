@@ -5348,6 +5348,18 @@ void Qt_Chess::onOnlineModeClicked() {
 }
 
 void Qt_Chess::onCreateRoomButtonClicked() {
+    // 顯示遊戲模式選擇對話框
+    OnlineDialog dialog(this);
+    dialog.m_createRoomRadio->setChecked(true);
+    dialog.onCreateRoomClicked(); // 啟用遊戲模式選擇
+    
+    if (dialog.exec() != QDialog::Accepted) {
+        return; // 使用者取消
+    }
+    
+    // 儲存選擇的遊戲模式
+    m_selectedGameModes = dialog.getGameModes();
+    
     // 創建房間
     if (m_networkManager->createRoom()) {
         m_currentGameMode = GameMode::OnlineGame;
@@ -5605,6 +5617,32 @@ void Qt_Chess::onOpponentJoined() {
     if (isHost) {
         // 房主：對手已加入，可以開始遊戲
         m_connectionStatusLabel->setText("✅ 對手已加入，請按開始鍵開始遊戲");
+        
+        // 顯示遊戲模式通知對話框
+        if (!m_selectedGameModes.isEmpty()) {
+            QMessageBox gameModeMsg(this);
+            gameModeMsg.setWindowTitle(tr("🎮 對手已加入"));
+            gameModeMsg.setIcon(QMessageBox::Information);
+            
+            QString modeText = tr("✅ 對手已加入房間！\n\n已選擇的遊戲模式：\n");
+            bool hasSelectedMode = false;
+            QMapIterator<QString, bool> it(m_selectedGameModes);
+            while (it.hasNext()) {
+                it.next();
+                if (it.value()) {
+                    modeText += "• " + it.key() + "\n";
+                    hasSelectedMode = true;
+                }
+            }
+            
+            if (!hasSelectedMode) {
+                modeText += tr("• 未選擇特殊模式\n");
+            }
+            
+            modeText += tr("\n請按「開始」鍵開始遊戲");
+            gameModeMsg.setText(modeText);
+            gameModeMsg.exec();
+        }
         
         if (m_startButton) {
             m_startButton->setText("▶ 開始");
@@ -6691,6 +6729,33 @@ void Qt_Chess::showRoomInfoDialog(const QString& roomNumber) {
     codeEdit->setFont(codeFont);
     codeEdit->setStyleSheet("QTextEdit { background-color: #E3F2FD; border: 2px solid #2196F3; border-radius: 5px; padding: 10px; }");
     layout->addWidget(codeEdit);
+    
+    // 顯示選擇的遊戲模式
+    if (!m_selectedGameModes.isEmpty()) {
+        QGroupBox* gameModeGroup = new QGroupBox(tr("🎯 已選擇的遊戲模式"), &dialog);
+        gameModeGroup->setStyleSheet("QGroupBox { font-weight: bold; color: #2196F3; padding: 10px; }");
+        QVBoxLayout* gameModeLayout = new QVBoxLayout(gameModeGroup);
+        
+        bool hasSelectedMode = false;
+        QMapIterator<QString, bool> it(m_selectedGameModes);
+        while (it.hasNext()) {
+            it.next();
+            if (it.value()) {
+                QLabel* modeLabel = new QLabel("✓ " + it.key(), &dialog);
+                modeLabel->setStyleSheet("QLabel { font-size: 10pt; padding: 3px; color: #4CAF50; }");
+                gameModeLayout->addWidget(modeLabel);
+                hasSelectedMode = true;
+            }
+        }
+        
+        if (!hasSelectedMode) {
+            QLabel* noModeLabel = new QLabel(tr("未選擇特殊模式"), &dialog);
+            noModeLabel->setStyleSheet("QLabel { font-size: 10pt; padding: 3px; color: #666; }");
+            gameModeLayout->addWidget(noModeLabel);
+        }
+        
+        layout->addWidget(gameModeGroup);
+    }
     
     // 複製按鈕
     QPushButton* copyButton = new QPushButton(tr("📋 複製房號"), &dialog);

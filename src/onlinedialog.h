@@ -10,6 +10,8 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QTextEdit>
+#include <QCheckBox>
+#include <QMap>
 
 class OnlineDialog : public QDialog
 {
@@ -27,6 +29,7 @@ public:
 
     Mode getMode() const { return m_mode; }
     QString getRoomNumber() const;
+    QMap<QString, bool> getGameModes() const;
 
 private slots:
     void onCreateRoomClicked();
@@ -43,6 +46,7 @@ private:
     QRadioButton* m_joinRoomRadio;
     
     QWidget* m_joinRoomWidget;
+    QWidget* m_gameModeWidget;
     QLineEdit* m_roomNumberEdit;
     QTextEdit* m_connectionInfoEdit;
     QPushButton* m_pasteButton;
@@ -51,6 +55,13 @@ private:
     QPushButton* m_cancelButton;
     
     QLabel* m_instructionLabel;
+    
+    // Game mode checkboxes
+    QCheckBox* m_standardModeCheckbox;
+    QCheckBox* m_rapidModeCheckbox;
+    QCheckBox* m_blitzModeCheckbox;
+    QCheckBox* m_handicapModeCheckbox;
+    QCheckBox* m_customRulesCheckbox;
 };
 
 #endif // ONLINEDIALOG_H

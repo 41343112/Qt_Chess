@@ -14,10 +14,16 @@ OnlineDialog::OnlineDialog(QWidget *parent)
     , m_mode(Mode::None)
     , m_connectionInfoEdit(nullptr)
     , m_pasteButton(nullptr)
+    , m_gameModeWidget(nullptr)
+    , m_standardModeCheckbox(nullptr)
+    , m_rapidModeCheckbox(nullptr)
+    , m_blitzModeCheckbox(nullptr)
+    , m_handicapModeCheckbox(nullptr)
+    , m_customRulesCheckbox(nullptr)
 {
     setupUI();
     setWindowTitle(tr("線上對戰 - 簡易連線"));
-    resize(500, 420);
+    resize(500, 500);
 }
 
 OnlineDialog::~OnlineDialog()
@@ -53,6 +59,44 @@ void OnlineDialog::setupUI()
     modeLayout->addWidget(m_joinRoomRadio);
     
     mainLayout->addWidget(modeGroup);
+    
+    mainLayout->addSpacing(10);
+    
+    // 遊戲模式選擇（只在創建房間時顯示）
+    m_gameModeWidget = new QWidget(this);
+    QVBoxLayout* gameModeMainLayout = new QVBoxLayout(m_gameModeWidget);
+    gameModeMainLayout->setContentsMargins(0, 0, 0, 0);
+    
+    QGroupBox* gameModeGroup = new QGroupBox(tr("🎯 選擇遊戲模式（可複選）"), this);
+    gameModeGroup->setStyleSheet("QGroupBox { font-weight: bold; color: #2196F3; }");
+    QVBoxLayout* gameModeLayout = new QVBoxLayout(gameModeGroup);
+    
+    m_standardModeCheckbox = new QCheckBox(tr("⚔️ 標準模式 - 經典國際象棋規則"), this);
+    m_standardModeCheckbox->setStyleSheet("QCheckBox { font-size: 10pt; padding: 3px; }");
+    m_standardModeCheckbox->setChecked(true); // 默認勾選標準模式
+    
+    m_rapidModeCheckbox = new QCheckBox(tr("⚡ 快棋模式 - 限時10分鐘"), this);
+    m_rapidModeCheckbox->setStyleSheet("QCheckBox { font-size: 10pt; padding: 3px; }");
+    
+    m_blitzModeCheckbox = new QCheckBox(tr("💨 閃電戰 - 限時3分鐘"), this);
+    m_blitzModeCheckbox->setStyleSheet("QCheckBox { font-size: 10pt; padding: 3px; }");
+    
+    m_handicapModeCheckbox = new QCheckBox(tr("🎲 讓子模式 - 可移除部分棋子"), this);
+    m_handicapModeCheckbox->setStyleSheet("QCheckBox { font-size: 10pt; padding: 3px; }");
+    
+    m_customRulesCheckbox = new QCheckBox(tr("🔧 自訂規則 - 特殊變體玩法"), this);
+    m_customRulesCheckbox->setStyleSheet("QCheckBox { font-size: 10pt; padding: 3px; }");
+    
+    gameModeLayout->addWidget(m_standardModeCheckbox);
+    gameModeLayout->addWidget(m_rapidModeCheckbox);
+    gameModeLayout->addWidget(m_blitzModeCheckbox);
+    gameModeLayout->addWidget(m_handicapModeCheckbox);
+    gameModeLayout->addWidget(m_customRulesCheckbox);
+    
+    gameModeMainLayout->addWidget(gameModeGroup);
+    
+    m_gameModeWidget->setEnabled(false);
+    mainLayout->addWidget(m_gameModeWidget);
     
     mainLayout->addSpacing(10);
     
@@ -141,6 +185,7 @@ void OnlineDialog::onCreateRoomClicked()
     if (m_createRoomRadio->isChecked()) {
         m_mode = Mode::CreateRoom;
         m_joinRoomWidget->setEnabled(false);
+        m_gameModeWidget->setEnabled(true);
         m_instructionLabel->setText(tr("🎮 您選擇了「創建房間」\n點擊「開始」後，系統會給您一個房號"));
     }
 }
@@ -150,6 +195,7 @@ void OnlineDialog::onJoinRoomClicked()
     if (m_joinRoomRadio->isChecked()) {
         m_mode = Mode::JoinRoom;
         m_joinRoomWidget->setEnabled(true);
+        m_gameModeWidget->setEnabled(false);
         m_instructionLabel->setText(tr("🎮 您選擇了「加入房間」\n請貼上朋友給您的房號，或手動輸入"));
     }
 }
@@ -215,4 +261,27 @@ QString OnlineDialog::getRoomNumber() const
     }
     
     return roomNumber;
+}
+
+QMap<QString, bool> OnlineDialog::getGameModes() const
+{
+    QMap<QString, bool> gameModes;
+    
+    if (m_standardModeCheckbox) {
+        gameModes["標準模式"] = m_standardModeCheckbox->isChecked();
+    }
+    if (m_rapidModeCheckbox) {
+        gameModes["快棋模式"] = m_rapidModeCheckbox->isChecked();
+    }
+    if (m_blitzModeCheckbox) {
+        gameModes["閃電戰"] = m_blitzModeCheckbox->isChecked();
+    }
+    if (m_handicapModeCheckbox) {
+        gameModes["讓子模式"] = m_handicapModeCheckbox->isChecked();
+    }
+    if (m_customRulesCheckbox) {
+        gameModes["自訂規則"] = m_customRulesCheckbox->isChecked();
+    }
+    
+    return gameModes;
 }
