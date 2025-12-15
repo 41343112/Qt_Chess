@@ -2289,7 +2289,8 @@ void Qt_Chess::onNewGameClicked() {
     // 隱藏認輸和請求和棋按鈕
     if (m_resignButton) m_resignButton->hide();
     if (m_requestDrawButton) m_requestDrawButton->hide();
-    if (m_exitButton) m_exitButton->hide();
+    // 保持退出按鈕顯示，讓使用者可以返回主選單
+    if (m_exitButton) m_exitButton->show();
 
     // 隱藏匯出 PGN 按鈕和複製棋譜按鈕
     if (m_exportPGNButton) m_exportPGNButton->hide();
@@ -2391,9 +2392,15 @@ void Qt_Chess::onRequestDrawClicked() {
 }
 
 void Qt_Chess::onExitClicked() {
+    // 如果遊戲還沒開始，返回主選單
+    if (!m_gameStarted) {
+        onBackToMainMenuClicked();
+        return;
+    }
+    
     // 退出當前對局，返回到開始對弈前的狀態（還在本地遊戲）
     // 如果遊戲已開始，詢問是否確定要退出
-    if (m_gameStarted && m_chessBoard.getGameResult() == GameResult::InProgress) {
+    if (m_chessBoard.getGameResult() == GameResult::InProgress) {
         QMessageBox::StandardButton reply = QMessageBox::question(
             this, 
             "退出遊戲", 
@@ -2447,10 +2454,11 @@ void Qt_Chess::onExitClicked() {
     if (m_whiteTimeProgressBar) m_whiteTimeProgressBar->hide();
     if (m_blackTimeProgressBar) m_blackTimeProgressBar->hide();
     
-    // 隱藏認輸、請求和棋和退出按鈕
+    // 隱藏認輸、請求和棋按鈕
     if (m_resignButton) m_resignButton->hide();
     if (m_requestDrawButton) m_requestDrawButton->hide();
-    if (m_exitButton) m_exitButton->hide();
+    // 保持退出按鈕顯示，讓使用者可以返回主選單
+    if (m_exitButton) m_exitButton->show();
     
     // 隱藏匯出 PGN 按鈕和複製棋譜按鈕
     if (m_exportPGNButton) m_exportPGNButton->hide();
