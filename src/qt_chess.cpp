@@ -4876,6 +4876,11 @@ void Qt_Chess::onHumanModeClicked() {
     // 清除線上模式的遊戲模式選擇
     m_selectedGameModes.clear();
     
+    // 隱藏線上模式的房間創建UI
+    if (m_onlineButtonsWidget) {
+        m_onlineButtonsWidget->hide();
+    }
+    
     // 更新引擎的遊戲模式
     if (m_chessEngine) {
         m_chessEngine->setGameMode(m_currentGameMode);
@@ -4896,6 +4901,11 @@ void Qt_Chess::onComputerModeClicked() {
     
     // 清除線上模式的遊戲模式選擇
     m_selectedGameModes.clear();
+    
+    // 隱藏線上模式的房間創建UI
+    if (m_onlineButtonsWidget) {
+        m_onlineButtonsWidget->hide();
+    }
     
     // 更新引擎的遊戲模式
     if (m_chessEngine) {
