@@ -4881,6 +4881,11 @@ void Qt_Chess::onHumanModeClicked() {
         m_onlineButtonsWidget->hide();
     }
     
+    // 顯示開始按鈕（本地和電腦模式需要）
+    if (m_startButton) {
+        m_startButton->show();
+    }
+    
     // 更新引擎的遊戲模式
     if (m_chessEngine) {
         m_chessEngine->setGameMode(m_currentGameMode);
@@ -4905,6 +4910,11 @@ void Qt_Chess::onComputerModeClicked() {
     // 隱藏線上模式的房間創建UI
     if (m_onlineButtonsWidget) {
         m_onlineButtonsWidget->hide();
+    }
+    
+    // 顯示開始按鈕（本地和電腦模式需要）
+    if (m_startButton) {
+        m_startButton->show();
     }
     
     // 更新引擎的遊戲模式
