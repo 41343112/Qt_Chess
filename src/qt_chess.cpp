@@ -1770,6 +1770,11 @@ void Qt_Chess::resetGameState() {
         m_rightTimePanel->hide();
     }
     
+    // 隱藏線上模式的房間創建UI（確保返回主選單時不會顯示）
+    if (m_onlineButtonsWidget) {
+        m_onlineButtonsWidget->hide();
+    }
+    
     // 如果有網路連接，斷開連接
     if (m_networkManager && m_networkManager->getStatus() == ConnectionStatus::Connected) {
         m_networkManager->closeConnection();
@@ -5417,30 +5422,14 @@ void Qt_Chess::onCreateRoomButtonClicked() {
         if (m_humanModeButton) m_humanModeButton->setEnabled(false);
         if (m_computerModeButton) m_computerModeButton->setEnabled(false);
         
-        // 修改開始按鈕為取消功能（紅色）
+        // 隱藏開始按鈕（等待對手時使用退出房間按鈕）
         if (m_startButton) {
-            m_startButton->setText("✗ 取消等待");
-            m_startButton->setEnabled(true);
-            m_startButton->show();
-            m_startButton->setStyleSheet(QString(
-                "QPushButton { "
-                "  background-color: #f44336; "
-                "  color: white; "
-                "  border: 3px solid #d32f2f; "
-                "  border-radius: 10px; "
-                "  padding: 8px; "
-                "  font-weight: bold; "
-                "  min-height: 45px; "
-                "}"
-                "QPushButton:hover { "
-                "  background-color: #d32f2f; "
-                "}"
-                "QPushButton:pressed { "
-                "  background-color: #c62828; "
-                "}"
-            ));
-            disconnect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onStartButtonClicked);
-            connect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onCancelRoomClicked);
+            m_startButton->hide();
+        }
+        
+        // 顯示退出房間按鈕讓使用者可以取消等待
+        if (m_exitRoomButton) {
+            m_exitRoomButton->show();
         }
         
         // 不要立即開始遊戲，等待對手加入
@@ -5512,30 +5501,14 @@ void Qt_Chess::onJoinRoomButtonClicked() {
         if (m_humanModeButton) m_humanModeButton->setEnabled(false);
         if (m_computerModeButton) m_computerModeButton->setEnabled(false);
         
-        // 修改開始按鈕為取消功能（紅色）
+        // 隱藏開始按鈕（連接期間使用退出房間按鈕）
         if (m_startButton) {
-            m_startButton->setText("✗ 取消連接");
-            m_startButton->setEnabled(true);
-            m_startButton->show();
-            m_startButton->setStyleSheet(QString(
-                "QPushButton { "
-                "  background-color: #f44336; "
-                "  color: white; "
-                "  border: 3px solid #d32f2f; "
-                "  border-radius: 10px; "
-                "  padding: 8px; "
-                "  font-weight: bold; "
-                "  min-height: 45px; "
-                "}"
-                "QPushButton:hover { "
-                "  background-color: #d32f2f; "
-                "}"
-                "QPushButton:pressed { "
-                "  background-color: #c62828; "
-                "}"
-            ));
-            disconnect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onStartButtonClicked);
-            connect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onCancelRoomClicked);
+            m_startButton->hide();
+        }
+        
+        // 顯示退出房間按鈕讓使用者可以取消連接
+        if (m_exitRoomButton) {
+            m_exitRoomButton->show();
         }
     } else {
         QMessageBox::warning(this, "加入失敗", "無法加入房間");
@@ -5574,8 +5547,6 @@ void Qt_Chess::onNetworkError(const QString& error) {
     // 恢復開始按鈕的原始功能和樣式
     if (m_startButton) {
         m_startButton->show();  // 確保按鈕顯示
-        disconnect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onCancelRoomClicked);
-        connect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onStartButtonClicked);
         m_startButton->setText("▶ 開始對弈");
         m_startButton->setEnabled(true);
         m_startButton->setStyleSheet(QString(
@@ -5824,8 +5795,6 @@ void Qt_Chess::onGameStartReceived(PieceColor playerColor) {
     
     // 恢復開始按鈕的原始功能和樣式
     if (m_startButton) {
-        disconnect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onCancelRoomClicked);
-        connect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onStartButtonClicked);
         m_startButton->setText("▶ 開始對弈");
         m_startButton->setEnabled(true);
         m_startButton->setStyleSheet(QString(
@@ -6531,8 +6500,6 @@ void Qt_Chess::onOpponentDisconnected() {
     // 恢復開始按鈕的原始功能和樣式
     if (m_startButton) {
         m_startButton->show();  // 確保按鈕顯示
-        disconnect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onCancelRoomClicked);
-        connect(m_startButton, &QPushButton::clicked, this, &Qt_Chess::onStartButtonClicked);
         m_startButton->setText("▶ 開始對弈");
         m_startButton->setEnabled(true);
         m_startButton->setStyleSheet(QString(
