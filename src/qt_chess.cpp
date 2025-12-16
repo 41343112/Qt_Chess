@@ -1772,6 +1772,20 @@ void Qt_Chess::resetGameState() {
         m_networkManager->closeConnection();
     }
     
+    // 隱藏線上模式專用的UI元件
+    if (m_onlineButtonsWidget) {
+        m_onlineButtonsWidget->hide();
+    }
+    if (m_connectionStatusLabel) {
+        m_connectionStatusLabel->hide();
+    }
+    if (m_roomInfoLabel) {
+        m_roomInfoLabel->hide();
+    }
+    if (m_exitRoomButton) {
+        m_exitRoomButton->hide();
+    }
+    
     // 更新顯示
     updateBoard();
     updateStatus();
@@ -4870,6 +4884,19 @@ void Qt_Chess::onHumanModeClicked() {
     m_currentGameMode = GameMode::HumanVsHuman;
     updateGameModeUI();
     
+    // 隱藏線上模式專用的創建/加入房間按鈕
+    if (m_onlineButtonsWidget) {
+        m_onlineButtonsWidget->hide();
+    }
+    
+    // 隱藏連線狀態和房間資訊標籤
+    if (m_connectionStatusLabel) {
+        m_connectionStatusLabel->hide();
+    }
+    if (m_roomInfoLabel) {
+        m_roomInfoLabel->hide();
+    }
+    
     // 更新引擎的遊戲模式
     if (m_chessEngine) {
         m_chessEngine->setGameMode(m_currentGameMode);
@@ -4887,6 +4914,19 @@ void Qt_Chess::onComputerModeClicked() {
     }
     
     updateGameModeUI();
+    
+    // 隱藏線上模式專用的創建/加入房間按鈕
+    if (m_onlineButtonsWidget) {
+        m_onlineButtonsWidget->hide();
+    }
+    
+    // 隱藏連線狀態和房間資訊標籤
+    if (m_connectionStatusLabel) {
+        m_connectionStatusLabel->hide();
+    }
+    if (m_roomInfoLabel) {
+        m_roomInfoLabel->hide();
+    }
     
     // 更新引擎的遊戲模式
     if (m_chessEngine) {
