@@ -43,6 +43,12 @@ class Qt_Chess;
 }
 QT_END_NAMESPACE
 
+// Constants for online mode
+constexpr qint64 DRAW_REQUEST_COOLDOWN_MS = 3000;  // 3 seconds cooldown for draw requests
+constexpr int ROOM_NUMBER_MIN = 1000;              // Minimum room number
+constexpr int ROOM_NUMBER_MAX = 9999;              // Maximum room number
+constexpr int ROOM_NUMBER_LENGTH = 4;              // Room number length
+
 class Qt_Chess : public QMainWindow
 {
     Q_OBJECT
@@ -64,7 +70,7 @@ private slots:
     void onNewGameClicked();
     void onResignClicked();       // 認輸按鈕點擊
     void onRequestDrawClicked();  // 請求和棋按鈕點擊
-    void onExitClicked();         // 退出按鈕點擊
+    void onExitClicked();         // 退出遊戲按鈕點擊
     void onSoundSettingsClicked();
     void onPieceIconSettingsClicked();
     void onBoardColorSettingsClicked();
@@ -125,7 +131,7 @@ private:
     QPushButton* m_newGameButton;
     QPushButton* m_resignButton;         // 認輸按鈕
     QPushButton* m_requestDrawButton;    // 請求和棋按鈕
-    QPushButton* m_exitButton;           // 退出按鈕（本地遊戲）
+    QPushButton* m_exitButton;           // 退出遊戲按鈕
     QWidget* m_boardButtonPanel;         // 棋盤下方按鈕面板
     QPushButton* m_startButton;
     
@@ -237,11 +243,16 @@ private:
     NetworkManager* m_networkManager;    // 網路管理器
     QPushButton* m_onlineModeButton;     // 線上對戰按鈕
     QPushButton* m_exitRoomButton;       // 退出房間按鈕
+    QPushButton* m_createRoomButton;     // 創建房間按鈕（右側面板）
+    QPushButton* m_joinRoomButton;       // 加入房間按鈕（右側面板）
+    QWidget* m_onlineButtonsWidget;      // 線上模式按鈕容器
     QLabel* m_connectionStatusLabel;     // 連線狀態標籤
     QLabel* m_roomInfoLabel;             // 房間資訊標籤
     bool m_isOnlineGame;                 // 是否為線上對戰
     bool m_waitingForOpponent;           // 等待對手
     PieceColor m_onlineHostSelectedColor;  // 房主選擇的顏色（線上模式）
+    qint64 m_lastDrawRequestTime;        // 上次請求和棋的時間（毫秒）
+    QMap<QString, bool> m_selectedGameModes;  // 選擇的遊戲模式
     
     // ========================================
     // 音效系統 (Sound System)
@@ -420,6 +431,8 @@ private:
     // ========================================
     void initializeNetwork();
     void onOnlineModeClicked();
+    void onCreateRoomButtonClicked();
+    void onJoinRoomButtonClicked();
     void onNetworkConnected();
     void onNetworkDisconnected();
     void onNetworkError(const QString& error);
