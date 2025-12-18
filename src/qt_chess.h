@@ -315,11 +315,13 @@ private:
     void setupUI();
     void setupMenuBar();
     void setupMainMenu();
+    void setupSettingsPage();
     void setupTimeControlUI(QVBoxLayout* timeControlPanelLayout);
     void setupEngineUI(QVBoxLayout* layout);
     void updateSquareSizes();
     void updateTimeControlSizes();
     void applyModernStylesheet();
+    QString getMenuButtonStyle() const;
     
     // ========================================
     // 主選單管理 (Main Menu Management)

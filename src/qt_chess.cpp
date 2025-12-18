@@ -302,6 +302,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     // setupMenuBar();  // 已移除選單欄功能
     setupUI();
     setupMainMenu();  // 在 setupUI() 之後設置主選單
+    setupSettingsPage();  // 設置設定頁面
     loadTimeControlSettings();  // 在 setupUI() 之後載入以確保元件存在
     loadEngineSettings();  // 載入引擎設定
     initializeEngine();  // 初始化棋局引擎
@@ -914,30 +915,8 @@ void Qt_Chess::setupMainMenu() {
     
     menuLayout->addSpacing(10);  // 減小標題後的間距
     
-    // 按鈕樣式 - 現代科技風格（更緊湊以適應小視窗）
-    QString buttonStyle = QString(
-        "QPushButton { "
-        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
-        "    stop:0 %1, stop:1 %2); "
-        "  color: %3; "
-        "  padding: 12px; "  // 減小內邊距
-        "  font-size: 16pt; "  // 減小字體
-        "  font-weight: bold; "
-        "  border: 3px solid %4; "
-        "  border-radius: 10px; "
-        "  min-width: 250px; "  // 減小最小寬度
-        "  min-height: 40px; "  // 添加最小高度確保按鈕不會太小
-        "} "
-        "QPushButton:hover { "
-        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
-        "    stop:0 %4, stop:1 %1); "
-        "  border: 3px solid %5; "
-        "} "
-        "QPushButton:pressed { "
-        "  background: %2; "
-        "}"
-    ).arg(THEME_BG_PANEL, THEME_BG_MEDIUM, THEME_TEXT_PRIMARY, 
-          THEME_ACCENT_PRIMARY, THEME_ACCENT_SUCCESS);
+    // 使用共享的按鈕樣式
+    QString buttonStyle = getMenuButtonStyle();
     
     // 本地遊玩按鈕
     m_mainMenuLocalPlayButton = new QPushButton("🎮 本地遊玩", m_mainMenuWidget);
@@ -971,6 +950,21 @@ void Qt_Chess::setupMainMenu() {
     
     // 將主選單添加到根佈局
     rootLayout->addWidget(m_mainMenuWidget);
+}
+
+void Qt_Chess::setupSettingsPage() {
+    // 獲取根佈局
+    QWidget* central = centralWidget();
+    if (!central) {
+        qWarning() << "setupSettingsPage: centralWidget is null!";
+        return;
+    }
+    
+    QVBoxLayout* rootLayout = qobject_cast<QVBoxLayout*>(central->layout());
+    if (!rootLayout) {
+        qWarning() << "setupSettingsPage: rootLayout is null or not a QVBoxLayout!";
+        return;
+    }
     
     // 創建設定頁面容器
     m_settingsPageWidget = new QWidget(central);
@@ -1000,46 +994,24 @@ void Qt_Chess::setupMainMenu() {
     
     settingsLayout->addSpacing(10);
     
-    // 按鈕樣式 - 現代科技風格
-    QString settingsButtonStyle = QString(
-        "QPushButton { "
-        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
-        "    stop:0 %1, stop:1 %2); "
-        "  color: %3; "
-        "  padding: 12px; "
-        "  font-size: 16pt; "
-        "  font-weight: bold; "
-        "  border: 3px solid %4; "
-        "  border-radius: 10px; "
-        "  min-width: 250px; "
-        "  min-height: 40px; "
-        "} "
-        "QPushButton:hover { "
-        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
-        "    stop:0 %4, stop:1 %1); "
-        "  border: 3px solid %5; "
-        "} "
-        "QPushButton:pressed { "
-        "  background: %2; "
-        "}"
-    ).arg(THEME_BG_PANEL, THEME_BG_MEDIUM, THEME_TEXT_PRIMARY, 
-          THEME_ACCENT_PRIMARY, THEME_ACCENT_SUCCESS);
+    // 使用共享的按鈕樣式
+    QString buttonStyle = getMenuButtonStyle();
     
     // 音效設定按鈕
     QPushButton* soundButton = new QPushButton("🔊 音效設定", m_settingsPageWidget);
-    soundButton->setStyleSheet(settingsButtonStyle);
+    soundButton->setStyleSheet(buttonStyle);
     connect(soundButton, &QPushButton::clicked, this, &Qt_Chess::onSoundSettingsClicked);
     settingsLayout->addWidget(soundButton, 0, Qt::AlignCenter);
     
     // 棋子圖標設定按鈕
     QPushButton* pieceIconButton = new QPushButton("♟ 棋子圖標設定", m_settingsPageWidget);
-    pieceIconButton->setStyleSheet(settingsButtonStyle);
+    pieceIconButton->setStyleSheet(buttonStyle);
     connect(pieceIconButton, &QPushButton::clicked, this, &Qt_Chess::onPieceIconSettingsClicked);
     settingsLayout->addWidget(pieceIconButton, 0, Qt::AlignCenter);
     
     // 棋盤顏色設定按鈕
     QPushButton* boardColorButton = new QPushButton("🎨 棋盤顏色設定", m_settingsPageWidget);
-    boardColorButton->setStyleSheet(settingsButtonStyle);
+    boardColorButton->setStyleSheet(buttonStyle);
     connect(boardColorButton, &QPushButton::clicked, this, &Qt_Chess::onBoardColorSettingsClicked);
     settingsLayout->addWidget(boardColorButton, 0, Qt::AlignCenter);
     
@@ -1047,8 +1019,8 @@ void Qt_Chess::setupMainMenu() {
     
     // 返回主選單按鈕
     QPushButton* backButton = new QPushButton("🏠 返回主選單", m_settingsPageWidget);
-    backButton->setStyleSheet(settingsButtonStyle);
-    connect(backButton, &QPushButton::clicked, this, &Qt_Chess::showMainMenu);
+    backButton->setStyleSheet(buttonStyle);
+    connect(backButton, &QPushButton::clicked, this, &Qt_Chess::onBackToMainMenuClicked);
     settingsLayout->addWidget(backButton, 0, Qt::AlignCenter);
     
     settingsLayout->addStretch();
@@ -1784,6 +1756,37 @@ void Qt_Chess::applyModernStylesheet() {
           THEME_ACCENT_PRIMARY, THEME_BORDER, THEME_ACCENT_SECONDARY, THEME_ACCENT_SUCCESS);
     
     setStyleSheet(styleSheet);
+}
+
+// ============================================================================
+// UI 輔助函數 (UI Helper Functions)
+// ============================================================================
+
+QString Qt_Chess::getMenuButtonStyle() const {
+    // 返回主選單和設定頁面共用的按鈕樣式 - 現代科技風格
+    return QString(
+        "QPushButton { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+        "    stop:0 %1, stop:1 %2); "
+        "  color: %3; "
+        "  padding: 12px; "
+        "  font-size: 16pt; "
+        "  font-weight: bold; "
+        "  border: 3px solid %4; "
+        "  border-radius: 10px; "
+        "  min-width: 250px; "
+        "  min-height: 40px; "
+        "} "
+        "QPushButton:hover { "
+        "  background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+        "    stop:0 %4, stop:1 %1); "
+        "  border: 3px solid %5; "
+        "} "
+        "QPushButton:pressed { "
+        "  background: %2; "
+        "}"
+    ).arg(THEME_BG_PANEL, THEME_BG_MEDIUM, THEME_TEXT_PRIMARY, 
+          THEME_ACCENT_PRIMARY, THEME_ACCENT_SUCCESS);
 }
 
 // ============================================================================
