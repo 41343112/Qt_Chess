@@ -5411,11 +5411,11 @@ void Qt_Chess::onOnlineModeClicked() {
         m_startButton->hide();
     }
     
-    // 顯示提示訊息
-    if (m_connectionStatusLabel) {
-        m_connectionStatusLabel->setText("🌐 請選擇創建房間或加入房間");
-        m_connectionStatusLabel->show();
-    }
+    // 不再顯示提示訊息「請選擇創建房間或加入房間」
+    // if (m_connectionStatusLabel) {
+    //     m_connectionStatusLabel->setText("🌐 請選擇創建房間或加入房間");
+    //     m_connectionStatusLabel->show();
+    // }
 }
 
 void Qt_Chess::onCreateRoomButtonClicked() {
@@ -6625,11 +6625,11 @@ void Qt_Chess::onCancelRoomClicked() {
             m_roomInfoLabel->hide();
         }
         
-        // 顯示提示訊息
-        if (m_connectionStatusLabel) {
-            m_connectionStatusLabel->setText("🌐 請選擇創建房間或加入房間");
-            m_connectionStatusLabel->show();
-        }
+        // 不再顯示提示訊息「請選擇創建房間或加入房間」
+        // if (m_connectionStatusLabel) {
+        //     m_connectionStatusLabel->setText("🌐 請選擇創建房間或加入房間");
+        //     m_connectionStatusLabel->show();
+        // }
     }
 }
 
@@ -6701,11 +6701,11 @@ void Qt_Chess::onExitRoomClicked() {
             onNewGameClicked();
         }
         
-        // 顯示提示訊息
-        if (m_connectionStatusLabel) {
-            m_connectionStatusLabel->setText("🌐 請選擇創建房間或加入房間");
-            m_connectionStatusLabel->show();
-        }
+        // 不再顯示提示訊息「請選擇創建房間或加入房間」
+        // if (m_connectionStatusLabel) {
+        //     m_connectionStatusLabel->setText("🌐 請選擇創建房間或加入房間");
+        //     m_connectionStatusLabel->show();
+        // }
         
         // 移除對話框以減少延遲
         // QMessageBox::information(this, "已退出", "已退出線上對戰，返回雙人模式");
