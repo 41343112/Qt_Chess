@@ -2791,6 +2791,13 @@ void Qt_Chess::onStartButtonClicked() {
                 m_requestDrawButton->show();
             }
         } else {
+            // 本地和電腦模式不顯示認輸和請求和棋按鈕
+            if (m_resignButton) {
+                m_resignButton->hide();
+            }
+            if (m_requestDrawButton) {
+                m_requestDrawButton->hide();
+            }
             // 本地遊戲進行中時顯示退出按鈕，讓玩家可以退出當前回合
             if (m_exitButton) {
                 m_exitButton->show();
@@ -2896,6 +2903,13 @@ void Qt_Chess::onStartButtonClicked() {
                 m_requestDrawButton->show();
             }
         } else {
+            // 本地和電腦模式不顯示認輸和請求和棋按鈕
+            if (m_resignButton) {
+                m_resignButton->hide();
+            }
+            if (m_requestDrawButton) {
+                m_requestDrawButton->hide();
+            }
             // 本地遊戲進行中時顯示退出按鈕，讓玩家可以退出當前回合
             if (m_exitButton) {
                 m_exitButton->show();
@@ -2976,6 +2990,13 @@ void Qt_Chess::onStartButtonClicked() {
                 m_requestDrawButton->show();
             }
         } else {
+            // 本地和電腦模式不顯示認輸和請求和棋按鈕
+            if (m_resignButton) {
+                m_resignButton->hide();
+            }
+            if (m_requestDrawButton) {
+                m_requestDrawButton->hide();
+            }
             // 本地遊戲進行中時顯示退出按鈕，讓玩家可以退出當前回合
             if (m_exitButton) {
                 m_exitButton->show();
@@ -4886,6 +4907,14 @@ void Qt_Chess::onHumanModeClicked() {
         m_onlineButtonsWidget->hide();
     }
     
+    // 隱藏線上模式的連線狀態標籤
+    if (m_connectionStatusLabel) {
+        m_connectionStatusLabel->hide();
+    }
+    if (m_roomInfoLabel) {
+        m_roomInfoLabel->hide();
+    }
+    
     // 顯示開始按鈕（本地和電腦模式需要）
     if (m_startButton) {
         m_startButton->show();
@@ -4915,6 +4944,14 @@ void Qt_Chess::onComputerModeClicked() {
     // 隱藏線上模式的房間創建UI
     if (m_onlineButtonsWidget) {
         m_onlineButtonsWidget->hide();
+    }
+    
+    // 隱藏線上模式的連線狀態標籤
+    if (m_connectionStatusLabel) {
+        m_connectionStatusLabel->hide();
+    }
+    if (m_roomInfoLabel) {
+        m_roomInfoLabel->hide();
     }
     
     // 顯示開始按鈕（本地和電腦模式需要）
@@ -5374,11 +5411,11 @@ void Qt_Chess::onOnlineModeClicked() {
         m_startButton->hide();
     }
     
-    // 顯示提示訊息
-    if (m_connectionStatusLabel) {
-        m_connectionStatusLabel->setText("🌐 請選擇創建房間或加入房間");
-        m_connectionStatusLabel->show();
-    }
+    // 不再顯示提示訊息「請選擇創建房間或加入房間」
+    // if (m_connectionStatusLabel) {
+    //     m_connectionStatusLabel->setText("🌐 請選擇創建房間或加入房間");
+    //     m_connectionStatusLabel->show();
+    // }
 }
 
 void Qt_Chess::onCreateRoomButtonClicked() {
@@ -6588,11 +6625,11 @@ void Qt_Chess::onCancelRoomClicked() {
             m_roomInfoLabel->hide();
         }
         
-        // 顯示提示訊息
-        if (m_connectionStatusLabel) {
-            m_connectionStatusLabel->setText("🌐 請選擇創建房間或加入房間");
-            m_connectionStatusLabel->show();
-        }
+        // 不再顯示提示訊息「請選擇創建房間或加入房間」
+        // if (m_connectionStatusLabel) {
+        //     m_connectionStatusLabel->setText("🌐 請選擇創建房間或加入房間");
+        //     m_connectionStatusLabel->show();
+        // }
     }
 }
 
@@ -6664,11 +6701,11 @@ void Qt_Chess::onExitRoomClicked() {
             onNewGameClicked();
         }
         
-        // 顯示提示訊息
-        if (m_connectionStatusLabel) {
-            m_connectionStatusLabel->setText("🌐 請選擇創建房間或加入房間");
-            m_connectionStatusLabel->show();
-        }
+        // 不再顯示提示訊息「請選擇創建房間或加入房間」
+        // if (m_connectionStatusLabel) {
+        //     m_connectionStatusLabel->setText("🌐 請選擇創建房間或加入房間");
+        //     m_connectionStatusLabel->show();
+        // }
         
         // 移除對話框以減少延遲
         // QMessageBox::information(this, "已退出", "已退出線上對戰，返回雙人模式");
