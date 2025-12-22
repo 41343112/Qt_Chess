@@ -118,6 +118,11 @@ const int PGN_MOVES_PER_LINE = 6;            // PGN 檔案中每行的移動回�
 const int ELO_BASE = 250;                    // 最低 ELO 評分（對應 Skill Level 0）
 const int ELO_PER_LEVEL = 150;               // 每級增加的 ELO 分數（確保結果能被50整除）
 
+// 地雷模式常數
+const QString MINE_COUNT_FONT_STYLE = "font-size: 20pt; font-weight: bold;";
+const QString MINE_AREA_BORDER_STYLE = "2px solid rgba(255, 100, 0, 0.6)";
+const QString NORMAL_BORDER_STYLE = "1px solid rgba(0, 255, 255, 0.3)";
+
 // 計算 ELO 評分的輔助函數
 static int calculateElo(int skillLevel) {
     return ELO_BASE + skillLevel * ELO_PER_LEVEL;
@@ -1934,7 +1939,7 @@ void Qt_Chess::updateBoard() {
                         // Append text styling to existing square style
                         QString currentStyle = m_squares[displayRow][displayCol]->styleSheet();
                         m_squares[displayRow][displayCol]->setStyleSheet(
-                            currentStyle + " " + colorStyle + " font-size: 20pt; font-weight: bold;"
+                            currentStyle + " " + colorStyle + " " + MINE_COUNT_FONT_STYLE
                         );
                     } else {
                         displayPieceOnSquare(m_squares[displayRow][displayCol], piece);
@@ -1972,11 +1977,11 @@ void Qt_Chess::updateSquareColor(int displayRow, int displayCol) {
     QString textColor = getPieceTextColor(logicalRow, logicalCol);
     
     // 地雷模式：為地雷區域添加特殊邊框
-    QString borderStyle = "1px solid rgba(0, 255, 255, 0.3)";
+    QString borderStyle = NORMAL_BORDER_STYLE;
     if (m_currentGameMode == GameMode::Minesweeper && 
         m_chessBoard.isMinesweeperSquare(logicalRow, logicalCol)) {
         // 地雷區域使用紅色邊框提示
-        borderStyle = "2px solid rgba(255, 100, 0, 0.6)";
+        borderStyle = MINE_AREA_BORDER_STYLE;
     }
     
     // 現代科技風格 - 帶有微妙的霓虹青色發光邊框效果和適當的文字顏色
