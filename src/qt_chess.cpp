@@ -964,13 +964,6 @@ void Qt_Chess::setupMainMenu() {
             this, &Qt_Chess::onMainMenuOnlinePlayClicked);
     menuLayout->addWidget(m_mainMenuOnlinePlayButton, 0, Qt::AlignCenter);
     
-    // 地雷模式按鈕
-    m_mainMenuMinesweeperButton = new QPushButton("💣 地雷模式", m_mainMenuWidget);
-    m_mainMenuMinesweeperButton->setStyleSheet(buttonStyle);
-    connect(m_mainMenuMinesweeperButton, &QPushButton::clicked, 
-            this, &Qt_Chess::onMainMenuMinesweeperClicked);
-    menuLayout->addWidget(m_mainMenuMinesweeperButton, 0, Qt::AlignCenter);
-    
     // 設定按鈕
     m_mainMenuSettingsButton = new QPushButton("⚙️ 設定", m_mainMenuWidget);
     m_mainMenuSettingsButton->setStyleSheet(buttonStyle);
@@ -1816,21 +1809,6 @@ void Qt_Chess::onMainMenuOnlinePlayClicked() {
     // 切換到線上遊玩模式
     showGameContent();
     onOnlineModeClicked();  // 顯示線上對戰對話框
-}
-
-void Qt_Chess::onMainMenuMinesweeperClicked() {
-    // 切換到地雷模式
-    showGameContent();
-    
-    // 設置為地雷模式
-    m_currentGameMode = GameMode::Minesweeper;
-    updateGameModeUI();
-    
-    // 初始化地雷
-    m_chessBoard.initializeMinesweeper();
-    
-    // 開始新遊戲
-    onNewGameClicked();
 }
 
 void Qt_Chess::onMainMenuSettingsClicked() {
