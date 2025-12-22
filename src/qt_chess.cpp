@@ -2779,6 +2779,13 @@ void Qt_Chess::onStartButtonClicked() {
     if (m_timeControlEnabled && !m_timerStarted) {
         // 重置棋盤到初始狀態
         resetBoardState();
+        
+        // 檢查線上模式是否選擇了地雷模式
+        if (m_isOnlineGame && m_selectedGameModes.contains("踩地雷") && m_selectedGameModes["踩地雷"]) {
+            m_currentGameMode = GameMode::Minesweeper;
+            m_chessBoard.initializeMinesweeper();
+            qDebug() << "[Qt_Chess::onStartButtonClicked] Minesweeper mode enabled in online game";
+        }
 
         // 清空棋譜列表
         if (m_moveListWidget) {
@@ -2912,6 +2919,13 @@ void Qt_Chess::onStartButtonClicked() {
     } else if (!m_timeControlEnabled && !m_gameStarted) {
         // 重置棋盤到初始狀態（即使沒有時間控制）
         resetBoardState();
+        
+        // 檢查線上模式是否選擇了地雷模式
+        if (m_isOnlineGame && m_selectedGameModes.contains("踩地雷") && m_selectedGameModes["踩地雷"]) {
+            m_currentGameMode = GameMode::Minesweeper;
+            m_chessBoard.initializeMinesweeper();
+            qDebug() << "[Qt_Chess::onStartButtonClicked] Minesweeper mode enabled in online game (no time control)";
+        }
 
         // 清空棋譜列表
         if (m_moveListWidget) {
@@ -3025,6 +3039,13 @@ void Qt_Chess::onStartButtonClicked() {
         
         // 重置棋盤到初始狀態
         resetBoardState();
+        
+        // 檢查線上模式是否選擇了地雷模式
+        if (m_selectedGameModes.contains("踩地雷") && m_selectedGameModes["踩地雷"]) {
+            m_currentGameMode = GameMode::Minesweeper;
+            m_chessBoard.initializeMinesweeper();
+            qDebug() << "[Qt_Chess::onStartButtonClicked] Minesweeper mode enabled in online game (timer already started)";
+        }
         
         // 清空棋譜列表
         if (m_moveListWidget) {
@@ -6015,6 +6036,14 @@ void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int increme
     
     // 初始化棋盤
     m_chessBoard.initializeBoard();
+    
+    // 檢查線上模式是否選擇了地雷模式
+    if (m_selectedGameModes.contains("踩地雷") && m_selectedGameModes["踩地雷"]) {
+        m_currentGameMode = GameMode::Minesweeper;
+        m_chessBoard.initializeMinesweeper();
+        qDebug() << "[Qt_Chess::onStartGameReceived] Minesweeper mode enabled in online game";
+    }
+    
     m_pieceSelected = false;
     m_uciMoveHistory.clear();
     
