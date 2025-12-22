@@ -118,6 +118,11 @@ const int PGN_MOVES_PER_LINE = 6;            // PGN 檔案中每行的移動回�
 const int ELO_BASE = 250;                    // 最低 ELO 評分（對應 Skill Level 0）
 const int ELO_PER_LEVEL = 150;               // 每級增加的 ELO 分數（確保結果能被50整除）
 
+// 地雷模式常數
+const QString MINE_COUNT_FONT_STYLE = "font-size: 20pt; font-weight: bold;";
+const QString MINE_AREA_BORDER_STYLE = "2px solid rgba(255, 100, 0, 0.6)";
+const QString NORMAL_BORDER_STYLE = "1px solid rgba(0, 255, 255, 0.3)";
+
 // 計算 ELO 評分的輔助函數
 static int calculateElo(int skillLevel) {
     return ELO_BASE + skillLevel * ELO_PER_LEVEL;
@@ -1887,8 +1892,42 @@ void Qt_Chess::updateBoard() {
             int displayRow = getDisplayRow(logicalRow);
             int displayCol = getDisplayCol(logicalCol);
             const ChessPiece& piece = m_chessBoard.getPiece(logicalRow, logicalCol);
-            displayPieceOnSquare(m_squares[displayRow][displayCol], piece);
+            
+            // First update square color
             updateSquareColor(displayRow, displayCol);
+            
+            // 地雷模式：在空格子上顯示地雷數量
+            if (m_currentGameMode == GameMode::Minesweeper && 
+                m_chessBoard.isMinesweeperSquare(logicalRow, logicalCol)) {
+                // 如果是空格且地雷數量已顯示，則在方格上顯示數字
+                if (piece.getType() == PieceType::None && 
+                    m_chessBoard.isMineCountRevealed(logicalRow, logicalCol)) {
+                    int mineCount = m_chessBoard.getMineCount(logicalRow, logicalCol);
+                    if (mineCount > 0) {
+                        // 用顏色標示地雷數量
+                        QString colorStyle;
+                        switch (mineCount) {
+                            case 1: colorStyle = "color: #0000FF;"; break;  // 藍色
+                            case 2: colorStyle = "color: #00AA00;"; break;  // 綠色
+                            case 3: colorStyle = "color: #FF0000;"; break;  // 紅色
+                            case 4: colorStyle = "color: #AA00AA;"; break;  // 紫色
+                            default: colorStyle = "color: #000000;"; break; // 黑色
+                        }
+                        m_squares[displayRow][displayCol]->setText(QString::number(mineCount));
+                        // Append text styling to existing square style
+                        QString currentStyle = m_squares[displayRow][displayCol]->styleSheet();
+                        m_squares[displayRow][displayCol]->setStyleSheet(
+                            currentStyle + " " + colorStyle + " " + MINE_COUNT_FONT_STYLE
+                        );
+                    } else {
+                        displayPieceOnSquare(m_squares[displayRow][displayCol], piece);
+                    }
+                } else {
+                    displayPieceOnSquare(m_squares[displayRow][displayCol], piece);
+                }
+            } else {
+                displayPieceOnSquare(m_squares[displayRow][displayCol], piece);
+            }
         }
     }
 
@@ -1915,9 +1954,17 @@ void Qt_Chess::updateSquareColor(int displayRow, int displayCol) {
     // 使用輔助函數獲取文字顏色
     QString textColor = getPieceTextColor(logicalRow, logicalCol);
     
+    // 地雷模式：為地雷區域添加特殊邊框
+    QString borderStyle = NORMAL_BORDER_STYLE;
+    if (m_currentGameMode == GameMode::Minesweeper && 
+        m_chessBoard.isMinesweeperSquare(logicalRow, logicalCol)) {
+        // 地雷區域使用紅色邊框提示
+        borderStyle = MINE_AREA_BORDER_STYLE;
+    }
+    
     // 現代科技風格 - 帶有微妙的霓虹青色發光邊框效果和適當的文字顏色
     m_squares[displayRow][displayCol]->setStyleSheet(
-        QString("QPushButton { background-color: %1; border: 1px solid rgba(0, 255, 255, 0.3); color: %2; }").arg(color.name(), textColor)
+        QString("QPushButton { background-color: %1; border: %2; color: %3; }").arg(color.name(), borderStyle, textColor)
         );
 }
 
@@ -2273,6 +2320,15 @@ void Qt_Chess::onSquareClicked(int displayRow, int displayCol) {
 
             updateBoard();
 
+            // 地雷模式：檢查是否踩到地雷
+            if (m_currentGameMode == GameMode::Minesweeper) {
+                if (m_chessBoard.checkMineExplosion(clickedSquare)) {
+                    // 棋子踩到地雷，已被移除
+                    QMessageBox::warning(this, "地雷爆炸", "💣 該棋子踩到地雷並被移除！");
+                    updateBoard();  // 重新更新棋盤顯示
+                }
+            }
+
             // 檢查是否需要兵升變
             if (m_chessBoard.needsPromotion(clickedSquare)) {
                 const ChessPiece& piece = m_chessBoard.getPiece(clickedSquare.y(), clickedSquare.x());
@@ -2332,6 +2388,12 @@ void Qt_Chess::onNewGameClicked() {
     }
 
     m_chessBoard.initializeBoard();
+    
+    // 地雷模式：初始化地雷
+    if (m_currentGameMode == GameMode::Minesweeper) {
+        m_chessBoard.initializeMinesweeper();
+    }
+    
     m_pieceSelected = false;
     m_gameStarted = false;  // 重置遊戲開始狀態
     m_uciMoveHistory.clear();  // 清空 UCI 移動歷史
@@ -2695,6 +2757,13 @@ void Qt_Chess::onStartButtonClicked() {
     if (m_timeControlEnabled && !m_timerStarted) {
         // 重置棋盤到初始狀態
         resetBoardState();
+        
+        // 檢查線上模式是否選擇了地雷模式
+        if (m_isOnlineGame && m_selectedGameModes.contains("踩地雷") && m_selectedGameModes["踩地雷"]) {
+            m_currentGameMode = GameMode::Minesweeper;
+            m_chessBoard.initializeMinesweeper();
+            qDebug() << "[Qt_Chess::onStartButtonClicked] Minesweeper mode enabled in online game";
+        }
 
         // 清空棋譜列表
         if (m_moveListWidget) {
@@ -2828,6 +2897,13 @@ void Qt_Chess::onStartButtonClicked() {
     } else if (!m_timeControlEnabled && !m_gameStarted) {
         // 重置棋盤到初始狀態（即使沒有時間控制）
         resetBoardState();
+        
+        // 檢查線上模式是否選擇了地雷模式
+        if (m_isOnlineGame && m_selectedGameModes.contains("踩地雷") && m_selectedGameModes["踩地雷"]) {
+            m_currentGameMode = GameMode::Minesweeper;
+            m_chessBoard.initializeMinesweeper();
+            qDebug() << "[Qt_Chess::onStartButtonClicked] Minesweeper mode enabled in online game (no time control)";
+        }
 
         // 清空棋譜列表
         if (m_moveListWidget) {
@@ -2941,6 +3017,13 @@ void Qt_Chess::onStartButtonClicked() {
         
         // 重置棋盤到初始狀態
         resetBoardState();
+        
+        // 檢查線上模式是否選擇了地雷模式
+        if (m_selectedGameModes.contains("踩地雷") && m_selectedGameModes["踩地雷"]) {
+            m_currentGameMode = GameMode::Minesweeper;
+            m_chessBoard.initializeMinesweeper();
+            qDebug() << "[Qt_Chess::onStartButtonClicked] Minesweeper mode enabled in online game (timer already started)";
+        }
         
         // 清空棋譜列表
         if (m_moveListWidget) {
@@ -5195,6 +5278,7 @@ bool Qt_Chess::isComputerTurn() const {
             // 電腦執白，人執黑
             return currentPlayer == PieceColor::White;
         case GameMode::OnlineGame:
+        case GameMode::Minesweeper:
         case GameMode::HumanVsHuman:
         default:
             return false;
@@ -5212,7 +5296,8 @@ bool Qt_Chess::isPlayerPiece(PieceColor pieceColor) const {
             // 電腦執白，人執黑
             return pieceColor == PieceColor::Black;
         case GameMode::OnlineGame:
-            // 線上對戰，只有本地玩家的顏色是玩家的
+        case GameMode::Minesweeper:
+            // 線上對戰或地雷模式，只有本地玩家的顏色是玩家的
             if (m_networkManager) {
                 return pieceColor == m_networkManager->getPlayerColor();
             }
@@ -5931,6 +6016,14 @@ void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int increme
     
     // 初始化棋盤
     m_chessBoard.initializeBoard();
+    
+    // 檢查線上模式是否選擇了地雷模式
+    if (m_selectedGameModes.contains("踩地雷") && m_selectedGameModes["踩地雷"]) {
+        m_currentGameMode = GameMode::Minesweeper;
+        m_chessBoard.initializeMinesweeper();
+        qDebug() << "[Qt_Chess::onStartGameReceived] Minesweeper mode enabled in online game";
+    }
+    
     m_pieceSelected = false;
     m_uciMoveHistory.clear();
     
