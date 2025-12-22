@@ -4907,6 +4907,14 @@ void Qt_Chess::onHumanModeClicked() {
         m_onlineButtonsWidget->hide();
     }
     
+    // 隱藏線上模式的連線狀態標籤
+    if (m_connectionStatusLabel) {
+        m_connectionStatusLabel->hide();
+    }
+    if (m_roomInfoLabel) {
+        m_roomInfoLabel->hide();
+    }
+    
     // 顯示開始按鈕（本地和電腦模式需要）
     if (m_startButton) {
         m_startButton->show();
@@ -4936,6 +4944,14 @@ void Qt_Chess::onComputerModeClicked() {
     // 隱藏線上模式的房間創建UI
     if (m_onlineButtonsWidget) {
         m_onlineButtonsWidget->hide();
+    }
+    
+    // 隱藏線上模式的連線狀態標籤
+    if (m_connectionStatusLabel) {
+        m_connectionStatusLabel->hide();
+    }
+    if (m_roomInfoLabel) {
+        m_roomInfoLabel->hide();
     }
     
     // 顯示開始按鈕（本地和電腦模式需要）
