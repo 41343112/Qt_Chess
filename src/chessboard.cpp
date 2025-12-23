@@ -1,7 +1,16 @@
 #include "chessboard.h"
+#include <QRandomGenerator>
+#include <algorithm>
+
+namespace {
+    // 地雷放置區域常數
+    const int MIN_MINE_ROW = 2;  // 地雷放置的最小行（避免影響起始棋子）
+    const int MAX_MINE_ROW = 6;  // 地雷放置的最大行（不包含，使用 < 而非 <=）
+}
 
 ChessBoard::ChessBoard()
-    : m_board(8, std::vector<ChessPiece>(8)), m_currentPlayer(PieceColor::White), m_enPassantTarget(-1, -1), m_gameResult(GameResult::InProgress)
+    : m_board(8, std::vector<ChessPiece>(8)), m_currentPlayer(PieceColor::White), m_enPassantTarget(-1, -1), m_gameResult(GameResult::InProgress),
+      m_minesweeperEnabled(false), m_minePositions(8, std::vector<bool>(8, false)), m_revealedSquares(8, std::vector<bool>(8, false))
 {
     initializeBoard();
 }
@@ -47,6 +56,15 @@ void ChessBoard::initializeBoard() {
     m_moveHistory.clear();
     m_gameResult = GameResult::InProgress;
     clearCapturedPieces();
+    
+    // 初始化地雷模式狀態
+    m_minesweeperEnabled = false;
+    for (int row = 0; row < 8; ++row) {
+        for (int col = 0; col < 8; ++col) {
+            m_minePositions[row][col] = false;
+            m_revealedSquares[row][col] = false;
+        }
+    }
 }
 
 const ChessPiece& ChessBoard::getPiece(int row, int col) const {
@@ -243,6 +261,26 @@ bool ChessBoard::movePiece(const QPoint& from, const QPoint& to) {
     m_board[to.y()][to.x()] = piece;
     m_board[to.y()][to.x()].setMoved(true);
     m_board[from.y()][from.x()] = ChessPiece(PieceType::None, PieceColor::None);
+    
+    // 處理地雷模式
+    if (m_minesweeperEnabled) {
+        // 揭開目標方格
+        revealSquare(to.y(), to.x());
+        
+        // 如果踩到地雷，移除該棋子
+        if (hasMine(to.y(), to.x())) {
+            // 棋子踩到地雷被炸毀
+            ChessPiece destroyedPiece = m_board[to.y()][to.x()];
+            m_board[to.y()][to.x()] = ChessPiece(PieceType::None, PieceColor::None);
+            
+            // 將被炸毀的棋子加入被吃掉列表
+            if (destroyedPiece.getColor() == PieceColor::White) {
+                m_capturedWhite.push_back(destroyedPiece);
+            } else if (destroyedPiece.getColor() == PieceColor::Black) {
+                m_capturedBlack.push_back(destroyedPiece);
+            }
+        }
+    }
     
     // 記錄移動（在切換玩家之前，因為 recordMove 需要檢查對手是否被將軍）
     recordMove(from, to, isCapture, isCastling, isEnPassant);
@@ -642,4 +680,119 @@ const std::vector<ChessPiece>& ChessBoard::getCapturedPieces(PieceColor color) c
 void ChessBoard::clearCapturedPieces() {
     m_capturedWhite.clear();
     m_capturedBlack.clear();
+}
+
+// ========================================
+// 地雷模式實現 (Minesweeper Mode Implementation)
+// ========================================
+
+void ChessBoard::enableMinesweeperMode(bool enable, int mineCount) {
+    m_minesweeperEnabled = enable;
+    
+    if (enable) {
+        // 清空現有地雷
+        for (int row = 0; row < 8; ++row) {
+            for (int col = 0; col < 8; ++col) {
+                m_minePositions[row][col] = false;
+                m_revealedSquares[row][col] = false;
+            }
+        }
+        
+        // 放置新地雷
+        placeMines(mineCount);
+    }
+}
+
+void ChessBoard::placeMines(int count) {
+    // 限制地雷數量在合理範圍內（1-20）
+    count = qMax(1, qMin(20, count));
+    
+    // 獲取所有空方格（中間4行，避免放在起始棋子位置）
+    std::vector<QPoint> emptySquares;
+    for (int row = MIN_MINE_ROW; row < MAX_MINE_ROW; ++row) {
+        for (int col = 0; col < 8; ++col) {
+            if (m_board[row][col].getType() == PieceType::None) {
+                emptySquares.push_back(QPoint(col, row));
+            }
+        }
+    }
+    
+    // 使用 Fisher-Yates 洗牌算法的部分選擇來放置地雷
+    QRandomGenerator* rng = QRandomGenerator::global();
+    int placedMines = 0;
+    int availableSize = static_cast<int>(emptySquares.size());
+    
+    // 確保有足夠的空格放置地雷
+    if (availableSize == 0) {
+        return;  // 沒有可用的空格，無法放置地雷
+    }
+    
+    while (placedMines < count && placedMines < availableSize) {
+        // 從剩餘的位置中隨機選擇一個
+        int index = placedMines + rng->bounded(availableSize - placedMines);
+        
+        // 交換選中的位置到已處理區域
+        std::swap(emptySquares[placedMines], emptySquares[index]);
+        
+        // 在選中的位置放置地雷
+        QPoint pos = emptySquares[placedMines];
+        m_minePositions[pos.y()][pos.x()] = true;
+        placedMines++;
+    }
+}
+
+bool ChessBoard::hasMine(int row, int col) const {
+    if (row < 0 || row >= 8 || col < 0 || col >= 8) {
+        return false;
+    }
+    return m_minePositions[row][col];
+}
+
+bool ChessBoard::isMineRevealed(int row, int col) const {
+    if (row < 0 || row >= 8 || col < 0 || col >= 8) {
+        return false;
+    }
+    return hasMine(row, col) && m_revealedSquares[row][col];
+}
+
+void ChessBoard::revealMine(int row, int col) {
+    if (row >= 0 && row < 8 && col >= 0 && col < 8) {
+        m_revealedSquares[row][col] = true;
+    }
+}
+
+int ChessBoard::getAdjacentMineCount(int row, int col) const {
+    if (row < 0 || row >= 8 || col < 0 || col >= 8) {
+        return 0;
+    }
+    
+    int count = 0;
+    // 檢查周圍8個方格
+    for (int dr = -1; dr <= 1; ++dr) {
+        for (int dc = -1; dc <= 1; ++dc) {
+            if (dr == 0 && dc == 0) continue; // 跳過自己
+            
+            int newRow = row + dr;
+            int newCol = col + dc;
+            
+            if (hasMine(newRow, newCol)) {
+                count++;
+            }
+        }
+    }
+    
+    return count;
+}
+
+bool ChessBoard::isSquareRevealed(int row, int col) const {
+    if (row < 0 || row >= 8 || col < 0 || col >= 8) {
+        return false;
+    }
+    return m_revealedSquares[row][col];
+}
+
+void ChessBoard::revealSquare(int row, int col) {
+    if (row >= 0 && row < 8 && col >= 0 && col < 8) {
+        m_revealedSquares[row][col] = true;
+    }
 }
