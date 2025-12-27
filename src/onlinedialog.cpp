@@ -76,10 +76,17 @@ void OnlineDialog::setupUI()
 
 QMap<QString, bool> OnlineDialog::getGameModes() const
 {
+    qDebug() << "[OnlineDialog::getGameModes] Getting game modes...";
+    qDebug() << "[OnlineDialog::getGameModes] m_standardModeCheckbox:" << (m_standardModeCheckbox != nullptr);
+    if (m_standardModeCheckbox) {
+        qDebug() << "[OnlineDialog::getGameModes] m_standardModeCheckbox->isChecked():" << m_standardModeCheckbox->isChecked();
+    }
+    
     QMap<QString, bool> gameModes;
     
     if (m_standardModeCheckbox) {
         gameModes["霧戰"] = m_standardModeCheckbox->isChecked();
+        qDebug() << "[OnlineDialog::getGameModes] Added 霧戰:" << m_standardModeCheckbox->isChecked();
     }
     if (m_rapidModeCheckbox) {
         gameModes["地吸引力"] = m_rapidModeCheckbox->isChecked();
@@ -93,6 +100,8 @@ QMap<QString, bool> OnlineDialog::getGameModes() const
     if (m_customRulesCheckbox) {
         gameModes["踩地雷"] = m_customRulesCheckbox->isChecked();
     }
+    
+    qDebug() << "[OnlineDialog::getGameModes] Returning" << gameModes.size() << "game modes";
     
     return gameModes;
 }

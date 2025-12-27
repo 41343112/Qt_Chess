@@ -5600,18 +5600,25 @@ void Qt_Chess::onOnlineModeClicked() {
 }
 
 void Qt_Chess::onCreateRoomButtonClicked() {
+    qDebug() << "[Qt_Chess::onCreateRoomButtonClicked] Starting...";
+    
     // 顯示遊戲模式選擇對話框
     OnlineDialog dialog(this);
     // OnlineDialog 默認就是創建房間模式，遊戲模式選擇會自動顯示
     
+    qDebug() << "[Qt_Chess::onCreateRoomButtonClicked] Dialog created, showing...";
+    
     if (dialog.exec() != QDialog::Accepted) {
+        qDebug() << "[Qt_Chess::onCreateRoomButtonClicked] Dialog cancelled";
         return; // 使用者取消
     }
+    
+    qDebug() << "[Qt_Chess::onCreateRoomButtonClicked] Dialog accepted, getting game modes...";
     
     // 儲存選擇的遊戲模式
     m_selectedGameModes = dialog.getGameModes();
     
-    qDebug() << "[Qt_Chess::onCreateRoomButtonClicked] Game modes selected by host:";
+    qDebug() << "[Qt_Chess::onCreateRoomButtonClicked] Game modes selected by host (count:" << m_selectedGameModes.size() << "):";
     QMapIterator<QString, bool> debugIt(m_selectedGameModes);
     while (debugIt.hasNext()) {
         debugIt.next();
