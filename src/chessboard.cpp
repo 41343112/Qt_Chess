@@ -658,7 +658,16 @@ std::vector<QPoint> ChessBoard::getVisibleSquaresForColor(PieceColor color) cons
                 QPoint piecePos(col, row);
                 
                 // 棋子本身所在的位置一定可見
-                visibleSquares.push_back(piecePos);
+                bool pieceAlreadyAdded = false;
+                for (const QPoint& sq : visibleSquares) {
+                    if (sq == piecePos) {
+                        pieceAlreadyAdded = true;
+                        break;
+                    }
+                }
+                if (!pieceAlreadyAdded) {
+                    visibleSquares.push_back(piecePos);
+                }
                 
                 // 檢查該棋子可以移動到的所有位置
                 for (int targetRow = 0; targetRow < 8; ++targetRow) {
@@ -669,7 +678,17 @@ std::vector<QPoint> ChessBoard::getVisibleSquaresForColor(PieceColor color) cons
                         if (piece.isValidMove(piecePos, targetPos, m_board, m_enPassantTarget)) {
                             // 檢查是否會使自己被將軍（這樣的移動是不合法的）
                             if (!wouldBeInCheck(piecePos, targetPos, color)) {
-                                visibleSquares.push_back(targetPos);
+                                // 檢查是否已經添加過這個方格
+                                bool alreadyAdded = false;
+                                for (const QPoint& sq : visibleSquares) {
+                                    if (sq == targetPos) {
+                                        alreadyAdded = true;
+                                        break;
+                                    }
+                                }
+                                if (!alreadyAdded) {
+                                    visibleSquares.push_back(targetPos);
+                                }
                             }
                         }
                     }

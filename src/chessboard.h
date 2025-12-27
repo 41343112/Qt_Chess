@@ -74,6 +74,7 @@ public:
     void clearCapturedPieces();
     
     // 霧戰模式 - Fog of War
+    // 返回指定顏色玩家可見的所有方格位置（包括己方棋子位置及其可移動範圍）
     std::vector<QPoint> getVisibleSquaresForColor(PieceColor color) const;
     
 private:
