@@ -2095,25 +2095,65 @@ void Qt_Chess::applyLastMoveHighlight() {
         return;
     }
     
-    // 高亮「從」格子（黃色）
-    int fromDisplayRow = getDisplayRow(m_lastMoveFrom.y());
-    int fromDisplayCol = getDisplayCol(m_lastMoveFrom.x());
-    bool fromIsLight = (m_lastMoveFrom.y() + m_lastMoveFrom.x()) % 2 == 0;
-    QString fromColor = fromIsLight ? LAST_MOVE_LIGHT_COLOR : LAST_MOVE_DARK_COLOR;
-    QString fromTextColor = getPieceTextColor(m_lastMoveFrom.y(), m_lastMoveFrom.x());
-    m_squares[fromDisplayRow][fromDisplayCol]->setStyleSheet(
-        QString("QPushButton { background-color: %1; border: 1px solid #333; color: %2; }").arg(fromColor, fromTextColor)
-    );
-    
-    // 高亮「到」格子（黃色）
-    int toDisplayRow = getDisplayRow(m_lastMoveTo.y());
-    int toDisplayCol = getDisplayCol(m_lastMoveTo.x());
-    bool toIsLight = (m_lastMoveTo.y() + m_lastMoveTo.x()) % 2 == 0;
-    QString toColor = toIsLight ? LAST_MOVE_LIGHT_COLOR : LAST_MOVE_DARK_COLOR;
-    QString toTextColor = getPieceTextColor(m_lastMoveTo.y(), m_lastMoveTo.x());
-    m_squares[toDisplayRow][toDisplayCol]->setStyleSheet(
-        QString("QPushButton { background-color: %1; border: 1px solid #333; color: %2; }").arg(toColor, toTextColor)
-    );
+    // 如果啟用霧戰模式，檢查這些格子是否可見
+    if (isFogModeEnabled()) {
+        PieceColor viewingPlayer;
+        if (m_isOnlineGame && m_networkManager) {
+            viewingPlayer = m_networkManager->getPlayerColor();
+        } else {
+            viewingPlayer = m_chessBoard.getCurrentPlayer();
+        }
+        
+        std::vector<std::vector<bool>> visibility;
+        getVisibleSquaresForPlayer(viewingPlayer, visibility);
+        
+        // 只高亮可見的格子
+        bool fromVisible = visibility[m_lastMoveFrom.y()][m_lastMoveFrom.x()];
+        bool toVisible = visibility[m_lastMoveTo.y()][m_lastMoveTo.x()];
+        
+        if (fromVisible) {
+            int fromDisplayRow = getDisplayRow(m_lastMoveFrom.y());
+            int fromDisplayCol = getDisplayCol(m_lastMoveFrom.x());
+            bool fromIsLight = (m_lastMoveFrom.y() + m_lastMoveFrom.x()) % 2 == 0;
+            QString fromColor = fromIsLight ? LAST_MOVE_LIGHT_COLOR : LAST_MOVE_DARK_COLOR;
+            QString fromTextColor = getPieceTextColor(m_lastMoveFrom.y(), m_lastMoveFrom.x());
+            m_squares[fromDisplayRow][fromDisplayCol]->setStyleSheet(
+                QString("QPushButton { background-color: %1; border: 1px solid #333; color: %2; }").arg(fromColor, fromTextColor)
+            );
+        }
+        
+        if (toVisible) {
+            int toDisplayRow = getDisplayRow(m_lastMoveTo.y());
+            int toDisplayCol = getDisplayCol(m_lastMoveTo.x());
+            bool toIsLight = (m_lastMoveTo.y() + m_lastMoveTo.x()) % 2 == 0;
+            QString toColor = toIsLight ? LAST_MOVE_LIGHT_COLOR : LAST_MOVE_DARK_COLOR;
+            QString toTextColor = getPieceTextColor(m_lastMoveTo.y(), m_lastMoveTo.x());
+            m_squares[toDisplayRow][toDisplayCol]->setStyleSheet(
+                QString("QPushButton { background-color: %1; border: 1px solid #333; color: %2; }").arg(toColor, toTextColor)
+            );
+        }
+    } else {
+        // 非霧戰模式，正常高亮
+        // 高亮「從」格子（黃色）
+        int fromDisplayRow = getDisplayRow(m_lastMoveFrom.y());
+        int fromDisplayCol = getDisplayCol(m_lastMoveFrom.x());
+        bool fromIsLight = (m_lastMoveFrom.y() + m_lastMoveFrom.x()) % 2 == 0;
+        QString fromColor = fromIsLight ? LAST_MOVE_LIGHT_COLOR : LAST_MOVE_DARK_COLOR;
+        QString fromTextColor = getPieceTextColor(m_lastMoveFrom.y(), m_lastMoveFrom.x());
+        m_squares[fromDisplayRow][fromDisplayCol]->setStyleSheet(
+            QString("QPushButton { background-color: %1; border: 1px solid #333; color: %2; }").arg(fromColor, fromTextColor)
+        );
+        
+        // 高亮「到」格子（黃色）
+        int toDisplayRow = getDisplayRow(m_lastMoveTo.y());
+        int toDisplayCol = getDisplayCol(m_lastMoveTo.x());
+        bool toIsLight = (m_lastMoveTo.y() + m_lastMoveTo.x()) % 2 == 0;
+        QString toColor = toIsLight ? LAST_MOVE_LIGHT_COLOR : LAST_MOVE_DARK_COLOR;
+        QString toTextColor = getPieceTextColor(m_lastMoveTo.y(), m_lastMoveTo.x());
+        m_squares[toDisplayRow][toDisplayCol]->setStyleSheet(
+            QString("QPushButton { background-color: %1; border: 1px solid #333; color: %2; }").arg(toColor, toTextColor)
+        );
+    }
 }
 
 int Qt_Chess::getDisplayRow(int logicalRow) const {
