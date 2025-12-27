@@ -412,13 +412,7 @@ void NetworkManager::processMessage(const QJsonObject& message)
         qint64 serverTimestamp = message["serverTimestamp"].toVariant().toLongLong();
         
         // 解析遊戲模式
-        QMap<QString, bool> gameModes;
-        if (message.contains("gameModes")) {
-            QJsonObject gameModesJson = message["gameModes"].toObject();
-            for (auto it = gameModesJson.constBegin(); it != gameModesJson.constEnd(); ++it) {
-                gameModes[it.key()] = it.value().toBool();
-            }
-        }
+        QMap<QString, bool> gameModes = parseGameModesFromJson(message);
         
         // 計算伺服器時間偏移（伺服器時間 - 本地時間）
         qint64 localTimestamp = QDateTime::currentMSecsSinceEpoch();
@@ -595,13 +589,7 @@ void NetworkManager::processMessage(const QJsonObject& message)
             PieceColor hostColor = (hostColorStr == "White") ? PieceColor::White : PieceColor::Black;
             
             // 解析遊戲模式
-            QMap<QString, bool> gameModes;
-            if (message.contains("gameModes")) {
-                QJsonObject gameModesJson = message["gameModes"].toObject();
-                for (auto it = gameModesJson.constBegin(); it != gameModesJson.constEnd(); ++it) {
-                    gameModes[it.key()] = it.value().toBool();
-                }
-            }
+            QMap<QString, bool> gameModes = parseGameModesFromJson(message);
             
             // 計算伺服器時間偏移（如果訊息中包含伺服器時間戳）
             qint64 serverTimeOffset = 0;
@@ -730,4 +718,16 @@ QString NetworkManager::messageTypeToString(MessageType type) const
     };
     
     return stringMap.value(type, "Unknown");
+}
+
+QMap<QString, bool> NetworkManager::parseGameModesFromJson(const QJsonObject& message) const
+{
+    QMap<QString, bool> gameModes;
+    if (message.contains("gameModes")) {
+        QJsonObject gameModesJson = message["gameModes"].toObject();
+        for (auto it = gameModesJson.constBegin(); it != gameModesJson.constEnd(); ++it) {
+            gameModes[it.key()] = it.value().toBool();
+        }
+    }
+    return gameModes;
 }

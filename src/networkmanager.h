@@ -116,6 +116,7 @@ private:
     void processMessage(const QJsonObject& message);
     MessageType stringToMessageType(const QString& type) const;
     QString messageTypeToString(MessageType type) const;
+    QMap<QString, bool> parseGameModesFromJson(const QJsonObject& message) const;
 };
 
 #endif // NETWORKMANAGER_H
