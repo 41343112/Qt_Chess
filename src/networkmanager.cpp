@@ -169,7 +169,7 @@ void NetworkManager::sendGameStart(PieceColor playerColor)
     sendMessage(message);
 }
 
-void NetworkManager::sendStartGame(int whiteTimeMs, int blackTimeMs, int incrementMs, PieceColor hostColor)
+void NetworkManager::sendStartGame(int whiteTimeMs, int blackTimeMs, int incrementMs, PieceColor hostColor, const QMap<QString, bool>& gameModes)
 {
     if (m_roomNumber.isEmpty()) {
         qDebug() << "[NetworkManager::sendStartGame] ERROR: Room number is empty";
@@ -183,6 +183,16 @@ void NetworkManager::sendStartGame(int whiteTimeMs, int blackTimeMs, int increme
     message["blackTimeMs"] = blackTimeMs;
     message["incrementMs"] = incrementMs;
     message["hostColor"] = (hostColor == PieceColor::White) ? "White" : "Black";
+    
+    // 添加遊戲模式
+    QJsonObject gameModesJson;
+    QMapIterator<QString, bool> it(gameModes);
+    while (it.hasNext()) {
+        it.next();
+        gameModesJson[it.key()] = it.value();
+    }
+    message["gameModes"] = gameModesJson;
+    
     sendMessage(message);
 }
 
@@ -585,6 +595,15 @@ void NetworkManager::processMessage(const QJsonObject& message)
                 serverTimeOffset = serverTimestamp - localTimestamp;
             }
             
+            // 提取遊戲模式
+            QMap<QString, bool> gameModes;
+            if (message.contains("gameModes")) {
+                QJsonObject gameModesJson = message["gameModes"].toObject();
+                for (auto it = gameModesJson.begin(); it != gameModesJson.end(); ++it) {
+                    gameModes[it.key()] = it.value().toBool();
+                }
+            }
+            
             // 根據房主的顏色選擇更新玩家顏色
             if (m_role == NetworkRole::Host) {
                 m_playerColor = hostColor;
@@ -594,7 +613,7 @@ void NetworkManager::processMessage(const QJsonObject& message)
                 m_opponentColor = hostColor;
             }
             
-            emit startGameReceived(whiteTimeMs, blackTimeMs, incrementMs, hostColor, serverTimeOffset);
+            emit startGameReceived(whiteTimeMs, blackTimeMs, incrementMs, hostColor, serverTimeOffset, gameModes);
         }
         break;
     
