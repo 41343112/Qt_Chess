@@ -254,6 +254,10 @@ private:
     qint64 m_lastDrawRequestTime;        // 上次請求和棋的時間（毫秒）
     QMap<QString, bool> m_selectedGameModes;  // 選擇的遊戲模式
     
+    // 霧戰模式相關 (Fog of War Mode)
+    bool m_fogOfWarEnabled;              // 是否啟用霧戰模式
+    std::vector<std::vector<bool>> m_visibleSquares;  // 可見方格（8x8）
+    
     // ========================================
     // 音效系統 (Sound System)
     // ========================================
@@ -454,6 +458,11 @@ private:
     void updateConnectionStatus();
     bool isOnlineTurn() const;
     void showRoomInfoDialog(const QString& roomNumber);
+    
+    // 霧戰模式 (Fog of War Mode)
+    void updateVisibleSquares();         // 更新可見方格
+    bool isSquareVisible(int row, int col) const;  // 檢查方格是否可見
+    void calculateVisibleSquares(PieceColor playerColor);  // 計算玩家可見的方格
     
     // ========================================
     // 音效系統 (Sound System)

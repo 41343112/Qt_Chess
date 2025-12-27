@@ -252,6 +252,7 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     , m_waitingForOpponent(false)
     , m_onlineHostSelectedColor(PieceColor::White)
     , m_lastDrawRequestTime(0)
+    , m_fogOfWarEnabled(false)
     , m_bgmPlayer(nullptr)
     , m_bgmEnabled(true)
     , m_bgmVolume(30)
@@ -305,6 +306,10 @@ Qt_Chess::Qt_Chess(QWidget *parent)
     loadEngineSettings();  // 載入引擎設定
     initializeEngine();  // 初始化棋局引擎
     initializeNetwork(); // 初始化網路管理器
+    
+    // 初始化霧戰模式的可見方格陣列（8x8）
+    m_visibleSquares.resize(8, std::vector<bool>(8, true));
+    
     updateBoard();
     updateStatus();
     updateTimeDisplays();
@@ -1741,6 +1746,9 @@ void Qt_Chess::resetGameState() {
     // 清除線上模式的遊戲模式選擇
     m_selectedGameModes.clear();
     
+    // 停用霧戰模式
+    m_fogOfWarEnabled = false;
+    
     // 停止計時器
     if (m_gameTimer) {
         if (m_gameTimer->isActive()) {
@@ -1882,6 +1890,9 @@ void Qt_Chess::onBackToMainMenuClicked() {
 // ============================================================================
 
 void Qt_Chess::updateBoard() {
+    // 更新霧戰模式的可見方格
+    updateVisibleSquares();
+    
     for (int logicalRow = 0; logicalRow < 8; ++logicalRow) {
         for (int logicalCol = 0; logicalCol < 8; ++logicalCol) {
             int displayRow = getDisplayRow(logicalRow);
@@ -1911,6 +1922,12 @@ void Qt_Chess::updateSquareColor(int displayRow, int displayCol) {
     int logicalCol = getLogicalCol(displayCol);
     bool isLight = (logicalRow + logicalCol) % 2 == 0;
     QColor color = isLight ? m_boardColorSettings.lightSquareColor : m_boardColorSettings.darkSquareColor;
+    
+    // 檢查是否啟用霧戰模式且該方格不可見
+    if (m_fogOfWarEnabled && m_isOnlineGame && !isSquareVisible(logicalRow, logicalCol)) {
+        // 用黑色覆蓋不可見的方格
+        color = QColor(0, 0, 0);  // 純黑色
+    }
     
     // 使用輔助函數獲取文字顏色
     QString textColor = getPieceTextColor(logicalRow, logicalCol);
@@ -1952,6 +1969,21 @@ void Qt_Chess::displayPieceOnSquare(QPushButton* square, const ChessPiece& piece
     // 清除 previous content
     square->setText("");
     square->setIcon(QIcon());
+    
+    // 檢查該方格是否在霧戰模式下可見
+    // 首先需要找到該方格的坐標
+    QPoint coords = m_buttonCoordinates.value(square, QPoint(-1, -1));
+    if (coords.x() >= 0 && coords.y() >= 0) {
+        int displayRow = coords.y();
+        int displayCol = coords.x();
+        int logicalRow = getLogicalRow(displayRow);
+        int logicalCol = getLogicalCol(displayCol);
+        
+        // 如果霧戰模式啟用且該方格不可見，不顯示棋子
+        if (m_fogOfWarEnabled && m_isOnlineGame && !isSquareVisible(logicalRow, logicalCol)) {
+            return;  // 不顯示任何棋子
+        }
+    }
 
     // 使用圖示或符號顯示棋子
     if (m_pieceIconSettings.useCustomIcons) {
@@ -4881,6 +4913,9 @@ void Qt_Chess::onHumanModeClicked() {
     // 清除線上模式的遊戲模式選擇
     m_selectedGameModes.clear();
     
+    // 停用霧戰模式
+    m_fogOfWarEnabled = false;
+    
     // 隱藏線上模式的房間創建UI
     if (m_onlineButtonsWidget) {
         m_onlineButtonsWidget->hide();
@@ -4911,6 +4946,9 @@ void Qt_Chess::onComputerModeClicked() {
     
     // 清除線上模式的遊戲模式選擇
     m_selectedGameModes.clear();
+    
+    // 停用霧戰模式
+    m_fogOfWarEnabled = false;
     
     // 隱藏線上模式的房間創建UI
     if (m_onlineButtonsWidget) {
@@ -6033,6 +6071,14 @@ void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int increme
     // 當遊戲開始時，將右側伸展設為 1
     setRightPanelStretch(1);
     
+    // 檢查是否啟用霧戰模式
+    if (m_selectedGameModes.contains("霧戰") && m_selectedGameModes["霧戰"]) {
+        m_fogOfWarEnabled = true;
+        qDebug() << "[Qt_Chess::onStartGameReceived] Fog of War mode enabled";
+    } else {
+        m_fogOfWarEnabled = false;
+    }
+    
     // 更新棋盤和狀態
     updateBoard();
     updateStatus();
@@ -6558,6 +6604,9 @@ void Qt_Chess::onCancelRoomClicked() {
         // 清除線上模式的遊戲模式選擇
         m_selectedGameModes.clear();
         
+        // 停用霧戰模式
+        m_fogOfWarEnabled = false;
+        
         // 隱藏開始按鈕，直到重新創建或加入房間
         if (m_startButton) {
             m_startButton->hide();
@@ -6658,6 +6707,9 @@ void Qt_Chess::onExitRoomClicked() {
         
         // 清除線上模式的遊戲模式選擇
         m_selectedGameModes.clear();
+        
+        // 停用霧戰模式
+        m_fogOfWarEnabled = false;
         
         // 只有在確實是線上遊戲時才重置棋盤
         if (wasOnlineGame) {
@@ -7535,4 +7587,77 @@ void Qt_Chess::onUpdateCheckFailed(const QString& error) {
     // 重設手動檢查標記
     m_manualUpdateCheck = false;
 }
+
+// ========================================
+// 霧戰模式實現 (Fog of War Mode Implementation)
+// ========================================
+
+void Qt_Chess::calculateVisibleSquares(PieceColor playerColor) {
+    // 重置所有方格為不可見
+    for (int row = 0; row < 8; ++row) {
+        for (int col = 0; col < 8; ++col) {
+            m_visibleSquares[row][col] = false;
+        }
+    }
+    
+    // 遍歷所有玩家的棋子
+    for (int row = 0; row < 8; ++row) {
+        for (int col = 0; col < 8; ++col) {
+            const ChessPiece& piece = m_chessBoard.getPiece(row, col);
+            
+            // 如果是玩家的棋子
+            if (piece.getColor() == playerColor && piece.getType() != PieceType::None) {
+                // 該棋子所在的方格可見
+                m_visibleSquares[row][col] = true;
+                
+                // 計算該棋子可以移動到的所有合法位置
+                QPoint from(col, row);
+                
+                // 臨時改變當前玩家以允許檢查該顏色的所有合法移動
+                PieceColor savedPlayer = m_chessBoard.getCurrentPlayer();
+                const_cast<ChessBoard&>(m_chessBoard).setCurrentPlayer(playerColor);
+                
+                for (int targetRow = 0; targetRow < 8; ++targetRow) {
+                    for (int targetCol = 0; targetCol < 8; ++targetCol) {
+                        QPoint to(targetCol, targetRow);
+                        
+                        // 使用 ChessBoard 的 isValidMove 檢查
+                        if (m_chessBoard.isValidMove(from, to)) {
+                            m_visibleSquares[targetRow][targetCol] = true;
+                        }
+                    }
+                }
+                
+                // 恢復原來的玩家
+                const_cast<ChessBoard&>(m_chessBoard).setCurrentPlayer(savedPlayer);
+            }
+        }
+    }
+}
+
+void Qt_Chess::updateVisibleSquares() {
+    if (!m_fogOfWarEnabled || !m_isOnlineGame) {
+        // 如果霧戰模式未啟用或不是線上遊戲，所有方格都可見
+        for (int row = 0; row < 8; ++row) {
+            for (int col = 0; col < 8; ++col) {
+                m_visibleSquares[row][col] = true;
+            }
+        }
+        return;
+    }
+    
+    // 確定當前玩家的顏色
+    PieceColor playerColor = m_networkManager->getPlayerColor();
+    
+    // 計算可見方格
+    calculateVisibleSquares(playerColor);
+}
+
+bool Qt_Chess::isSquareVisible(int row, int col) const {
+    if (row < 0 || row >= 8 || col < 0 || col >= 8) {
+        return false;
+    }
+    return m_visibleSquares[row][col];
+}
+
 
