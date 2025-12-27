@@ -6010,6 +6010,23 @@ void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int increme
         qDebug() << "  -" << it.key() << ":" << it.value();
     }
     
+    // 如果是房客，顯示啟用的遊戲模式通知
+    if (m_networkManager && m_networkManager->getRole() == NetworkRole::Guest) {
+        QStringList activeModes;
+        if (gameModes.value("霧戰", false)) activeModes << "🌫️ 霧戰";
+        if (gameModes.value("地吸引力", false)) activeModes << "🌍 地吸引力";
+        if (gameModes.value("傳送陣", false)) activeModes << "🔮 傳送陣";
+        if (gameModes.value("骰子", false)) activeModes << "🎲 骰子";
+        if (gameModes.value("踩地雷", false)) activeModes << "💣 踩地雷";
+        
+        if (!activeModes.isEmpty()) {
+            QString modesText = activeModes.join("、");
+            if (m_connectionStatusLabel) {
+                m_connectionStatusLabel->setText("🎮 啟用模式：" + modesText);
+            }
+        }
+    }
+    
     // 儲存伺服器時間偏移和遊戲開始時間，用於線上模式的時間同步
     m_serverTimeOffset = serverTimeOffset;
     m_gameStartLocalTime = QDateTime::currentMSecsSinceEpoch();
