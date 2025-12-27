@@ -2711,6 +2711,11 @@ void Qt_Chess::onStartButtonClicked() {
             m_networkManager->setPlayerColors(m_onlineHostSelectedColor);
         }
         
+        qDebug() << "[Qt_Chess::onStartButtonClicked] Host sending game modes:";
+        for (auto it = m_selectedGameModes.constBegin(); it != m_selectedGameModes.constEnd(); ++it) {
+            qDebug() << "  -" << it.key() << ":" << it.value();
+        }
+        
         m_networkManager->sendStartGame(whiteTimeMs, blackTimeMs, incrementMs, m_onlineHostSelectedColor, m_selectedGameModes);
         
         qDebug() << "[Qt_Chess::onStartButtonClicked] Host sending StartGame to server"
@@ -5998,6 +6003,12 @@ void Qt_Chess::onStartGameReceived(int whiteTimeMs, int blackTimeMs, int increme
     
     // 儲存接收到的遊戲模式（房客同步房主選擇的模式）
     m_selectedGameModes = gameModes;
+    
+    // 記錄同步的遊戲模式
+    qDebug() << "[Qt_Chess::onStartGameReceived] Synchronized game modes:";
+    for (auto it = gameModes.constBegin(); it != gameModes.constEnd(); ++it) {
+        qDebug() << "  -" << it.key() << ":" << it.value();
+    }
     
     // 儲存伺服器時間偏移和遊戲開始時間，用於線上模式的時間同步
     m_serverTimeOffset = serverTimeOffset;
