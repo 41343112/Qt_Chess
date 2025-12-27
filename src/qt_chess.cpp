@@ -7613,7 +7613,11 @@ void Qt_Chess::calculateVisibleSquares(PieceColor playerColor) {
                 // 計算該棋子可以移動到的所有合法位置
                 QPoint from(col, row);
                 
-                // 臨時改變當前玩家以允許檢查該顏色的所有合法移動
+                // 注意：這裡使用 const_cast 暫時改變當前玩家以檢查該顏色的合法移動。
+                // 這是安全的，因為：
+                // 1. isValidMove() 是 const 方法，不會修改棋盤狀態
+                // 2. 我們立即恢復原來的玩家顏色
+                // 3. 這只用於可見性計算，不影響實際遊戲狀態
                 PieceColor savedPlayer = m_chessBoard.getCurrentPlayer();
                 const_cast<ChessBoard&>(m_chessBoard).setCurrentPlayer(playerColor);
                 
