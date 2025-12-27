@@ -118,6 +118,7 @@ wss.on('connection', ws => {
                     blackTimeMs: blackTimeMs,
                     incrementMs: msg.incrementMs,
                     hostColor: msg.hostColor,
+                    gameModes: msg.gameModes || {},  // 添加遊戲模式，如果沒有則為空物件
                     serverTimestamp: Date.now() + 500,  // 添加 500ms 緩衝以補償網路延遲
                     // 發送初始計時器狀態
                     timerState: {
