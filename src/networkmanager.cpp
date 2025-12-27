@@ -169,7 +169,7 @@ void NetworkManager::sendGameStart(PieceColor playerColor)
     sendMessage(message);
 }
 
-void NetworkManager::sendStartGame(int whiteTimeMs, int blackTimeMs, int incrementMs, PieceColor hostColor)
+void NetworkManager::sendStartGame(int whiteTimeMs, int blackTimeMs, int incrementMs, PieceColor hostColor, const QMap<QString, bool>& gameModes)
 {
     if (m_roomNumber.isEmpty()) {
         qDebug() << "[NetworkManager::sendStartGame] ERROR: Room number is empty";
@@ -183,6 +183,16 @@ void NetworkManager::sendStartGame(int whiteTimeMs, int blackTimeMs, int increme
     message["blackTimeMs"] = blackTimeMs;
     message["incrementMs"] = incrementMs;
     message["hostColor"] = (hostColor == PieceColor::White) ? "White" : "Black";
+    
+    // 添加遊戲模式
+    QJsonObject gameModesObj;
+    QMapIterator<QString, bool> it(gameModes);
+    while (it.hasNext()) {
+        it.next();
+        gameModesObj[it.key()] = it.value();
+    }
+    message["gameModes"] = gameModesObj;
+    
     sendMessage(message);
 }
 
@@ -569,13 +579,22 @@ void NetworkManager::processMessage(const QJsonObject& message)
     }
     
     case MessageType::StartGame:
-        // 收到房主的開始遊戲通知（包含時間設定和顏色選擇）
+        // 收到房主的開始遊戲通知（包含時間設定、顏色選擇和遊戲模式）
         {
             int whiteTimeMs = message["whiteTimeMs"].toInt();
             int blackTimeMs = message["blackTimeMs"].toInt();
             int incrementMs = message["incrementMs"].toInt();
             QString hostColorStr = message["hostColor"].toString();
             PieceColor hostColor = (hostColorStr == "White") ? PieceColor::White : PieceColor::Black;
+            
+            // 解析遊戲模式
+            QMap<QString, bool> gameModes;
+            if (message.contains("gameModes")) {
+                QJsonObject gameModesObj = message["gameModes"].toObject();
+                for (const QString& key : gameModesObj.keys()) {
+                    gameModes[key] = gameModesObj[key].toBool();
+                }
+            }
             
             // 計算伺服器時間偏移（如果訊息中包含伺服器時間戳）
             qint64 serverTimeOffset = 0;
@@ -594,7 +613,7 @@ void NetworkManager::processMessage(const QJsonObject& message)
                 m_opponentColor = hostColor;
             }
             
-            emit startGameReceived(whiteTimeMs, blackTimeMs, incrementMs, hostColor, serverTimeOffset);
+            emit startGameReceived(whiteTimeMs, blackTimeMs, incrementMs, hostColor, serverTimeOffset, gameModes);
         }
         break;
     
