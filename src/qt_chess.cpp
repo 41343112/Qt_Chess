@@ -2854,6 +2854,13 @@ void Qt_Chess::onStartButtonClicked() {
             m_networkManager->setPlayerColors(m_onlineHostSelectedColor);
         }
         
+        qDebug() << "[Qt_Chess::onStartButtonClicked] Sending game modes to server:";
+        QMapIterator<QString, bool> debugIt(m_selectedGameModes);
+        while (debugIt.hasNext()) {
+            debugIt.next();
+            qDebug() << "  -" << debugIt.key() << ":" << debugIt.value();
+        }
+        
         m_networkManager->sendStartGame(whiteTimeMs, blackTimeMs, incrementMs, m_onlineHostSelectedColor, m_selectedGameModes);
         
         qDebug() << "[Qt_Chess::onStartButtonClicked] Host sending StartGame to server"
@@ -5603,6 +5610,13 @@ void Qt_Chess::onCreateRoomButtonClicked() {
     
     // 儲存選擇的遊戲模式
     m_selectedGameModes = dialog.getGameModes();
+    
+    qDebug() << "[Qt_Chess::onCreateRoomButtonClicked] Game modes selected by host:";
+    QMapIterator<QString, bool> debugIt(m_selectedGameModes);
+    while (debugIt.hasNext()) {
+        debugIt.next();
+        qDebug() << "  -" << debugIt.key() << ":" << debugIt.value();
+    }
     
     // 創建房間
     if (m_networkManager->createRoom()) {
