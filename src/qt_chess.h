@@ -339,6 +339,7 @@ private:
     
     // 霧戰模式 (Fog of War)
     bool isFogOfWarEnabled() const;
+    PieceColor getViewingPlayer() const;
     bool isSquareVisibleInFogOfWar(int logicalRow, int logicalCol, PieceColor viewingPlayer) const;
     
     // 高亮顯示

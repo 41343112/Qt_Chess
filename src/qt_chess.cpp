@@ -1886,19 +1886,8 @@ void Qt_Chess::updateBoard() {
     bool fogOfWarEnabled = isFogOfWarEnabled();
     PieceColor viewingPlayer = PieceColor::White; // 預設視角
     
-    // 決定視角
-    if (m_isOnlineGame && m_networkManager) {
-        // 線上模式：根據玩家在房間中的角色決定視角
-        if (m_networkManager->isHost()) {
-            // 房主的視角取決於其選擇的顏色
-            viewingPlayer = m_onlineHostSelectedColor;
-        } else {
-            // 房客的視角是房主選擇顏色的對立面
-            viewingPlayer = (m_onlineHostSelectedColor == PieceColor::White) ? PieceColor::Black : PieceColor::White;
-        }
-    } else {
-        // 本地模式或電腦模式：使用當前玩家視角（輪流顯示各自的霧戰視野）
-        viewingPlayer = m_chessBoard.getCurrentPlayer();
+    if (fogOfWarEnabled) {
+        viewingPlayer = getViewingPlayer();
     }
     
     for (int logicalRow = 0; logicalRow < 8; ++logicalRow) {
@@ -1945,20 +1934,7 @@ void Qt_Chess::updateSquareColor(int displayRow, int displayCol) {
     // 檢查是否啟用霧戰模式
     bool fogOfWarEnabled = isFogOfWarEnabled();
     if (fogOfWarEnabled) {
-        PieceColor viewingPlayer = PieceColor::White; // 預設視角
-        
-        // 決定視角
-        if (m_isOnlineGame && m_networkManager) {
-            // 線上模式：根據玩家在房間中的角色決定視角
-            if (m_networkManager->isHost()) {
-                viewingPlayer = m_onlineHostSelectedColor;
-            } else {
-                viewingPlayer = (m_onlineHostSelectedColor == PieceColor::White) ? PieceColor::Black : PieceColor::White;
-            }
-        } else {
-            // 本地模式或電腦模式：使用當前玩家視角
-            viewingPlayer = m_chessBoard.getCurrentPlayer();
-        }
+        PieceColor viewingPlayer = getViewingPlayer();
         
         // 檢查該方格是否可見
         bool isVisible = isSquareVisibleInFogOfWar(logicalRow, logicalCol, viewingPlayer);
@@ -2030,7 +2006,7 @@ void Qt_Chess::displayPieceOnSquare(QPushButton* square, const ChessPiece& piece
 void Qt_Chess::displayPieceOnSquare(QPushButton* square, const ChessPiece& piece, bool isVisible) {
     if (!square) return;
 
-    // 清除 previous content
+    // 清除之前的內容
     square->setText("");
     square->setIcon(QIcon());
 
@@ -2047,7 +2023,7 @@ void Qt_Chess::displayPieceOnSquare(QPushButton* square, const ChessPiece& piece
         if (!pixmap.isNull()) {
             QIcon icon(pixmap);
             square->setIcon(icon);
-            // 設置 icon size based on square size
+            // 根據方格大小設置圖示尺寸
             int iconSize = calculateIconSize(square);
             square->setIconSize(QSize(iconSize, iconSize));
         } else {
@@ -2063,6 +2039,23 @@ void Qt_Chess::displayPieceOnSquare(QPushButton* square, const ChessPiece& piece
 bool Qt_Chess::isFogOfWarEnabled() const {
     // 檢查是否選擇了霧戰模式
     return m_selectedGameModes.value("霧戰", false);
+}
+
+PieceColor Qt_Chess::getViewingPlayer() const {
+    // 決定視角
+    if (m_isOnlineGame && m_networkManager) {
+        // 線上模式：根據玩家在房間中的角色決定視角
+        if (m_networkManager->isHost()) {
+            // 房主的視角取決於其選擇的顏色
+            return m_onlineHostSelectedColor;
+        } else {
+            // 房客的視角是房主選擇顏色的對立面
+            return (m_onlineHostSelectedColor == PieceColor::White) ? PieceColor::Black : PieceColor::White;
+        }
+    } else {
+        // 本地模式或電腦模式：使用當前玩家視角（輪流顯示各自的霧戰視野）
+        return m_chessBoard.getCurrentPlayer();
+    }
 }
 
 bool Qt_Chess::isSquareVisibleInFogOfWar(int logicalRow, int logicalCol, PieceColor viewingPlayer) const {
