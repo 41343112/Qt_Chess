@@ -2310,17 +2310,23 @@ void Qt_Chess::onSquareClicked(int displayRow, int displayCol) {
             updateBoard();
 
             // 檢查是否需要兵升變
+            bool needsUpdate = false;
             if (m_chessBoard.needsPromotion(clickedSquare)) {
                 const ChessPiece& piece = m_chessBoard.getPiece(clickedSquare.y(), clickedSquare.x());
                 PieceType promotionType = showPromotionDialog(piece.getColor());
                 m_chessBoard.promotePawn(clickedSquare, promotionType);
                 promType = promotionType;
-                updateBoard();
+                needsUpdate = true;
             }
             
             // 應用地吸引力模式（如果啟用）
             if (m_gravityModeEnabled) {
                 applyGravity();
+                needsUpdate = true;
+            }
+            
+            // 更新棋盤顯示（在升變和地吸引力之後統一更新）
+            if (needsUpdate) {
                 updateBoard();
             }
             
@@ -3325,17 +3331,23 @@ void Qt_Chess::mouseReleaseEvent(QMouseEvent *event) {
                 updateBoard();
 
                 // 檢查 pawn promotion is needed
+                bool needsUpdate = false;
                 if (m_chessBoard.needsPromotion(logicalDropSquare)) {
                     const ChessPiece& piece = m_chessBoard.getPiece(logicalDropSquare.y(), logicalDropSquare.x());
                     PieceType promotionType = showPromotionDialog(piece.getColor());
                     m_chessBoard.promotePawn(logicalDropSquare, promotionType);
                     promType = promotionType;
-                    updateBoard();
+                    needsUpdate = true;
                 }
                 
                 // 應用地吸引力模式（如果啟用）
                 if (m_gravityModeEnabled) {
                     applyGravity();
+                    needsUpdate = true;
+                }
+                
+                // 更新棋盤顯示（在升變和地吸引力之後統一更新）
+                if (needsUpdate) {
                     updateBoard();
                 }
                 
@@ -5143,6 +5155,7 @@ void Qt_Chess::onEngineBestMove(const QString& move) {
         updateBoard();
         
         // 處理升變
+        bool needsUpdate = false;
         if (m_chessBoard.needsPromotion(to)) {
             // 引擎的升變類型已經包含在移動中
             if (promotionType != PieceType::None) {
@@ -5151,12 +5164,17 @@ void Qt_Chess::onEngineBestMove(const QString& move) {
                 // 預設升變為后
                 m_chessBoard.promotePawn(to, PieceType::Queen);
             }
-            updateBoard();
+            needsUpdate = true;
         }
         
         // 應用地吸引力模式（如果啟用）
         if (m_gravityModeEnabled) {
             applyGravity();
+            needsUpdate = true;
+        }
+        
+        // 更新棋盤顯示（在升變和地吸引力之後統一更新）
+        if (needsUpdate) {
             updateBoard();
         }
         
@@ -7747,8 +7765,9 @@ void Qt_Chess::applyGravity() {
                     
                     // 如果棋子需要移動
                     if (targetRow > row) {
-                        // 將棋子移動到新位置
-                        m_chessBoard.setPiece(targetRow, col, piece);
+                        // 將棋子移動到新位置，保留棋子的狀態（包括 hasMoved）
+                        ChessPiece movedPiece = piece;
+                        m_chessBoard.setPiece(targetRow, col, movedPiece);
                         m_chessBoard.setPiece(row, col, ChessPiece(PieceType::None, PieceColor::None));
                         pieceMoved = true;
                     }
