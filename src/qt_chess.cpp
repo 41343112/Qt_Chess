@@ -2045,7 +2045,7 @@ PieceColor Qt_Chess::getViewingPlayer() const {
     // 決定視角
     if (m_isOnlineGame && m_networkManager) {
         // 線上模式：根據玩家在房間中的角色決定視角
-        if (m_networkManager->isHost()) {
+        if (m_networkManager->getRole() == NetworkRole::Host) {
             // 房主的視角取決於其選擇的顏色
             return m_onlineHostSelectedColor;
         } else {
