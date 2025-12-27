@@ -73,6 +73,9 @@ public:
     const std::vector<ChessPiece>& getCapturedPieces(PieceColor color) const;
     void clearCapturedPieces();
     
+    // 霧戰模式 - Fog of War
+    std::vector<QPoint> getVisibleSquaresForColor(PieceColor color) const;
+    
 private:
     std::vector<std::vector<ChessPiece>> m_board;
     PieceColor m_currentPlayer;

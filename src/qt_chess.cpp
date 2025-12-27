@@ -1882,12 +1882,39 @@ void Qt_Chess::onBackToMainMenuClicked() {
 // ============================================================================
 
 void Qt_Chess::updateBoard() {
+    // 檢查是否啟用霧戰模式
+    bool fogOfWarEnabled = isFogOfWarEnabled();
+    PieceColor viewingPlayer = PieceColor::White; // 預設視角
+    
+    // 決定視角
+    if (m_isOnlineGame && m_networkManager) {
+        // 線上模式：根據玩家在房間中的角色決定視角
+        if (m_networkManager->isHost()) {
+            // 房主的視角取決於其選擇的顏色
+            viewingPlayer = m_onlineHostSelectedColor;
+        } else {
+            // 房客的視角是房主選擇顏色的對立面
+            viewingPlayer = (m_onlineHostSelectedColor == PieceColor::White) ? PieceColor::Black : PieceColor::White;
+        }
+    } else {
+        // 本地模式或電腦模式：使用當前玩家視角（輪流顯示各自的霧戰視野）
+        viewingPlayer = m_chessBoard.getCurrentPlayer();
+    }
+    
     for (int logicalRow = 0; logicalRow < 8; ++logicalRow) {
         for (int logicalCol = 0; logicalCol < 8; ++logicalCol) {
             int displayRow = getDisplayRow(logicalRow);
             int displayCol = getDisplayCol(logicalCol);
             const ChessPiece& piece = m_chessBoard.getPiece(logicalRow, logicalCol);
-            displayPieceOnSquare(m_squares[displayRow][displayCol], piece);
+            
+            // 如果啟用霧戰模式，檢查該方格是否可見
+            if (fogOfWarEnabled) {
+                bool isVisible = isSquareVisibleInFogOfWar(logicalRow, logicalCol, viewingPlayer);
+                displayPieceOnSquare(m_squares[displayRow][displayCol], piece, isVisible);
+            } else {
+                displayPieceOnSquare(m_squares[displayRow][displayCol], piece);
+            }
+            
             updateSquareColor(displayRow, displayCol);
         }
     }
@@ -1914,6 +1941,34 @@ void Qt_Chess::updateSquareColor(int displayRow, int displayCol) {
     
     // 使用輔助函數獲取文字顏色
     QString textColor = getPieceTextColor(logicalRow, logicalCol);
+    
+    // 檢查是否啟用霧戰模式
+    bool fogOfWarEnabled = isFogOfWarEnabled();
+    if (fogOfWarEnabled) {
+        PieceColor viewingPlayer = PieceColor::White; // 預設視角
+        
+        // 決定視角
+        if (m_isOnlineGame && m_networkManager) {
+            // 線上模式：根據玩家在房間中的角色決定視角
+            if (m_networkManager->isHost()) {
+                viewingPlayer = m_onlineHostSelectedColor;
+            } else {
+                viewingPlayer = (m_onlineHostSelectedColor == PieceColor::White) ? PieceColor::Black : PieceColor::White;
+            }
+        } else {
+            // 本地模式或電腦模式：使用當前玩家視角
+            viewingPlayer = m_chessBoard.getCurrentPlayer();
+        }
+        
+        // 檢查該方格是否可見
+        bool isVisible = isSquareVisibleInFogOfWar(logicalRow, logicalCol, viewingPlayer);
+        
+        if (!isVisible) {
+            // 不可見的方格顯示為深灰色霧狀效果
+            color = QColor(50, 50, 60); // 深灰藍色
+            textColor = "#888888"; // 灰色文字
+        }
+    }
     
     // 現代科技風格 - 帶有微妙的霓虹青色發光邊框效果和適當的文字顏色
     m_squares[displayRow][displayCol]->setStyleSheet(
@@ -1970,6 +2025,59 @@ void Qt_Chess::displayPieceOnSquare(QPushButton* square, const ChessPiece& piece
         // 使用 Unicode 符號
         square->setText(piece.getSymbol());
     }
+}
+
+void Qt_Chess::displayPieceOnSquare(QPushButton* square, const ChessPiece& piece, bool isVisible) {
+    if (!square) return;
+
+    // 清除 previous content
+    square->setText("");
+    square->setIcon(QIcon());
+
+    // 如果不可見，顯示霧狀效果（空白或霧狀符號）
+    if (!isVisible) {
+        // 使用霧狀符號 🌫 或留空
+        square->setText("🌫");
+        return;
+    }
+
+    // 使用圖示或符號顯示棋子
+    if (m_pieceIconSettings.useCustomIcons) {
+        QPixmap pixmap = getCachedPieceIcon(piece.getType(), piece.getColor());
+        if (!pixmap.isNull()) {
+            QIcon icon(pixmap);
+            square->setIcon(icon);
+            // 設置 icon size based on square size
+            int iconSize = calculateIconSize(square);
+            square->setIconSize(QSize(iconSize, iconSize));
+        } else {
+            // 如果圖示無法載入或不在快取中則回退到符號
+            square->setText(piece.getSymbol());
+        }
+    } else {
+        // 使用 Unicode 符號
+        square->setText(piece.getSymbol());
+    }
+}
+
+bool Qt_Chess::isFogOfWarEnabled() const {
+    // 檢查是否選擇了霧戰模式
+    return m_selectedGameModes.value("霧戰", false);
+}
+
+bool Qt_Chess::isSquareVisibleInFogOfWar(int logicalRow, int logicalCol, PieceColor viewingPlayer) const {
+    // 獲取該玩家可見的所有方格
+    std::vector<QPoint> visibleSquares = m_chessBoard.getVisibleSquaresForColor(viewingPlayer);
+    
+    // 檢查當前方格是否在可見列表中
+    QPoint currentSquare(logicalCol, logicalRow);
+    for (const QPoint& visibleSquare : visibleSquares) {
+        if (visibleSquare == currentSquare) {
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 QString Qt_Chess::getPieceTextColor(int logicalRow, int logicalCol) const {

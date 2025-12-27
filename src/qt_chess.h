@@ -334,7 +334,12 @@ private:
     void updateSquareColor(int row, int col);
     void updateStatus();
     void displayPieceOnSquare(QPushButton* square, const ChessPiece& piece);
+    void displayPieceOnSquare(QPushButton* square, const ChessPiece& piece, bool isVisible);
     QString getPieceTextColor(int logicalRow, int logicalCol) const;
+    
+    // 霧戰模式 (Fog of War)
+    bool isFogOfWarEnabled() const;
+    bool isSquareVisibleInFogOfWar(int logicalRow, int logicalCol, PieceColor viewingPlayer) const;
     
     // 高亮顯示
     void highlightValidMoves();

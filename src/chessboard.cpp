@@ -643,3 +643,40 @@ void ChessBoard::clearCapturedPieces() {
     m_capturedWhite.clear();
     m_capturedBlack.clear();
 }
+
+// 霧戰模式 - 計算指定顏色可見的所有方格
+std::vector<QPoint> ChessBoard::getVisibleSquaresForColor(PieceColor color) const {
+    std::vector<QPoint> visibleSquares;
+    
+    // 遍歷棋盤上所有該顏色的棋子
+    for (int row = 0; row < 8; ++row) {
+        for (int col = 0; col < 8; ++col) {
+            const ChessPiece& piece = m_board[row][col];
+            
+            // 如果是該顏色的棋子
+            if (piece.getColor() == color && piece.getType() != PieceType::None) {
+                QPoint piecePos(col, row);
+                
+                // 棋子本身所在的位置一定可見
+                visibleSquares.push_back(piecePos);
+                
+                // 檢查該棋子可以移動到的所有位置
+                for (int targetRow = 0; targetRow < 8; ++targetRow) {
+                    for (int targetCol = 0; targetCol < 8; ++targetCol) {
+                        QPoint targetPos(targetCol, targetRow);
+                        
+                        // 如果棋子可以移動到該位置，則該位置可見
+                        if (piece.isValidMove(piecePos, targetPos, m_board, m_enPassantTarget)) {
+                            // 檢查是否會使自己被將軍（這樣的移動是不合法的）
+                            if (!wouldBeInCheck(piecePos, targetPos, color)) {
+                                visibleSquares.push_back(targetPos);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    return visibleSquares;
+}
