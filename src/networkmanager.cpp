@@ -169,7 +169,7 @@ void NetworkManager::sendGameStart(PieceColor playerColor)
     sendMessage(message);
 }
 
-void NetworkManager::sendStartGame(int whiteTimeMs, int blackTimeMs, int incrementMs, PieceColor hostColor)
+void NetworkManager::sendStartGame(int whiteTimeMs, int blackTimeMs, int incrementMs, PieceColor hostColor, const QMap<QString, bool>& gameModes)
 {
     if (m_roomNumber.isEmpty()) {
         qDebug() << "[NetworkManager::sendStartGame] ERROR: Room number is empty";
@@ -183,6 +183,14 @@ void NetworkManager::sendStartGame(int whiteTimeMs, int blackTimeMs, int increme
     message["blackTimeMs"] = blackTimeMs;
     message["incrementMs"] = incrementMs;
     message["hostColor"] = (hostColor == PieceColor::White) ? "White" : "Black";
+    
+    // 添加遊戲模式
+    QJsonObject gameModesObj;
+    for (auto it = gameModes.begin(); it != gameModes.end(); ++it) {
+        gameModesObj[it.key()] = it.value();
+    }
+    message["gameModes"] = gameModesObj;
+    
     sendMessage(message);
 }
 
@@ -577,6 +585,15 @@ void NetworkManager::processMessage(const QJsonObject& message)
             QString hostColorStr = message["hostColor"].toString();
             PieceColor hostColor = (hostColorStr == "White") ? PieceColor::White : PieceColor::Black;
             
+            // 提取遊戲模式
+            QMap<QString, bool> gameModes;
+            if (message.contains("gameModes")) {
+                QJsonObject gameModesObj = message["gameModes"].toObject();
+                for (auto it = gameModesObj.begin(); it != gameModesObj.end(); ++it) {
+                    gameModes[it.key()] = it.value().toBool();
+                }
+            }
+            
             // 計算伺服器時間偏移（如果訊息中包含伺服器時間戳）
             qint64 serverTimeOffset = 0;
             if (message.contains("serverTimestamp")) {
@@ -594,7 +611,7 @@ void NetworkManager::processMessage(const QJsonObject& message)
                 m_opponentColor = hostColor;
             }
             
-            emit startGameReceived(whiteTimeMs, blackTimeMs, incrementMs, hostColor, serverTimeOffset);
+            emit startGameReceived(whiteTimeMs, blackTimeMs, incrementMs, hostColor, serverTimeOffset, gameModes);
         }
         break;
     
