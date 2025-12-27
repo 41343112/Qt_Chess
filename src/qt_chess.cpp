@@ -1882,13 +1882,39 @@ void Qt_Chess::onBackToMainMenuClicked() {
 // ============================================================================
 
 void Qt_Chess::updateBoard() {
+    // 如果啟用霧戰模式，計算當前玩家的可見範圍
+    std::vector<std::vector<bool>> visibility;
+    bool fogEnabled = isFogModeEnabled();
+    PieceColor viewingPlayer = m_chessBoard.getCurrentPlayer();
+    
+    if (fogEnabled) {
+        getVisibleSquaresForPlayer(viewingPlayer, visibility);
+    }
+    
     for (int logicalRow = 0; logicalRow < 8; ++logicalRow) {
         for (int logicalCol = 0; logicalCol < 8; ++logicalCol) {
             int displayRow = getDisplayRow(logicalRow);
             int displayCol = getDisplayCol(logicalCol);
             const ChessPiece& piece = m_chessBoard.getPiece(logicalRow, logicalCol);
-            displayPieceOnSquare(m_squares[displayRow][displayCol], piece);
-            updateSquareColor(displayRow, displayCol);
+            
+            // 檢查該格子是否可見
+            bool isVisible = !fogEnabled || visibility[logicalRow][logicalCol];
+            
+            if (isVisible) {
+                // 正常顯示棋子
+                displayPieceOnSquare(m_squares[displayRow][displayCol], piece);
+                updateSquareColor(displayRow, displayCol);
+            } else {
+                // 應用霧效果：顯示為空格子，並使用特殊顏色表示霧
+                ChessPiece emptyPiece(PieceType::None, PieceColor::None);
+                displayPieceOnSquare(m_squares[displayRow][displayCol], emptyPiece);
+                
+                // 使用深灰色表示霧
+                QString fogColor = "#2A2A2A";
+                m_squares[displayRow][displayCol]->setStyleSheet(
+                    QString("QPushButton { background-color: %1; border: 1px solid #1A1A1A; }").arg(fogColor)
+                );
+            }
         }
     }
 
@@ -2188,6 +2214,80 @@ PieceType Qt_Chess::showPromotionDialog(PieceColor color) {
 
     dialog.exec();
     return selectedType;
+}
+
+// ============================================================================
+// 霧戰模式 (Fog of War Mode)
+// ============================================================================
+
+bool Qt_Chess::isFogModeEnabled() const {
+    // 檢查霧戰模式是否已啟用
+    return m_selectedGameModes.contains("霧戰") && m_selectedGameModes["霧戰"];
+}
+
+void Qt_Chess::getVisibleSquaresForPlayer(PieceColor playerColor, std::vector<std::vector<bool>>& visibility) const {
+    // 初始化所有格子為不可見
+    visibility.clear();
+    visibility.resize(8, std::vector<bool>(8, false));
+    
+    // 獲取棋盤狀態
+    const auto& board = m_chessBoard.getBoard();
+    
+    // 遍歷所有格子，找到玩家的棋子
+    for (int row = 0; row < 8; ++row) {
+        for (int col = 0; col < 8; ++col) {
+            const ChessPiece& piece = m_chessBoard.getPiece(row, col);
+            
+            // 如果是玩家的棋子
+            if (piece.getType() != PieceType::None && piece.getColor() == playerColor) {
+                // 該棋子所在格子可見
+                visibility[row][col] = true;
+                
+                // 根據棋子類型計算可見範圍
+                QPoint from(col, row);
+                
+                // 檢查所有可能的目標位置
+                for (int targetRow = 0; targetRow < 8; ++targetRow) {
+                    for (int targetCol = 0; targetCol < 8; ++targetCol) {
+                        QPoint to(targetCol, targetRow);
+                        
+                        // 如果該棋子可以移動到目標位置，則該位置可見
+                        if (piece.isValidMove(from, to, board, m_chessBoard.getEnPassantTarget())) {
+                            visibility[targetRow][targetCol] = true;
+                        }
+                        
+                        // 特殊處理：兵可以看到斜前方的格子（即使那裡沒有敵方棋子）
+                        if (piece.getType() == PieceType::Pawn) {
+                            int direction = (playerColor == PieceColor::White) ? -1 : 1;
+                            int targetRow1 = row + direction;
+                            int targetCol1 = col - 1;
+                            int targetCol2 = col + 1;
+                            
+                            if (targetRow1 >= 0 && targetRow1 < 8) {
+                                if (targetCol1 >= 0 && targetCol1 < 8) {
+                                    visibility[targetRow1][targetCol1] = true;
+                                }
+                                if (targetCol2 >= 0 && targetCol2 < 8) {
+                                    visibility[targetRow1][targetCol2] = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+bool Qt_Chess::isSquareVisibleInFogMode(int logicalRow, int logicalCol, PieceColor playerColor) const {
+    if (!isFogModeEnabled()) {
+        return true; // 如果霧戰模式未啟用，所有格子都可見
+    }
+    
+    std::vector<std::vector<bool>> visibility;
+    getVisibleSquaresForPlayer(playerColor, visibility);
+    
+    return visibility[logicalRow][logicalCol];
 }
 
 // ============================================================================

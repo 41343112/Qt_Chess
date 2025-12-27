@@ -354,6 +354,11 @@ private:
     void resetBoardState();
     PieceType showPromotionDialog(PieceColor color);
     
+    // 霧戰模式 (Fog of War Mode)
+    bool isFogModeEnabled() const;
+    bool isSquareVisibleInFogMode(int logicalRow, int logicalCol, PieceColor playerColor) const;
+    void getVisibleSquaresForPlayer(PieceColor playerColor, std::vector<std::vector<bool>>& visibility) const;
+    
     // ========================================
     // 時間控制系統 (Time Control System)
     // ========================================

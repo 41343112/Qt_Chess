@@ -73,6 +73,9 @@ public:
     const std::vector<ChessPiece>& getCapturedPieces(PieceColor color) const;
     void clearCapturedPieces();
     
+    // 取得棋盤狀態（用於霧戰模式）
+    const std::vector<std::vector<ChessPiece>>& getBoard() const { return m_board; }
+    
 private:
     std::vector<std::vector<ChessPiece>> m_board;
     PieceColor m_currentPlayer;
