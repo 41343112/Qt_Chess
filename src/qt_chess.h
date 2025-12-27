@@ -341,7 +341,7 @@ private:
     void clearHighlights();
     void applyCheckHighlight(const QPoint& excludeSquare = QPoint(-1, -1));
     void applyLastMoveHighlight();
-    void highlightSquareForLastMove(const QPoint& square);  // 霧戰模式輔助函數
+    void highlightSquareForLastMove(const QPoint& square);  // 高亮上一步移動格子的輔助函數
     
     // 棋盤座標轉換
     int getDisplayRow(int logicalRow) const;
@@ -359,6 +359,7 @@ private:
     bool isFogModeEnabled() const;
     bool isSquareVisibleInFogMode(int logicalRow, int logicalCol, PieceColor playerColor) const;
     void getVisibleSquaresForPlayer(PieceColor playerColor, std::vector<std::vector<bool>>& visibility) const;
+    PieceColor getCurrentViewingPlayer() const;  // 取得當前視角玩家顏色（線上模式用玩家顏色，本地模式用當前回合）
     
     // ========================================
     // 時間控制系統 (Time Control System)

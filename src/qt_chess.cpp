@@ -1885,16 +1885,9 @@ void Qt_Chess::updateBoard() {
     // 如果啟用霧戰模式，計算當前玩家的可見範圍
     std::vector<std::vector<bool>> visibility;
     bool fogEnabled = isFogModeEnabled();
-    PieceColor viewingPlayer;
     
     if (fogEnabled) {
-        // 在線上模式，使用本地玩家的顏色
-        // 在本地模式，使用當前回合玩家的顏色
-        if (m_isOnlineGame && m_networkManager) {
-            viewingPlayer = m_networkManager->getPlayerColor();
-        } else {
-            viewingPlayer = m_chessBoard.getCurrentPlayer();
-        }
+        PieceColor viewingPlayer = getCurrentViewingPlayer();
         getVisibleSquaresForPlayer(viewingPlayer, visibility);
     }
     
@@ -2108,12 +2101,7 @@ void Qt_Chess::applyLastMoveHighlight() {
     
     // 如果啟用霧戰模式，檢查這些格子是否可見
     if (isFogModeEnabled()) {
-        PieceColor viewingPlayer;
-        if (m_isOnlineGame && m_networkManager) {
-            viewingPlayer = m_networkManager->getPlayerColor();
-        } else {
-            viewingPlayer = m_chessBoard.getCurrentPlayer();
-        }
+        PieceColor viewingPlayer = getCurrentViewingPlayer();
         
         std::vector<std::vector<bool>> visibility;
         getVisibleSquaresForPlayer(viewingPlayer, visibility);
@@ -2249,6 +2237,16 @@ bool Qt_Chess::isFogModeEnabled() const {
     return m_selectedGameModes.contains("霧戰") && m_selectedGameModes["霧戰"];
 }
 
+PieceColor Qt_Chess::getCurrentViewingPlayer() const {
+    // 在線上模式，使用本地玩家的顏色
+    // 在本地模式，使用當前回合玩家的顏色
+    if (m_isOnlineGame && m_networkManager) {
+        return m_networkManager->getPlayerColor();
+    } else {
+        return m_chessBoard.getCurrentPlayer();
+    }
+}
+
 void Qt_Chess::getVisibleSquaresForPlayer(PieceColor playerColor, std::vector<std::vector<bool>>& visibility) const {
     // 初始化所有格子為不可見
     visibility.clear();
@@ -2260,7 +2258,7 @@ void Qt_Chess::getVisibleSquaresForPlayer(PieceColor playerColor, std::vector<st
     // 遍歷所有格子，找到玩家的棋子
     for (int row = 0; row < 8; ++row) {
         for (int col = 0; col < 8; ++col) {
-            const ChessPiece& piece = m_chessBoard.getPiece(row, col);
+            const ChessPiece& piece = board[row][col];
             
             // 如果是玩家的棋子
             if (piece.getType() != PieceType::None && piece.getColor() == playerColor) {
