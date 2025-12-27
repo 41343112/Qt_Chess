@@ -261,6 +261,11 @@ private:
     // 地吸引力模式相關 (Gravity Mode)
     bool m_gravityModeEnabled;           // 是否啟用地吸引力模式
     
+    // 傳送陣模式相關 (Teleportation Mode)
+    bool m_teleportModeEnabled;          // 是否啟用傳送陣模式
+    QPoint m_teleportPortal1;            // 傳送門位置1
+    QPoint m_teleportPortal2;            // 傳送門位置2
+    
     // ========================================
     // 音效系統 (Sound System)
     // ========================================
@@ -470,6 +475,12 @@ private:
     // 地吸引力模式 (Gravity Mode)
     void applyGravity();                 // 應用地吸引力讓棋子下落
     void rotateBoardDisplay(bool rotate);  // 旋轉棋盤UI顯示
+    
+    // 傳送陣模式 (Teleportation Mode)
+    void initializeTeleportPortals();    // 初始化傳送門位置
+    void resetTeleportPortals();         // 重置傳送門位置
+    bool isTeleportPortal(int row, int col) const;  // 檢查方格是否為傳送門
+    void handleTeleportation(const QPoint& from, const QPoint& to);  // 處理傳送
     
     // ========================================
     // 音效系統 (Sound System)
